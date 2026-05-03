@@ -1,5 +1,33 @@
 # Changelog
 
+## v1.1.0 - 2026-05-03
+
+### New Features
+
+- Add `--branch` flag to override worktree/branch name #315 @bronislav
+- Add provider override CLI flags (`--claude-command`, `--external-review-tool`) #314 @korjavin
+- Add `/ralphex-adopt` skill for converting plans from other formats into ralphex format #313 @umputun
+- Add `move_plan_on_completion` config option #307 @bronislav
+- Add `--image` and `--port` CLI flags to docker wrapper #301 @umputun
+- Also retry admin-disabled allocation on `wait_on_limit` 7571c70
+
+### Improved
+
+- Migrate docs site from mkdocs-material to zensical 90becf9
+- Rework landing copy and add FAQ to capture ralph-loop search traffic 96fe10a
+- Fix plugin install command in README and llms.txt #323 @umputun
+- Drop goconst linter check 710b297
+
+### Fixed
+
+- Tighten default codex error/limit patterns to avoid false positives on codebases that talk about rate limits #324 @umputun
+- Detect admin-disabled usage allocation in claude output #319 @umputun
+- Progress log filename ignores `--branch` override #316 @bronislav
+- Trigger `--wait` retry on codex stderr-only quota errors #311 @umputun
+- Resume watch-mode tailing after flock race marks session completed #305 @umputun
+- Keep task section headers in English for localized plans #302 @umputun
+- Prevent flag/option names from wrapping in table first column e3622c1
+
 ## v1.0.1 - 2026-04-21
 
 ### Fixed
