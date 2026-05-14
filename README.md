@@ -195,6 +195,20 @@ ralphex --review
 ralphex --review docs/plans/add-auth.md
 ```
 
+### External-Only Mode
+
+External-only mode (`--external-only`, alias `-e`) skips the task and first review phases and runs the external review pipeline (Phase 3 → Phase 4) on changes already present on the current branch. The flag name follows the same cutoff convention as `--review`: it marks where execution starts, not which single phase runs. After the external review loop converges (or hits its iteration limit), the post-external critical/major review (Phase 4) runs to catch regressions from fixes applied during the loop.
+
+If the external review loop finds no issues on its first pass, Phase 4 is skipped automatically because there is nothing to regress.
+
+```bash
+# run external review pipeline on current branch changes
+ralphex --external-only
+
+# optionally pass a plan file for context
+ralphex --external-only docs/plans/feature.md
+```
+
 ### Worktree Isolation
 
 The `--worktree` flag runs plan execution in an isolated git worktree at `.ralphex/worktrees/<branch>`, enabling parallel execution of multiple plans on the same repo without branch conflicts.
