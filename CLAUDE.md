@@ -70,41 +70,16 @@ docs/plans/         # plan files location
 - Progress file locking (flock) for active session detection
 - Watch-mode dashboard reactivates completed sessions on fsnotify Write events, resuming tailing from `Session.lastOffset` — recovery path for the flock race in `RefreshStates` that can prematurely mark a running session completed. `Session.Reactivate()` is idempotent and scoped to the written path; `loadProgressFileIntoSession` records `lastOffset` after the initial load so reactivation does not re-emit replayed events
 - Progress file fresh start: files ending in a `Completed:` footer are truncated on reuse; files ending in a `Failed:` footer (written by `Logger.SetFailed` before `Close`) or with no footer preserve content and write a `--- restarted at ... ---` separator, so retried failed/aborted runs keep history. `SetFailed` is called in `cmd/ralphex/main.go` for `r.Run` errors (including `ErrUserAborted`), dashboard start errors, and errors from `runWithWorktree`
-- Multiple execution modes: full, tasks-only, review-only, external-only/codex-only, plan creation
 - `--codex` is an executor switch (not a new pipeline mode): sets `cfg.Executor = config.ExecutorCodex` so task, both reviews, and finalize run through `CodexExecutor`(s) with `MultiAgent=true` (enables `features.multi_agent`, registers the `reviewer` agent for spawn_agent calls). Forces `cfg.ExternalReviewTool = "none"` (codex-reviewing-codex is weak-signal self-review). `--pass-claude-md` (codex executor only) sets `CodexExecutor.PassClaudeMd = true`. The `Mode` enum is unchanged; the `Executors` struct uses role-named fields (`Task`/`Review`/`External`/`Custom`), and `buildCodexExecutors` wires one codex instance into both `Task` and `Review` when the resolved review model/effort matches task, or two distinct instances when they differ. Review prompts are shared with claude — the `{{agent:<name>}}` expansion in `pkg/processor/prompts.go` reads `cfg.AppConfig.Executor` and emits `Use the Task tool` (claude) or `spawn_agent(agent='reviewer', task='...')` (codex). Codex config is passed as additive `-c` overrides per invocation by `(*CodexExecutor).configOverrides()` in `pkg/executor/codex.go`, layered on top of the user's `~/.codex/config.toml` so user customizations are preserved. ralphex never writes to `~/.codex/`; for user-level CLAUDE.md it prints a one-time hint to `ln -s ~/.claude/CLAUDE.md ~/.codex/AGENTS.md`
 - Codex review-phase directives: `prependCodexReviewGuidance` (`pkg/processor/prompts.go`) injects a `=== Codex orchestration directives ===` block atop `ReviewFirstPrompt` and `ReviewSecondPrompt` when `cfg.isCodexExecutor()` is true (no-op for claude). Covers two codex multi_agent quirks: (a) spawn_agent must pass only `agent` and `task` — `fork_context=true` with explicit `agent_type` is rejected by the codex API; (b) on a `wait_agent` timeout for a sub-agent that died mid-tool-call, re-spawn that agent ONCE then proceed with partial results. Section-level injection works for embedded and customized review prompts alike. Wired at three call sites in `pkg/processor/runner.go`: first review (full pipeline + review-only mode) and the review-second loop.
 - Codex task-phase skill-conflict directive: `prependCodexTaskGuidance` (`pkg/processor/prompts.go`) injects the `=== Codex task-execution directives ===` block (`codexTaskGuidance`) atop `TaskPrompt` when `cfg.isCodexExecutor()` is true (no-op for claude). Wired at one call site — `runTaskPhase` in `pkg/processor/runner.go`. It tells codex that ralphex's task prompt is authoritative and a conflicting auto-activated skill from `~/.codex/skills/` must not be followed. Deliberately generic (names no specific skill); a soft prompt-level mitigation, not a hard guard — codex 0.133.0 has no per-invocation skill-disable flag. Task-phase only
 - Codex output streaming: codex has no `stream-json` equivalent, so assistant message text + tool dispatch land only in the session rollout file at `~/.codex/sessions/<y>/<m>/<d>/rollout-<ts>-<session-id>.jsonl`. `CodexExecutor.Run` extracts the session id from the stderr header banner (`extractSessionID` + buffered `sessionIDCh`) and spawns `tailRolloutFile` to follow it. `formatRolloutEvent` forwards only assistant message text — reasoning records are covered by the stderr bold-summary stream, `function_call` records are skipped as tool-machinery noise. `tailCtx` is canceled after stdout EOF so the tailer drains once more and exits
 - Codex stderr filtering: `shouldDisplay` (`pkg/executor/codex.go`) suppresses the per-iteration startup banner, but on the executor's first `Run()` call (`headerEmitted atomic.Bool`) whitelists three header lines — `model:`, `sandbox:`, `reasoning effort:` — so users see what codex resolved from `~/.codex/config.toml`. Bold reasoning summaries always flow through. The ralphex-side banner (`printExecutorInfo`, `cmd/ralphex/main.go`) emits `sandbox:` (and `model:` / `reasoning effort:` when `codex_model` / `codex_reasoning_effort` are set; empty values skipped)
-- `--base-ref` flag overrides default branch for review diffs (branch name or commit hash)
-- `--skip-finalize` flag disables finalize step for a single run
-- `--task-model` / `--review-model`: `model[:effort]` syntax (effort levels: `low`, `medium`, `high`, `xhigh`, `max`); `--review-model` falls back to `--task-model`. Claude mode: injected as `--model`/`--effort` into `claude_command` (custom wrappers may ignore via `*) shift ;;`). Codex mode: selects per-phase model/effort, resolved by `ResolveCodexModelEffort` (pkg/processor/runner.go) against `codex_model`/`codex_reasoning_effort` defaults — each populated half of the spec overrides its default. `buildCodexExecutors` builds a separate review `CodexExecutor` when review model/effort differs from task, otherwise the task executor handles task/review/finalize. `max` does not exist in codex — a spec requesting it keeps the default effort, reports `maxDropped`, and the startup banner (`codexModelBanner`, `cmd/ralphex/main.go`) warns. The banner shows a `review model` line only when the review phase resolves differently from task
-- `--wait` flag enables rate limit retry with specified duration (e.g., `--wait=1h`)
-- `--session-timeout` flag sets per-session timeout (e.g., `--session-timeout=30m`), kills hanging sessions. Applies to claude in default executor mode and to every executor call under `--codex`; external codex/custom review in Claude mode is not affected
-- `--idle-timeout` flag kills claude/codex executor sessions when no output is received for a specified duration (e.g., `--idle-timeout=5m`), resets on each output line
-- `--review-patience` flag terminates external review after N unchanged rounds (stalemate detection)
-- Manual break via SIGQUIT (Ctrl+\) works in both task and external review loops. In task phase, break pauses execution and prompts "press Enter to continue, Ctrl+C to abort"; on resume the same task re-runs with a fresh session that re-reads the plan file (allowing mid-run plan edits). In external review, break terminates the loop immediately. Not available on Windows
-- Custom external review support via scripts (wraps any AI tool)
-- Configuration via `~/.config/ralphex/` with embedded defaults
-- File watching for multi-session dashboard using fsnotify
-- Optional finalize step after successful reviews (disabled by default)
-- Optional notifications on completion/failure via Telegram, Email, Slack, Webhook, or custom script (best-effort, disabled by default)
+- `--task-model`/`--review-model` resolve per-phase model/effort. Claude mode injects `--model`/`--effort` into `claude_command`. Codex mode: `ResolveCodexModelEffort` (`pkg/processor/runner.go`) resolves the `model[:effort]` spec against `codex_model`/`codex_reasoning_effort` defaults; `buildCodexExecutors` builds a separate review `CodexExecutor` when review differs from task. `max` effort does not exist in codex — kept default, `maxDropped` reported, `codexModelBanner` (`cmd/ralphex/main.go`) warns
 
 ### Finalize Step
 
-Optional post-completion step that runs after successful review phases:
-
-- Triggers on: ModeFull, ModeReview, ModeCodexOnly (modes with review pipeline)
-- Disabled by default (`finalize_enabled = false` in config)
-- Uses task color (green) for output
-- Runs once, no signal loop - best effort (failures logged but don't block success)
-- Template variables supported (`{{DEFAULT_BRANCH}}`, etc.)
-
-Default behavior (when enabled): rebases commits onto default branch, optionally squashes related commits, runs tests to verify.
-
-Config option: `finalize_enabled = true` in `~/.config/ralphex/config` or `.ralphex/config`
-CLI override: `--skip-finalize` disables finalize for a single run even if enabled in config
-Prompt file: `~/.config/ralphex/prompts/finalize.txt` or `.ralphex/prompts/finalize.txt`
+Optional post-completion step after successful review phases. Triggers on `ModeFull`, `ModeReview`, `ModeCodexOnly`. Disabled by default (`finalize_enabled`). Runs once, no signal loop — best effort (failures logged, don't block success). Default behavior when enabled: rebase commits onto default branch, optionally squash, run tests.
 
 Key files:
 - `pkg/processor/runner.go` - `runFinalize()` method called at end of review modes
@@ -112,73 +87,43 @@ Key files:
 
 ### Custom External Review
 
-Allows using custom scripts instead of codex for external code review:
+Custom scripts instead of codex for external review (`external_review_tool = custom`, `custom_review_script`). Script gets the prompt file path as its single arg, outputs findings to stdout for Claude to evaluate.
 
-- Config: `external_review_tool = custom` and `custom_review_script = /path/to/script.sh`
-- Script receives prompt file path as single argument
-- Script outputs findings to stdout (ralphex passes them to Claude for evaluation)
-- `{{DIFF_INSTRUCTION}}` template variable expands based on iteration:
-  - First iteration: `git diff main...HEAD` (all feature branch changes)
-  - Subsequent iterations: `git diff` (uncommitted changes only)
-- `--external-only` (-e) flag runs only external review; `--codex-only` (-c) is deprecated alias
-- `max_external_iterations` config / `--max-external-iterations` CLI flag overrides external review loop limit (0 = auto, derived as `max(3, max_iterations/5)`)
-- `review_patience` config / `--review-patience` CLI flag enables stalemate detection: tracks consecutive rounds with no commits, terminates early when threshold reached (0 = disabled)
-- `session_timeout` / `idle_timeout` (see Configuration): in default Claude mode neither applies to external codex/custom review; under `--codex` `session_timeout` covers every executor call and `idle_timeout` covers first-class `--codex` sessions
-- Manual break: pressing Ctrl+\ (SIGQUIT) during task phase pauses execution ("press Enter to continue, Ctrl+C to abort"); on resume the same task re-runs with a fresh session that re-reads the plan file. During external review, Ctrl+\ terminates the loop immediately. Break channel is repeatable (send-on-channel, not close-once). `SetPauseHandler()` sets the callback for task pause UX. Not available on Windows
+- `{{DIFF_INSTRUCTION}}` expands per iteration: first `git diff main...HEAD`, subsequent `git diff` (uncommitted only)
+- `max_external_iterations` 0 = auto, `max(3, max_iterations/5)`
+- `review_patience` stalemate detection: terminates after N consecutive no-commit rounds (0 = disabled)
+- `session_timeout`/`idle_timeout` (see Configuration): in default Claude mode neither applies to external codex/custom review; under `--codex` `session_timeout` covers every executor call
+- Manual break: Ctrl+\ pauses task phase (fresh session re-reads plan on resume), terminates external review immediately. Break channel is repeatable (send-on-channel, not close-once); `SetPauseHandler()` sets the task pause callback. Not on Windows
 - `codex_enabled = false` backward compat: treated as `external_review_tool = none`
 
 Key files:
 - `pkg/executor/custom.go` - CustomExecutor for running external scripts
-- `pkg/config/defaults/prompts/codex_review.txt` - prompt sent to codex external review tool
-- `pkg/config/defaults/prompts/custom_review.txt` - prompt sent to custom tool
-- `pkg/config/defaults/prompts/custom_eval.txt` - prompt for claude to evaluate custom tool output
-- `pkg/processor/prompts.go` - `getDiffInstruction()`, `buildPreviousContext()`, and `replaceVariablesWithIteration()`
+- `pkg/config/defaults/prompts/codex_review.txt` / `custom_review.txt` / `custom_eval.txt` - external review prompts
+- `pkg/processor/prompts.go` - `getDiffInstruction()`, `buildPreviousContext()`, `replaceVariablesWithIteration()`
 - `pkg/processor/runner.go` - dispatch logic in external review loop
 
 ### Alternative Providers for Claude Phases
 
-`claude_command` and `claude_args` config options allow replacing Claude Code with any CLI that produces compatible `stream-json` output. Included wrappers:
+`claude_command`/`claude_args` replace Claude Code with any `stream-json`-compatible CLI. Included wrappers: `scripts/codex-as-claude/codex-as-claude.sh`, `scripts/copilot-as-claude/copilot-as-claude.sh`. Wrappers must ignore unknown flags gracefully (`*) shift ;;`) — default Claude flags may still be passed via config fallback. See `docs/custom-providers.md`.
 
-- `scripts/codex-as-claude/codex-as-claude.sh`
-- `scripts/copilot-as-claude/copilot-as-claude.sh`
-
-Config: `claude_command = /path/to/<wrapper>.sh` and optionally `claude_args =` (empty).
-Note: default Claude flags may still be passed due to config fallback; wrappers should ignore unknown flags gracefully (the included script does this via `*) shift ;;`).
 Env vars:
 - Codex: `CODEX_MODEL`, `CODEX_SANDBOX`, `CODEX_VERBOSE`
 - Copilot: `COPILOT_MODEL`, `COPILOT_GITHUB_TOKEN`, `GH_TOKEN`, `GITHUB_TOKEN`
-Copilot wrapper behavior: runs `copilot` in native autopilot mode with `--autopilot --no-ask-user --allow-all` for unattended task/review phases; plan runs switch to `--autopilot --allow-all` so `QUESTION` signals can surface clarifications without native question suppression.
-Documentation: `docs/custom-providers.md`
+Copilot wrapper: native autopilot mode — `--autopilot --no-ask-user --allow-all` for task/review, `--autopilot --allow-all` for plan runs (so `QUESTION` signals surface).
 
 ### AWS Bedrock Provider (Docker Wrapper Only)
 
-The Docker wrapper script (`scripts/ralphex-dk.sh`) supports AWS Bedrock as an alternative Claude provider:
-
-- Config: `--claude-provider bedrock` CLI flag or `RALPHEX_CLAUDE_PROVIDER=bedrock` env var
-- Requires: `AWS_REGION`, and either `AWS_PROFILE` or explicit credentials
-- Auto-sets: `CLAUDE_CODE_USE_BEDROCK=1` when bedrock provider is selected
-- When enabled: skips macOS keychain extraction and `~/.claude` directory check
-- Credential export: uses `aws configure export-credentials` to extract temporary credentials from AWS profiles
-- Never mounts `~/.aws` directory - exports only specific credentials needed
+`scripts/ralphex-dk.sh` supports AWS Bedrock as a Claude provider (`--claude-provider bedrock` / `RALPHEX_CLAUDE_PROVIDER`). See `docs/bedrock-setup.md`.
 
 Key functions in `scripts/ralphex-dk.sh`:
 - `get_claude_provider()` - returns provider from CLI flag or env var
 - `build_bedrock_env_args()` - builds docker -e flags for BEDROCK_ENV_VARS
-- `export_aws_profile_credentials()` - exports credentials from AWS profile using aws CLI
-- `validate_bedrock_config()` - validates bedrock configuration and returns warnings
-
-Documentation: `docs/bedrock-setup.md`
+- `export_aws_profile_credentials()` - exports credentials from AWS profile
+- `validate_bedrock_config()` - validates bedrock config, returns warnings
 
 ### Docker Socket Support (Docker Wrapper Only)
 
-The `--docker` flag (or `RALPHEX_DOCKER_SOCKET=1` env var) mounts the host Docker socket into the container, enabling testcontainers and Docker-dependent workflows.
-
-- Config: `--docker` CLI flag or `RALPHEX_DOCKER_SOCKET=1` env var (truthy: "1", "true", "yes")
-- Socket path: resolved from `DOCKER_HOST` env var (unix:// scheme) or defaults to `/var/run/docker.sock`
-- Socket mount: without SELinux `:z`/`:Z` suffixes
-- GID detection: `os.stat()` on socket, passed via `DOCKER_GID` env var for baseimage group setup
-- Linux warning: emits security warning to stderr (macOS has VM isolation, no warning)
-- Missing socket: exits with error (fail-fast, no silent degradation)
+`--docker` flag (or `RALPHEX_DOCKER_SOCKET`) mounts the host Docker socket for testcontainers. Socket path from `DOCKER_HOST` (unix://) or `/var/run/docker.sock`; GID auto-detected and passed via `DOCKER_GID`. Missing socket = fail-fast error.
 
 Key functions in `scripts/ralphex-dk.sh`:
 - `is_docker_enabled()` - checks CLI flag and `RALPHEX_DOCKER_SOCKET` env var
@@ -187,11 +132,7 @@ Key functions in `scripts/ralphex-dk.sh`:
 
 ### Docker Network Mode (Docker Wrapper Only)
 
-The `--network` flag (or `RALPHEX_DOCKER_NETWORK` env var) sets the Docker network mode for the container, allowing it to reach docker-compose services on localhost.
-
-- Config: `--network MODE` CLI flag or `RALPHEX_DOCKER_NETWORK` env var
-- Passes `--network <value>` to `docker run`
-- Common values: `host` (reach host-exposed ports), named networks (e.g., `my-compose-net`)
+`--network MODE` flag (or `RALPHEX_DOCKER_NETWORK`) passes `--network <value>` to `docker run` — lets the container reach docker-compose services on localhost.
 
 ### Git Package API
 
@@ -329,8 +270,7 @@ project/
 ### Error Pattern Detection
 
 Configurable patterns detect rate limit and quota errors in claude/codex output:
-- `claude_error_patterns`: comma-separated patterns for claude (default: "You've hit your limit,API Error:,cannot be launched inside another Claude Code session,Not logged in,Your usage allocation has been disabled by your admin,You've hit your org's monthly usage limit")
-- `codex_error_patterns`: comma-separated patterns for codex (default: "Rate limit exceeded,rate limit reached,429 Too Many Requests,quota exceeded,insufficient_quota,You've hit your usage limit"). Phrases are tightened so codex review findings that *talk about* rate limiting in a codebase do not trip a false positive when codex exits non-zero for an unrelated reason
+- `claude_error_patterns` / `codex_error_patterns`: comma-separated error patterns (default strings in `llms.txt` and the embedded config). Codex phrases are tightened so review findings that *talk about* rate limiting do not trip a false positive
 - Matching is case-insensitive substring search
 - Whitespace is trimmed from each pattern
 - For claude: patterns checked against the last 10 text blocks (not full output) to avoid false positives when analysis text mentions rate limit phrases. Context cancellation paths bypass pattern checks
@@ -339,8 +279,7 @@ Configurable patterns detect rate limit and quota errors in claude/codex output:
 - On match, ralphex exits gracefully with pattern info and help command suggestion
 
 Limit patterns for wait+retry behavior:
-- `claude_limit_patterns`: comma-separated (default: "You've hit your limit,Your usage allocation has been disabled by your admin,You've hit your org's monthly usage limit")
-- `codex_limit_patterns`: comma-separated (default: "Rate limit exceeded,rate limit reached,429 Too Many Requests,quota exceeded,insufficient_quota,You've hit your usage limit")
+- `claude_limit_patterns` / `codex_limit_patterns`: comma-separated limit patterns (default strings in `llms.txt` and the embedded config)
 - `wait_on_limit`: duration string (e.g., "1h", "30m"), disabled by default
 - `--wait` CLI flag overrides `wait_on_limit` config
 - Priority: limit patterns checked first; if match AND wait > 0, wait and retry; if match AND wait == 0, fall through to error pattern behavior
