@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.3.0 - 2026-05-21
+
+### New Features
+
+- Add first-class codex executor mode #350 @umputun
+
+### Improved
+
+- Add External-Only Mode section to README #345 @umputun
+- Bump github.com/slack-go/slack from 0.23.0 to 0.23.1 #347 @dependabot
+
 ## v1.2.0 - 2026-05-12
 
 ### New Features
