@@ -72,7 +72,15 @@
                 "name": "Can I run ralphex with codex instead of Claude Code?",
                 "acceptedAnswer": {
                     "@type": "Answer",
-                    "text": "Yes. ralphex ships with a codex-as-claude wrapper script that translates codex output into ralphex's stream-json protocol. Point claude_command at the wrapper in your config and ralphex drives codex through the same task and review loop. The same approach works for GitHub Copilot CLI, Cursor CLI, or any agent with a compatible streaming output."
+                    "text": "Yes, two ways. The simplest is ralphex --codex, a first-class codex executor that runs the whole pipeline on the codex CLI. Alternatively, the codex-as-claude wrapper script translates codex output into ralphex's stream-json protocol - point claude_command at it in your config. The wrapper approach also works for GitHub Copilot CLI, Cursor CLI, or any agent with compatible streaming output."
+                }
+            },
+            {
+                "@type": "Question",
+                "name": "What does ralphex's --codex mode do?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "ralphex --codex runs the entire pipeline - task execution, both review phases, and finalize - through the codex CLI as a first-class executor, not a wrapper. Review agents are spawned natively through codex's multi-agent feature. The separate external review phase is skipped automatically, since a codex-reviewing-codex pass is a same-model self-review with weak signal. Add --pass-claude-md to have codex pick up your project's CLAUDE.md as AGENTS.md. This is the path for teams who want to stay on an OpenAI plan rather than a Claude subscription."
                 }
             },
             {
@@ -1033,7 +1041,7 @@
                 <path d="M2 17l10 5 10-5"/>
                 <path d="M2 12l10 5 10-5"/>
             </svg>
-            Powered by <span>Claude Code</span>
+            Powered by <span>Claude Code &amp; codex</span>
         </div>
 
         <h1>
@@ -1042,8 +1050,9 @@
         </h1>
 
         <p class="hero-subtitle">
-            The autonomous Claude Code loop for plan execution and multi-agent code review.
-            Each task runs in a fresh session, keeping Claude sharp from start to finish.
+            The autonomous loop for plan execution and multi-agent code review, driving
+            Claude Code or codex. Each task runs in a fresh session, keeping the agent
+            sharp from start to finish.
         </p>
 
         <div class="hero-cta">
@@ -1134,7 +1143,7 @@
     <section class="features" id="features">
         <div class="section-header animate-on-scroll">
             <h2>Built for Autonomous Execution</h2>
-            <p>Everything you need to run Claude Code autonomously on complex features</p>
+            <p>Everything you need to run Claude Code or codex autonomously on complex features</p>
         </div>
 
         <div class="features-grid">
@@ -1214,7 +1223,7 @@
                     </svg>
                 </div>
                 <h3>Docker Isolation</h3>
-                <p>Run in container for safer autonomous execution. Claude only accesses your project, not the entire system.</p>
+                <p>Run in container for safer autonomous execution. The agent only accesses your project, not the entire system.</p>
             </div>
 
             <div class="feature-card animate-on-scroll">
@@ -1261,7 +1270,7 @@
                 <div class="step-number">2</div>
                 <div class="step-content">
                     <h3>First Code Review</h3>
-                    <p>Launches 5 review agents in parallel via Claude Code's Task tool. Covers quality, implementation correctness, testing, over-engineering, and documentation.</p>
+                    <p>Launches 5 review agents in parallel &mdash; via Claude Code's Task tool, or codex's multi-agent spawn. Covers quality, implementation correctness, testing, over-engineering, and documentation.</p>
                 </div>
             </div>
 
@@ -1526,13 +1535,28 @@
             <details class="faq-item animate-on-scroll" style="background:var(--bg-secondary); border:1px solid var(--border); border-radius:12px; padding:1.5rem 1.75rem;">
                 <summary style="cursor:pointer; font-weight:600; color:var(--teal); font-family:'JetBrains Mono',monospace; font-size:1.05rem; list-style:none;">Can I run ralphex with codex instead of Claude Code?</summary>
                 <p style="margin-top:1rem; color:var(--text-secondary); line-height:1.7;">
-                    Yes. ralphex ships with a <code>codex-as-claude</code> wrapper script that translates
-                    codex output into ralphex's stream-json protocol. Point <code>claude_command</code> at
-                    the wrapper in your config and ralphex drives codex through the same task and review
-                    loop. The same approach works for GitHub Copilot CLI, Cursor CLI, or any agent with a
-                    compatible streaming output. See the
+                    Yes &mdash; two ways. The simplest is <code>ralphex --codex</code>, a first-class
+                    codex executor that runs the whole pipeline on the codex CLI (see the next question).
+                    Alternatively, the <code>codex-as-claude</code> wrapper script translates codex output
+                    into ralphex's stream-json protocol &mdash; point <code>claude_command</code> at it in
+                    your config. The wrapper approach also works for GitHub Copilot CLI, Cursor CLI, or any
+                    agent with a compatible streaming output. See the
                     <a href="https://github.com/umputun/ralphex/blob/master/docs/custom-providers.md" style="color:var(--teal);" target="_blank">custom providers documentation</a>
                     for details.
+                </p>
+            </details>
+
+            <details class="faq-item animate-on-scroll" style="background:var(--bg-secondary); border:1px solid var(--border); border-radius:12px; padding:1.5rem 1.75rem;">
+                <summary style="cursor:pointer; font-weight:600; color:var(--teal); font-family:'JetBrains Mono',monospace; font-size:1.05rem; list-style:none;">What does ralphex's <code>--codex</code> mode do?</summary>
+                <p style="margin-top:1rem; color:var(--text-secondary); line-height:1.7;">
+                    <code>ralphex --codex</code> runs the entire pipeline &mdash; task execution, both
+                    review phases, and finalize &mdash; through the codex CLI as a first-class executor,
+                    not a wrapper. Review agents are spawned natively through codex's multi-agent feature.
+                    The separate external review phase is skipped automatically, since a
+                    codex-reviewing-codex pass is a same-model self-review with weak signal. Add
+                    <code>--pass-claude-md</code> to have codex pick up your project's
+                    <code>CLAUDE.md</code> as <code>AGENTS.md</code>. This is the path for teams who want
+                    to stay on an OpenAI plan rather than a Claude subscription.
                 </p>
             </details>
 
