@@ -173,7 +173,7 @@ func New(cfg Config, log Logger, holder *status.PhaseHolder) *Runner {
 
 // buildClaudeExecutors constructs the claude executors for task and review phases.
 // returns a single executor in the Review slot only when review_model differs from
-// task_model — otherwise the task executor handles both roles.
+// the task executor model — otherwise the task executor handles both roles.
 func (cfg Config) buildClaudeExecutors(log Logger) (*executor.ClaudeExecutor, Executor) {
 	claudeExec := &executor.ClaudeExecutor{
 		OutputHandler: func(text string) {
@@ -251,8 +251,8 @@ func (cfg Config) buildCodexExecutor(log Logger) *executor.CodexExecutor {
 // in first-class --codex mode. the review slot is non-nil only when the resolved
 // review model/effort differs from task — otherwise the task executor handles review
 // and finalize too. --task-model / --review-model (and their config equivalents) are
-// resolved against codex_model / codex_reasoning_effort: --review-model falls back to
-// --task-model when unset, and an unset spec inherits the codex config defaults.
+// resolved against codex_model / codex_reasoning_effort: review_model falls back to
+// task_model when unset, and an unset spec inherits the codex config defaults.
 func (cfg Config) buildCodexExecutors(log Logger) (*executor.CodexExecutor, Executor) {
 	var defModel, defEffort string
 	if cfg.AppConfig != nil {
@@ -1569,8 +1569,8 @@ func needsCodexBinary(appConfig *config.Config) bool {
 }
 
 // ParseModelEffort splits a "model[:effort]" spec into separate parts.
-// Used by New to parse task_model/review_model config values into the
-// ClaudeExecutor.Model and ClaudeExecutor.Effort fields.
+// Used by New to parse phase model config values into the ClaudeExecutor.Model
+// and ClaudeExecutor.Effort fields.
 // Empty input returns ("", ""). Missing colon returns (s, "").
 // A leading colon (":high") returns ("", "high"); a trailing colon ("opus:") returns ("opus", "").
 // Only the first colon is treated as the separator; anything after is passed through as effort.
