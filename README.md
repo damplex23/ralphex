@@ -10,7 +10,14 @@
 
 <h2 align="center">Autonomous plan execution with Gemini CLI and codex</h2>
 
-*ralphex is a standalone CLI tool that runs in your terminal from the root of a git repository. It orchestrates Gemini CLI or codex to execute implementation plans autonomously - no IDE plugins or cloud services required, just a coding agent and a single binary.*
+*ralphex is a standalone CLI tool that runs in your terminal from the root of a git repository. It orchestrates Gemini CLI, Antigravity (`agy`), or codex to execute implementation plans autonomously - no IDE plugins or cloud services required, just a coding agent and a single binary.*
+
+🚀 **The New & Improved Ralphex** 🚀
+Ralphex has been completely rebuilt to serve as the ultimate bridge between current and next-generation AI coding tools:
+- **Native Gemini CLI Integration**: Fully migrated to support Gemini's streaming output, replacing the legacy Claude Code implementation.
+- **Antigravity (`agy`) Ready**: First-class support for Google's next-generation coding agent via built-in adapters.
+- **Zero-Friction GitHub Forks**: Automatic management of `.geminiignore` and git tracking ensures your forks run flawlessly out of the box without blocking on artifact files.
+- **Beautiful Terminal UX**: Intelligent JSON noise-stripping provides zero-latency, word-wrapped, and phase-colored streaming output that looks perfect.
 
 Gemini CLI is powerful but interactive - it requires you to watch, approve, and guide each step. For complex features spanning multiple tasks, this means hours of babysitting. Worse, as context fills up during long sessions, the model's quality degrades - it starts making mistakes, forgetting earlier decisions, and producing worse code.
 
