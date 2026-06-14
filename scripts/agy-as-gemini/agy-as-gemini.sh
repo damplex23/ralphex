@@ -68,7 +68,7 @@ fi
 # configurable via environment; agy's default 5m is too short for ralphex sessions
 AGY_PRINT_TIMEOUT="${AGY_PRINT_TIMEOUT:-2h}"
 
-# build agy arguments. We use --dangerously-skip-permissions to run unattended.
+# build agy arguments. We use --dangerously-skip-permissions (or equivalent) to run unattended.
 agy_args=("--dangerously-skip-permissions" "--print-timeout" "${AGY_PRINT_TIMEOUT}" "-p" "$prompt")
 
 # temporary files for stderr capture and stdout piping.
