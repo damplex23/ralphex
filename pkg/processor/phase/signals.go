@@ -69,19 +69,33 @@ func ParseQuestionPayload(output string) (*QuestionPayload, error) {
 		return nil, errors.New("malformed question signal: empty JSON payload")
 	}
 
+	// try parsing directly first
 	var payload QuestionPayload
-	if err := json.Unmarshal([]byte(jsonStr), &payload); err != nil {
-		return nil, fmt.Errorf("malformed question signal: invalid JSON: %w", err)
+	if err := json.Unmarshal([]byte(jsonStr), &payload); err == nil {
+		return validateQuestionPayload(&payload)
 	}
 
-	if payload.Question == "" {
+	// if direct parse fails, try to find the outermost { } in case of extra text or partial escaping
+	start := strings.Index(jsonStr, "{")
+	end := strings.LastIndex(jsonStr, "}")
+	if start != -1 && end != -1 && end > start {
+		jsonStr = jsonStr[start : end+1]
+		if err := json.Unmarshal([]byte(jsonStr), &payload); err == nil {
+			return validateQuestionPayload(&payload)
+		}
+	}
+
+	return nil, fmt.Errorf("malformed question signal: invalid JSON payload: %q", jsonStr)
+}
+
+func validateQuestionPayload(p *QuestionPayload) (*QuestionPayload, error) {
+	if p.Question == "" {
 		return nil, errors.New("malformed question signal: missing question field")
 	}
-	if len(payload.Options) == 0 {
+	if len(p.Options) == 0 {
 		return nil, errors.New("malformed question signal: missing or empty options field")
 	}
-
-	return &payload, nil
+	return p, nil
 }
 
 // ParsePlanDraftPayload extracts plan content from output containing a PLAN_DRAFT signal.
