@@ -50,7 +50,7 @@ func TestValuesLoader_Load_EmbeddedOnly(t *testing.T) {
 
 	// all values should come from embedded defaults
 	assert.Equal(t, "gemini", values.GeminiCommand)
-	assert.Equal(t, "--non-interactive --output-format stream-json --verbose", values.GeminiArgs)
+	assert.Equal(t, "--yolo --output-format stream-json --prompt \"\"", values.GeminiArgs)
 	assert.True(t, values.CodexEnabled)
 	assert.True(t, values.CodexEnabledSet)
 	assert.Equal(t, "codex", values.CodexCommand)
@@ -155,7 +155,7 @@ func TestValuesLoader_Load_PartialConfigs(t *testing.T) {
 
 	// missing values filled from embedded defaults
 	assert.Equal(t, "gemini", values.GeminiCommand)
-	assert.Equal(t, "--non-interactive --output-format stream-json --verbose", values.GeminiArgs)
+	assert.Equal(t, "--yolo --output-format stream-json --prompt \"\"", values.GeminiArgs)
 	assert.Equal(t, "codex", values.CodexCommand)
 	assert.Equal(t, 2000, values.IterationDelayMs)
 }
@@ -1152,7 +1152,7 @@ func TestValuesLoader_Load_AllCommentedConfigFallsBackToEmbedded(t *testing.T) {
 
 	// should fall back to embedded defaults since file has no actual content
 	assert.Equal(t, "gemini", values.GeminiCommand)
-	assert.Equal(t, "--non-interactive --output-format stream-json --verbose", values.GeminiArgs)
+	assert.Equal(t, "--yolo --output-format stream-json --prompt \"\"", values.GeminiArgs)
 	assert.True(t, values.CodexEnabled)
 	assert.Equal(t, "codex", values.CodexCommand)
 	assert.Equal(t, "gpt-5.5", values.CodexModel, "codex_model defaults to embedded gpt-5.5 (uncommented in embedded default)")
@@ -1181,7 +1181,7 @@ plans_dir = custom/plans
 	assert.Equal(t, "custom/plans", values.PlansDir)
 
 	// commented-out values should fall back to embedded defaults
-	assert.Equal(t, "--non-interactive --output-format stream-json --verbose", values.GeminiArgs)
+	assert.Equal(t, "--yolo --output-format stream-json --prompt \"\"", values.GeminiArgs)
 }
 
 func TestValuesLoader_Load_LocalAllCommentedGlobalHasContent(t *testing.T) {

@@ -405,7 +405,7 @@ func TestGeminiExecutor_Run_WithCustomCommand(t *testing.T) {
 	require.NoError(t, result.Error)
 	assert.Equal(t, "my-gemini", capturedCmd)
 	// should still use default args
-	assert.Contains(t, capturedArgs, "--non-interactive")
+	assert.Contains(t, capturedArgs, "--yolo")
 }
 
 func TestGeminiExecutor_Run_WithCustomArgs(t *testing.T) {
@@ -424,8 +424,8 @@ func TestGeminiExecutor_Run_WithCustomArgs(t *testing.T) {
 	result := e.Run(context.Background(), "test prompt")
 
 	require.NoError(t, result.Error)
-	// should use custom args plus --print (non-interactive mode flag, always appended)
-	assert.Equal(t, []string{"--custom-arg", "--another-arg", "value", "--print"}, capturedArgs)
+	// should use custom args plus --prompt "" (non-interactive mode flag, always appended)
+	assert.Equal(t, []string{"--custom-arg", "--another-arg", "value", "--prompt", ""}, capturedArgs)
 }
 
 func TestGeminiExecutor_Run_WithExplicitEmptyArgs(t *testing.T) {
@@ -444,7 +444,7 @@ func TestGeminiExecutor_Run_WithExplicitEmptyArgs(t *testing.T) {
 	result := e.Run(context.Background(), "test prompt")
 
 	require.NoError(t, result.Error)
-	assert.Equal(t, []string{"--print"}, capturedArgs)
+	assert.Equal(t, []string{"--prompt", ""}, capturedArgs)
 }
 
 func TestGeminiExecutor_Run_WithCustomCommandAndArgs(t *testing.T) {
@@ -460,14 +460,14 @@ func TestGeminiExecutor_Run_WithCustomCommandAndArgs(t *testing.T) {
 	e := &GeminiExecutor{
 		cmdRunner: mock,
 		Command:   "custom-gemini",
-		Args:      "--skip-perms --verbose",
+		Args:      "--skip-perms --prompt \"\"",
 	}
 
 	result := e.Run(context.Background(), "the prompt")
 
 	require.NoError(t, result.Error)
 	assert.Equal(t, "custom-gemini", capturedCmd)
-	assert.Equal(t, []string{"--skip-perms", "--verbose", "--print"}, capturedArgs)
+	assert.Equal(t, []string{"--skip-perms", "--prompt \"\"", "--prompt", ""}, capturedArgs)
 }
 
 func TestSplitArgs(t *testing.T) {
@@ -484,7 +484,7 @@ func TestSplitArgs(t *testing.T) {
 		{name: "multiple spaces between", input: "arg1   arg2", want: []string{"arg1", "arg2"}},
 		{name: "mixed quotes", input: `--a "b" --c 'd'`, want: []string{"--a", "b", "--c", "d"}},
 		{name: "escaped quote", input: `--flag \"quoted\"`, want: []string{"--flag", `"quoted"`}},
-		{name: "real gemini args", input: "--non-interactive --output-format stream-json --verbose", want: []string{"--non-interactive", "--output-format", "stream-json", "--verbose"}},
+		{name: "real gemini args", input: "--yolo --output-format stream-json --prompt \"\"", want: []string{"--yolo", "--output-format", "stream-json", "--prompt \"\""}},
 	}
 
 	for _, tc := range tests {
@@ -502,17 +502,17 @@ func TestStripFlag(t *testing.T) {
 		flag string
 		want []string
 	}{
-		{name: "removes flag and value", args: []string{"--verbose", "--model", "opus", "--print"}, flag: "--model", want: []string{"--verbose", "--print"}},
-		{name: "flag not present", args: []string{"--verbose", "--print"}, flag: "--model", want: []string{"--verbose", "--print"}},
-		{name: "flag at end with value", args: []string{"--verbose", "--model", "opus"}, flag: "--model", want: []string{"--verbose"}},
+		{name: "removes flag and value", args: []string{"--prompt \"\"", "--model", "opus", "--prompt", ""}, flag: "--model", want: []string{"--prompt \"\"", "--prompt", ""}},
+		{name: "flag not present", args: []string{"--prompt \"\"", "--prompt", ""}, flag: "--model", want: []string{"--prompt \"\"", "--prompt", ""}},
+		{name: "flag at end with value", args: []string{"--prompt \"\"", "--model", "opus"}, flag: "--model", want: []string{"--prompt \"\""}},
 		{name: "empty args", args: []string{}, flag: "--model", want: []string{}},
-		{name: "removes equals form", args: []string{"--verbose", "--model=opus", "--print"}, flag: "--model", want: []string{"--verbose", "--print"}},
-		{name: "removes equals form at end", args: []string{"--verbose", "--model=opus"}, flag: "--model", want: []string{"--verbose"}},
-		{name: "removes bare flag at end", args: []string{"--verbose", "--model"}, flag: "--model", want: []string{"--verbose"}},
-		{name: "removes repeated occurrences", args: []string{"--model", "opus", "--verbose", "--model=sonnet"}, flag: "--model", want: []string{"--verbose"}},
-		{name: "does not match prefix-only", args: []string{"--model-foo", "bar", "--print"}, flag: "--model", want: []string{"--model-foo", "bar", "--print"}},
-		{name: "bare flag in middle preserves next flag", args: []string{"--verbose", "--model", "--print"}, flag: "--model", want: []string{"--verbose", "--print"}},
-		{name: "bare flag preserves next flag with dash value", args: []string{"--model", "-x", "--print"}, flag: "--model", want: []string{"-x", "--print"}},
+		{name: "removes equals form", args: []string{"--prompt \"\"", "--model=opus", "--prompt", ""}, flag: "--model", want: []string{"--prompt \"\"", "--prompt", ""}},
+		{name: "removes equals form at end", args: []string{"--prompt \"\"", "--model=opus"}, flag: "--model", want: []string{"--prompt \"\""}},
+		{name: "removes bare flag at end", args: []string{"--prompt \"\"", "--model"}, flag: "--model", want: []string{"--prompt \"\""}},
+		{name: "removes repeated occurrences", args: []string{"--model", "opus", "--prompt \"\"", "--model=sonnet"}, flag: "--model", want: []string{"--prompt \"\""}},
+		{name: "does not match prefix-only", args: []string{"--model-foo", "bar", "--prompt", ""}, flag: "--model", want: []string{"--model-foo", "bar", "--prompt", ""}},
+		{name: "bare flag in middle preserves next flag", args: []string{"--prompt \"\"", "--model", "--prompt", ""}, flag: "--model", want: []string{"--prompt \"\"", "--prompt", ""}},
+		{name: "bare flag preserves next flag with dash value", args: []string{"--model", "-x", "--prompt", ""}, flag: "--model", want: []string{"-x", "--prompt", ""}},
 	}
 
 	for _, tc := range tests {
@@ -1159,8 +1159,8 @@ func TestGeminiExecutor_Run_IdleTimeoutNotFiredResult(t *testing.T) {
 	assert.False(t, result.IdleTimedOut, "IdleTimedOut should be false on normal completion")
 }
 
-// printFlag is registered so the test binary accepts --print without erroring.
-// GeminiExecutor.Run() always appends --print to the command args; when the test
+// printFlag is registered so the test binary accepts --prompt "" without erroring.
+// GeminiExecutor.Run() always appends --prompt "" to the command args; when the test
 // binary is used as the subprocess command, this flag must be registered.
 var _ = flag.Bool("print", false, "consumed by subprocess tests")
 
@@ -1231,7 +1231,7 @@ func TestExecGeminiRunner_StdinSet(t *testing.T) {
 
 func TestGeminiExecutor_Run_NoPromptInArgs(t *testing.T) {
 	// verify that args never include -p: prompt is always passed via stdin, not CLI arg.
-	// also verify --print is present for non-interactive mode in both default and custom-args paths.
+	// also verify --prompt "" is present for non-interactive mode in both default and custom-args paths.
 	jsonStream := `{"type":"content_block_delta","delta":{"type":"text_delta","text":"ok"}}`
 
 	tests := []struct {
@@ -1239,7 +1239,7 @@ func TestGeminiExecutor_Run_NoPromptInArgs(t *testing.T) {
 		args string
 	}{
 		{name: "default args", args: ""},
-		{name: "custom args", args: "--non-interactive --output-format stream-json"},
+		{name: "custom args", args: "--yolo --output-format stream-json"},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -1259,7 +1259,7 @@ func TestGeminiExecutor_Run_NoPromptInArgs(t *testing.T) {
 			require.NoError(t, result.Error)
 			assert.NotContains(t, capturedArgs, "-p")
 			assert.NotContains(t, capturedArgs, "test prompt")
-			assert.Contains(t, capturedArgs, "--print", "non-interactive flag must be present")
+			assert.Contains(t, capturedArgs, "--prompt", "", "non-interactive flag must be present")
 		})
 	}
 }
@@ -1438,7 +1438,7 @@ func TestGeminiExecutor_Run_ModelFlag(t *testing.T) {
 	})
 
 	t.Run("model overrides existing --model in args", func(t *testing.T) {
-		e := &GeminiExecutor{Args: "--verbose --model opus --output-format json", Model: "sonnet", cmdRunner: mock}
+		e := &GeminiExecutor{Args: "--prompt \"\" --model opus --output-format json", Model: "sonnet", cmdRunner: mock}
 		result := e.Run(context.Background(), "test")
 		require.NoError(t, result.Error)
 		assert.Contains(t, capturedArgs, "sonnet")
@@ -1508,7 +1508,7 @@ func TestGeminiExecutor_Run_EffortFlag(t *testing.T) {
 
 	t.Run("effort overrides existing --effort in args", func(t *testing.T) {
 		var capturedArgs []string
-		e := &GeminiExecutor{Args: "--verbose --effort low --output-format json", Effort: "high", cmdRunner: newMock(&capturedArgs)}
+		e := &GeminiExecutor{Args: "--prompt \"\" --effort low --output-format json", Effort: "high", cmdRunner: newMock(&capturedArgs)}
 		result := e.Run(context.Background(), "test")
 		require.NoError(t, result.Error)
 		assert.Contains(t, capturedArgs, "high")
@@ -1518,7 +1518,7 @@ func TestGeminiExecutor_Run_EffortFlag(t *testing.T) {
 
 	t.Run("effort overrides equals form in args", func(t *testing.T) {
 		var capturedArgs []string
-		e := &GeminiExecutor{Args: "--verbose --effort=low --output-format json", Effort: "high", cmdRunner: newMock(&capturedArgs)}
+		e := &GeminiExecutor{Args: "--prompt \"\" --effort=low --output-format json", Effort: "high", cmdRunner: newMock(&capturedArgs)}
 		result := e.Run(context.Background(), "test")
 		require.NoError(t, result.Error)
 		assert.Contains(t, capturedArgs, "high")

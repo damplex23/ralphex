@@ -272,9 +272,8 @@ func (e *GeminiExecutor) Run(ctx context.Context, prompt string) Result {
 		args = splitArgs(e.Args)
 	default:
 		args = []string{
-			"--non-interactive",
+			"--yolo",
 			"--output-format", "stream-json",
-			"--verbose",
 		}
 	}
 	// inject --model flag if a model override is configured;
@@ -289,10 +288,9 @@ func (e *GeminiExecutor) Run(ctx context.Context, prompt string) Result {
 		args = stripFlag(args, "--effort")
 		args = append(args, "--effort", e.Effort)
 	}
-	// always append --print to enable non-interactive mode; mirrors old -p flag that was
-	// always appended. wrapper scripts ignore unknown flags via '*) shift ;;' catch-all.
-	args = append(args, "--print")
-	// pass prompt via stdin to avoid Windows 8191-char command-line limit;
+	// signal headless mode via --prompt; ralphex passes the real prompt via stdin
+	// to avoid Windows 8191-char command-line limit.
+	args = append(args, "--prompt", "")
 	// if cmdRunner is set (test injection), use it; otherwise use real runner
 	stdinReader := strings.NewReader(prompt)
 	var runner CommandRunner

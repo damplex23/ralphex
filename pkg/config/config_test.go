@@ -197,7 +197,7 @@ func TestLoad_PartialConfig(t *testing.T) {
 
 	// missing values filled from embedded defaults
 	assert.Equal(t, "gemini", cfg.GeminiCommand)
-	assert.Equal(t, "--non-interactive --output-format stream-json --verbose", cfg.GeminiArgs)
+	assert.Equal(t, "--yolo --output-format stream-json --prompt \"\"", cfg.GeminiArgs)
 	assert.Equal(t, "codex", cfg.CodexCommand)
 	assert.Equal(t, "gpt-5.5", cfg.CodexModel, "codex_model defaults to embedded gpt-5.5")
 	assert.Equal(t, "xhigh", cfg.CodexReasoningEffort)
@@ -224,7 +224,7 @@ func TestLoad_EmptyConfig(t *testing.T) {
 
 	// all values should come from embedded defaults
 	assert.Equal(t, "gemini", cfg.GeminiCommand)
-	assert.Equal(t, "--non-interactive --output-format stream-json --verbose", cfg.GeminiArgs)
+	assert.Equal(t, "--yolo --output-format stream-json --prompt \"\"", cfg.GeminiArgs)
 	assert.Equal(t, "codex", cfg.CodexCommand)
 	assert.Equal(t, "gpt-5.5", cfg.CodexModel, "codex_model defaults to embedded gpt-5.5")
 	assert.Equal(t, "xhigh", cfg.CodexReasoningEffort)
@@ -897,7 +897,7 @@ color_task = #0000ff
 	assert.Equal(t, 3, cfg.TaskRetryCount)
 
 	// embedded defaults (not in global or local)
-	assert.Equal(t, "--non-interactive --output-format stream-json --verbose", cfg.GeminiArgs)
+	assert.Equal(t, "--yolo --output-format stream-json --prompt \"\"", cfg.GeminiArgs)
 	assert.Equal(t, "codex", cfg.CodexCommand)
 	assert.Equal(t, "gpt-5.5", cfg.CodexModel, "codex_model defaults to embedded gpt-5.5")
 

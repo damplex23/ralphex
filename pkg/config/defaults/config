@@ -17,10 +17,10 @@
 gemini_command = gemini
 
 # gemini_args: arguments passed to gemini command
-# --non-interactive: bypass permission prompts for autonomous execution
+# --yolo: bypass permission prompts for autonomous execution
 # --output-format stream-json: output JSON events for progress tracking
-# --verbose: enable detailed logging
-gemini_args = --non-interactive --output-format stream-json --verbose
+# --prompt "": signal headless execution (prompt passed via stdin)
+gemini_args = --yolo --output-format stream-json --prompt ""
 
 # plan_model: model to use for interactive plan creation
 # syntax: model[:effort] where model is gemini-2.0-flash/gemini-2.0-pro (or a full model ID)
