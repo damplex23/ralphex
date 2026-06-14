@@ -1,15 +1,15 @@
-# Add gemini-as-claude wrapper script
+# Add gemini-as-gemini wrapper script
 
 ## Overview
-Add a `scripts/gemini-as-claude/` directory with a wrapper script that translates Gemini CLI plain-text output into Claude-compatible stream-json format, following the same conventions as `codex-as-claude` and `opencode-as-claude`. Includes test script and README, plus a docs update.
+Add a `scripts/gemini-as-gemini/` directory with a wrapper script that translates Gemini CLI plain-text output into Gemini-compatible stream-json format, following the same conventions as `codex-as-gemini` and `opencode-as-gemini`. Includes test script and README, plus a docs update.
 
 ## Context
 - Files involved:
-  - Create: `scripts/gemini-as-claude/gemini-as-claude.sh`
-  - Create: `scripts/gemini-as-claude/gemini-as-claude_test.sh`
-  - Create: `scripts/gemini-as-claude/README.md`
+  - Create: `scripts/gemini-as-gemini/gemini-as-gemini.sh`
+  - Create: `scripts/gemini-as-gemini/gemini-as-gemini_test.sh`
+  - Create: `scripts/gemini-as-gemini/README.md`
   - Modify: `docs/custom-providers.md`
-- Related patterns: `scripts/codex-as-claude/`, `scripts/opencode/`
+- Related patterns: `scripts/codex-as-gemini/`, `scripts/opencode/`
 - Key difference: Gemini CLI outputs plain text (not JSONL), so each output line is wrapped as a `content_block_delta` event (simpler translation than codex/opencode)
 
 ## Development Approach
@@ -20,10 +20,10 @@ Add a `scripts/gemini-as-claude/` directory with a wrapper script that translate
 
 ## Implementation Steps
 
-### Task 1: Create gemini-as-claude.sh
+### Task 1: Create gemini-as-gemini.sh
 
 **Files:**
-- Create: `scripts/gemini-as-claude/gemini-as-claude.sh`
+- Create: `scripts/gemini-as-gemini/gemini-as-gemini.sh`
 
 - [x] Add shebang, header comment with config example and env var docs (matching codex/opencode style)
 - [x] Verify `jq` and `gemini` are available (exit with error messages if not)
@@ -38,10 +38,10 @@ Add a `scripts/gemini-as-claude/` directory with a wrapper script that translate
 - [x] After main loop: wait for gemini exit code, emit stderr lines as `content_block_delta` events, emit fallback result event, preserve gemini exit code
 - [x] Make script executable (`chmod +x`)
 
-### Task 2: Create gemini-as-claude_test.sh
+### Task 2: Create gemini-as-gemini_test.sh
 
 **Files:**
-- Create: `scripts/gemini-as-claude/gemini-as-claude_test.sh`
+- Create: `scripts/gemini-as-gemini/gemini-as-gemini_test.sh`
 
 - [x] Create mock `gemini` script (reads `MOCK_STDOUT_FILE`, `MOCK_STDERR_FILE`, `MOCK_EXIT_CODE`, writes args to file)
 - [x] Test: signal passthrough (`<<<RALPHEX:ALL_TASKS_DONE>>>` appears in `content_block_delta` output)
@@ -65,18 +65,18 @@ Add a `scripts/gemini-as-claude/` directory with a wrapper script that translate
 - [x] Test: fallback result event emitted when gemini exits without explicit end
 - [x] Test: malformed/non-JSON input handled gracefully (plain text lines become valid JSON events)
 - [x] Test: SIGTERM forwarded to gemini child process
-- [x] Make test script executable; run it: `bash scripts/gemini-as-claude/gemini-as-claude_test.sh`
+- [x] Make test script executable; run it: `bash scripts/gemini-as-gemini/gemini-as-gemini_test.sh`
 
 ### Task 3: Create README.md
 
 **Files:**
-- Create: `scripts/gemini-as-claude/README.md`
+- Create: `scripts/gemini-as-gemini/README.md`
 
-- [x] Add title and description (drop-in replacement for claude in task and review phases)
-- [x] Add configuration section (claude_command, claude_args =)
+- [x] Add title and description (drop-in replacement for gemini in task and review phases)
+- [x] Add configuration section (gemini_command, gemini_args =)
 - [x] Add environment variables table (GEMINI_MODEL, GEMINI_VERBOSE)
 - [x] Add requirements section (gemini CLI, jq)
-- [x] Add testing section (`bash scripts/gemini-as-claude/gemini-as-claude_test.sh`)
+- [x] Add testing section (`bash scripts/gemini-as-gemini/gemini-as-gemini_test.sh`)
 
 ### Task 4: Update docs/custom-providers.md
 
@@ -89,12 +89,12 @@ Add a `scripts/gemini-as-claude/` directory with a wrapper script that translate
 
 ### Task 5: Verify acceptance criteria
 
-- [x] Manual test: `bash scripts/gemini-as-claude/gemini-as-claude_test.sh` — all tests pass
+- [x] Manual test: `bash scripts/gemini-as-gemini/gemini-as-gemini_test.sh` — all tests pass
 - [x] Verify no Go tests broken: `make test`
 - [x] Run linter: `make lint`
-- [x] Verify both scripts are executable: `ls -la scripts/gemini-as-claude/`
+- [x] Verify both scripts are executable: `ls -la scripts/gemini-as-gemini/`
 
 ### Task 6: Update documentation
 
-- [x] Update `CLAUDE.md` if needed (add gemini-as-claude to the scripts/ structure description)
+- [x] Update `GEMINI.md` if needed (add gemini-as-gemini to the scripts/ structure description)
 - [x] Move this plan to `docs/plans/completed/`

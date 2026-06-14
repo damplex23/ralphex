@@ -219,17 +219,17 @@ type customChannel struct {
 - [x] Include message format examples (success and failure)
 - [x] Reference `go-pkgz/notify` for advanced channel-specific options
 
-### Task 7: Update README, CLAUDE.md, and verify
+### Task 7: Update README, GEMINI.md, and verify
 
 **Files:**
 - Modify: `README.md`
-- Modify: `CLAUDE.md`
+- Modify: `GEMINI.md`
 - Modify: `llms.txt`
 
 - [x] Add "Notifications" bullet to Features list in README
 - [x] Add short "Notifications" section under Configuration in README with link to `docs/notifications.md`
-- [x] Update CLAUDE.md Key Patterns section to mention notification support
-- [x] Update CLAUDE.md Configuration section to mention `notify_*` config fields
+- [x] Update GEMINI.md Key Patterns section to mention notification support
+- [x] Update GEMINI.md Configuration section to mention `notify_*` config fields
 - [x] Update llms.txt Customization section to mention notification channels
 - [x] Verify edge cases: nil service, empty channels, misconfigured channels
 - [x] Verify misconfigured channels fail fast at startup

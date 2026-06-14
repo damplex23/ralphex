@@ -25,7 +25,7 @@ func testColors() *Colors {
 		Task:       "0,255,0",
 		Review:     "0,255,255",
 		Codex:      "255,0,255",
-		ClaudeEval: "100,200,255",
+		GeminiEval: "100,200,255",
 		Warn:       "255,255,0",
 		Error:      "255,0,0",
 		Signal:     "255,100,100",
@@ -1124,7 +1124,7 @@ func TestNewColors(t *testing.T) {
 			Task:       "0,255,0",
 			Review:     "0,255,255",
 			Codex:      "255,0,255",
-			ClaudeEval: "100,200,255",
+			GeminiEval: "100,200,255",
 			Warn:       "255,255,0",
 			Error:      "255,0,0",
 			Signal:     "255,100,100",
@@ -1141,7 +1141,7 @@ func TestNewColors(t *testing.T) {
 		assert.NotNil(t, colors.ForPhase(status.PhaseTask))
 		assert.NotNil(t, colors.ForPhase(status.PhaseReview))
 		assert.NotNil(t, colors.ForPhase(status.PhaseCodex))
-		assert.NotNil(t, colors.ForPhase(status.PhaseClaudeEval))
+		assert.NotNil(t, colors.ForPhase(status.PhaseGeminiEval))
 	})
 
 	t.Run("panics on invalid task color", func(t *testing.T) {
@@ -1149,7 +1149,7 @@ func TestNewColors(t *testing.T) {
 			Task:       "invalid",
 			Review:     "0,255,255",
 			Codex:      "255,0,255",
-			ClaudeEval: "100,200,255",
+			GeminiEval: "100,200,255",
 			Warn:       "255,255,0",
 			Error:      "255,0,0",
 			Signal:     "255,100,100",
@@ -1164,7 +1164,7 @@ func TestNewColors(t *testing.T) {
 			Task:       "",
 			Review:     "0,255,255",
 			Codex:      "255,0,255",
-			ClaudeEval: "100,200,255",
+			GeminiEval: "100,200,255",
 			Warn:       "255,255,0",
 			Error:      "255,0,0",
 			Signal:     "255,100,100",
@@ -1207,7 +1207,7 @@ func TestColors_Methods(t *testing.T) {
 		assert.NotNil(t, colors.ForPhase(status.PhaseTask))
 		assert.NotNil(t, colors.ForPhase(status.PhaseReview))
 		assert.NotNil(t, colors.ForPhase(status.PhaseCodex))
-		assert.NotNil(t, colors.ForPhase(status.PhaseClaudeEval))
+		assert.NotNil(t, colors.ForPhase(status.PhaseGeminiEval))
 	})
 }
 

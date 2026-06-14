@@ -20,7 +20,7 @@ RUN \
 FROM ghcr.io/umputun/baseimage/app:latest
 
 LABEL org.opencontainers.image.source="https://github.com/umputun/ralphex"
-LABEL org.opencontainers.image.description="Autonomous plan execution with Claude Code"
+LABEL org.opencontainers.image.description="Autonomous plan execution with Gemini CLI"
 LABEL org.opencontainers.image.licenses="MIT"
 
 # install base tools (node.js, npm, python, essentials)
@@ -33,15 +33,15 @@ RUN apk add --no-cache \
     make gcc musl-dev docker-cli && \
     sed -i 's|/home/app:/bin/sh|/home/app:/bin/bash|' /etc/passwd
 
-# set env for claude code on alpine (use system ripgrep)
+# set env for gemini code on alpine (use system ripgrep)
 ENV USE_BUILTIN_RIPGREP=0
 
 # mark container environment for ralphex (used to auto-disable codex sandbox)
 ENV RALPHEX_DOCKER=1
 
-# install claude code and codex globally, verify CLI commands exist
-RUN npm install -g @anthropic-ai/claude-code @openai/codex && \
-    command -v claude >/dev/null || { echo "error: claude CLI not found"; exit 1; } && \
+# install gemini code and codex globally, verify CLI commands exist
+RUN npm install -g @gemini-ai/gemini-code @openai/codex && \
+    command -v gemini >/dev/null || { echo "error: gemini CLI not found"; exit 1; } && \
     command -v codex >/dev/null || { echo "error: codex CLI not found"; exit 1; }
 
 # copy ralphex binary

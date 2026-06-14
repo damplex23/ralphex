@@ -71,16 +71,16 @@ Related to: #159
 ### Task 3: Verify and update documentation
 
 **Files:**
-- Modify: `CLAUDE.md`
+- Modify: `GEMINI.md`
 - Modify: `README.md`
 - Modify: `llms.txt`
 
 - [x] run full test suite: `go test ./...`
 - [x] run linter: `golangci-lint run --max-issues-per-linter=0 --max-same-issues=0`
-- [x] run formatters: `~/.claude/format.sh`
+- [x] run formatters: `~/.gemini/format.sh`
 - [x] update README.md CLI usage / customization sections with new option
 - [x] update llms.txt with new config option
-- [x] update CLAUDE.md if needed
+- [x] update GEMINI.md if needed
 - [x] move this plan to `docs/plans/completed/`
 
 ## Technical Details

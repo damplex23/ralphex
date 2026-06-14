@@ -24,7 +24,7 @@ Closes #155
 
 **Architecture compatibility (already works without changes):**
 - Git operations use `git rev-parse --show-toplevel` which returns worktree root
-- Claude/Codex executors inherit CWD (no `cmd.Dir` set)
+- Gemini/Codex executors inherit CWD (no `cmd.Dir` set)
 - Flock and session IDs use absolute paths, no collisions
 - `.git` startup check passes (worktrees have a `.git` file, not directory; `os.Stat` succeeds for both)
 - `GetDefaultBranch` reads shared refs, works across worktrees
@@ -142,7 +142,7 @@ Wire up worktree creation, chdir, execution, and cleanup in `cmd/ralphex/main.go
 
 ### Task 4: Make progress logger path absolute
 
-Ensure progress file paths are absolute so they work correctly when passed to Claude/Codex running in a worktree.
+Ensure progress file paths are absolute so they work correctly when passed to Gemini/Codex running in a worktree.
 
 **Files:**
 - Modify: `pkg/progress/progress.go`
@@ -186,7 +186,7 @@ Ensure graceful handling of stale worktrees and concurrent access.
 ### Task 7: [Final] Update documentation
 
 - [x] Update README.md with `--worktree` flag and `use_worktree` config option
-- [x] Update CLAUDE.md with worktree-related patterns and files
+- [x] Update GEMINI.md with worktree-related patterns and files
 - [x] Update `llms.txt` with `--worktree` usage example
 - [x] N/A: progress files stay in main repo's `.ralphex/progress/`, no extra `--watch` config needed
 - [x] Move this plan to `docs/plans/completed/`
@@ -203,7 +203,7 @@ Ensure graceful handling of stale worktrees and concurrent access.
 3. `gitSvc.CreateWorktreeForPlan(planFile)` → creates `.ralphex/worktrees/<name>` with branch
 4. `os.Chdir(worktreePath)` → switch into worktree
 5. Open `worktreeGitSvc` from new CWD
-6. `executePlan(ctx, ...)` runs normally (Claude/Codex inherit worktree CWD)
+6. `executePlan(ctx, ...)` runs normally (Gemini/Codex inherit worktree CWD)
 7. On completion: `DiffStats` from `worktreeGitSvc` (correct HEAD), `MovePlanToCompleted` from `mainGitSvc`
 8. Cleanup (defer + interrupt): `os.Chdir(origDir)` then `mainGitSvc.RemoveWorktree(wtPath)`
 

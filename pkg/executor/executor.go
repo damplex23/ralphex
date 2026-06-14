@@ -1,4 +1,4 @@
-// Package executor provides CLI execution for Claude and Codex tools.
+// Package executor provides CLI execution for Gemini and Codex tools.
 package executor
 
 import (
@@ -31,7 +31,7 @@ const recentBlockCount = 10 // number of recent text blocks to keep for pattern 
 // PatternMatchError is returned when a configured error pattern is detected in output.
 type PatternMatchError struct {
 	Pattern string // the pattern that matched
-	HelpCmd string // command to run for more information (e.g., "claude /usage")
+	HelpCmd string // command to run for more information (e.g., "gemini /usage")
 }
 
 func (e *PatternMatchError) Error() string {
@@ -65,17 +65,17 @@ type CommandRunner interface {
 	Run(ctx context.Context, name string, args ...string) (output io.Reader, wait func() error, err error)
 }
 
-// execClaudeRunner is the default command runner using os/exec.
+// execGeminiRunner is the default command runner using os/exec.
 // when stdin is non-nil, it is connected to the child process's stdin (used to pass
 // the prompt via pipe instead of a -p CLI argument to avoid Windows 8191-char cmd limit).
-// preserveAPIKey, when true, leaves ANTHROPIC_API_KEY intact in the child env (for users
-// who authenticate Claude Code via API key rather than OAuth/keychain).
-type execClaudeRunner struct {
+// preserveAPIKey, when true, leaves GEMINI_API_KEY intact in the child env (for users
+// who authenticate Gemini CLI via API key rather than OAuth/keychain).
+type execGeminiRunner struct {
 	stdin          io.Reader
 	preserveAPIKey bool
 }
 
-func (r *execClaudeRunner) Run(ctx context.Context, name string, args ...string) (io.Reader, func() error, error) {
+func (r *execGeminiRunner) Run(ctx context.Context, name string, args ...string) (io.Reader, func() error, error) {
 	// check context before starting to avoid spawning a process that will be immediately killed
 	if err := ctx.Err(); err != nil {
 		return nil, nil, fmt.Errorf("context already canceled: %w", err)
@@ -85,11 +85,11 @@ func (r *execClaudeRunner) Run(ctx context.Context, name string, args ...string)
 	// to ensure the entire process group is killed, not just the direct child
 	cmd := exec.Command(name, args...) //nolint:noctx // intentional: we handle context cancellation via process group kill
 
-	// build child env: always strip CLAUDECODE (prevents nested session errors); strip
-	// ANTHROPIC_API_KEY by default so a host-set key cannot silently override OAuth/keychain
+	// build child env: always strip GEMINICODE (prevents nested session errors); strip
+	// GEMINI_API_KEY by default so a host-set key cannot silently override OAuth/keychain
 	// auth and bill a different account. preserveAPIKey opts into keeping the key for users
-	// who authenticate Claude Code via API key.
-	cmd.Env = claudeChildEnv(os.Environ(), r.preserveAPIKey)
+	// who authenticate Gemini CLI via API key.
+	cmd.Env = geminiChildEnv(os.Environ(), r.preserveAPIKey)
 
 	// pass prompt via stdin when set (avoids Windows 8191-char command-line limit)
 	if r.stdin != nil {
@@ -190,15 +190,15 @@ func stripFlag(args []string, flag string) []string {
 	return result
 }
 
-// claudeChildEnv builds the environment for a child claude process. CLAUDECODE is always
-// stripped to prevent nested-session errors. ANTHROPIC_API_KEY is stripped unless
-// preserveAPIKey is true; preserving it is required for users who authenticate Claude Code
+// geminiChildEnv builds the environment for a child gemini process. GEMINICODE is always
+// stripped to prevent nested-session errors. GEMINI_API_KEY is stripped unless
+// preserveAPIKey is true; preserving it is required for users who authenticate Gemini CLI
 // via API key rather than OAuth/keychain.
-func claudeChildEnv(env []string, preserveAPIKey bool) []string {
+func geminiChildEnv(env []string, preserveAPIKey bool) []string {
 	if preserveAPIKey {
-		return filterEnv(env, "CLAUDECODE")
+		return filterEnv(env, "GEMINICODE")
 	}
-	return filterEnv(env, "ANTHROPIC_API_KEY", "CLAUDECODE")
+	return filterEnv(env, "GEMINI_API_KEY", "GEMINICODE")
 }
 
 // filterEnv returns a copy of env with specified keys removed.
@@ -219,7 +219,7 @@ func filterEnv(env []string, keysToRemove ...string) []string {
 	return result
 }
 
-// streamEvent represents a JSON event from claude CLI stream output.
+// streamEvent represents a JSON event from gemini CLI stream output.
 type streamEvent struct {
 	Type    string `json:"type"`
 	Message struct {
@@ -239,28 +239,28 @@ type streamEvent struct {
 	Result json.RawMessage `json:"result"` // can be string or object with "output" field
 }
 
-// ClaudeExecutor runs claude CLI commands with streaming JSON parsing.
-type ClaudeExecutor struct {
-	Command        string            // command to execute, defaults to "claude"
+// GeminiExecutor runs gemini CLI commands with streaming JSON parsing.
+type GeminiExecutor struct {
+	Command        string            // command to execute, defaults to "gemini"
 	Args           string            // additional arguments (space-separated), defaults to standard args
 	ArgsSet        bool              // true when Args was explicitly set, including an empty value
-	Model          string            // model override (e.g., "fable", "opus", "sonnet", "haiku"); empty = CLI default
-	Effort         string            // reasoning effort override (e.g., "low", "medium", "high", "xhigh", "max"); empty = CLI default
+	Model          string            // model override; empty = CLI default
+	Effort         string            // reasoning effort override; empty = CLI default
 	OutputHandler  func(text string) // called for each text chunk, can be nil
 	Debug          bool              // enable debug output
 	ErrorPatterns  []string          // patterns to detect in output (e.g., rate limit messages)
 	LimitPatterns  []string          // patterns to detect rate limits (checked before error patterns)
 	RetryPatterns  []string          // patterns to detect transient errors that should retry like timeouts
 	IdleTimeout    time.Duration     // kill session after this duration of no output, zero = disabled
-	PreserveAPIKey bool              // when true, ANTHROPIC_API_KEY is passed through to the child; default false strips it
+	PreserveAPIKey bool              // when true, GEMINI_API_KEY is passed through to the child; default false strips it
 	cmdRunner      CommandRunner     // for testing, nil uses default
 }
 
-// Run executes claude CLI with the given prompt and parses streaming JSON output.
-func (e *ClaudeExecutor) Run(ctx context.Context, prompt string) Result {
+// Run executes gemini CLI with the given prompt and parses streaming JSON output.
+func (e *GeminiExecutor) Run(ctx context.Context, prompt string) Result {
 	cmd := e.Command
 	if cmd == "" {
-		cmd = "claude"
+		cmd = "gemini"
 	}
 
 	// build args from configured string or use defaults
@@ -272,7 +272,7 @@ func (e *ClaudeExecutor) Run(ctx context.Context, prompt string) Result {
 		args = splitArgs(e.Args)
 	default:
 		args = []string{
-			"--dangerously-skip-permissions",
+			"--non-interactive",
 			"--output-format", "stream-json",
 			"--verbose",
 		}
@@ -299,7 +299,7 @@ func (e *ClaudeExecutor) Run(ctx context.Context, prompt string) Result {
 	if e.cmdRunner != nil {
 		runner = e.cmdRunner
 	} else {
-		runner = &execClaudeRunner{stdin: stdinReader, preserveAPIKey: e.PreserveAPIKey}
+		runner = &execGeminiRunner{stdin: stdinReader, preserveAPIKey: e.PreserveAPIKey}
 	}
 
 	// set up idle timeout: derive a cancellable context that fires when no output
@@ -343,12 +343,12 @@ func (e *ClaudeExecutor) Run(ctx context.Context, prompt string) Result {
 			return Result{Output: result.Output, RecentText: result.RecentText, Signal: result.Signal, Error: ctx.Err()}
 		}
 		if result.Output == "" {
-			return Result{Error: fmt.Errorf("claude exited with error: %w", waitErr)}
+			return Result{Error: fmt.Errorf("gemini exited with error: %w", waitErr)}
 		}
-		// non-zero exit with output but no signal means claude failed without doing useful work.
+		// non-zero exit with output but no signal means gemini failed without doing useful work.
 		// if there IS a signal, work was done — ignore exit code (some tasks exit non-zero after completion).
 		if result.Signal == "" {
-			result.Error = fmt.Errorf("claude exited with error: %w", waitErr)
+			result.Error = fmt.Errorf("gemini exited with error: %w", waitErr)
 		}
 	}
 
@@ -359,8 +359,8 @@ func (e *ClaudeExecutor) Run(ctx context.Context, prompt string) Result {
 	return result
 }
 
-func (e *ClaudeExecutor) patternError(recentText, signal string) error {
-	// a non-empty signal means claude reported a structured outcome (completion, review-done,
+func (e *GeminiExecutor) patternError(recentText, signal string) error {
+	// a non-empty signal means gemini reported a structured outcome (completion, review-done,
 	// etc). a stray retry marker in the output must not discard that by forcing a session
 	// re-run, so retry detection is skipped when a signal is present. limit and error patterns
 	// still fire — they surface loudly instead of silently re-running, so they cannot drop work.
@@ -370,19 +370,19 @@ func (e *ClaudeExecutor) patternError(recentText, signal string) error {
 		}
 	}
 	if pattern := matchPattern(recentText, e.LimitPatterns); pattern != "" {
-		return &LimitPatternError{Pattern: pattern, HelpCmd: "claude /usage"}
+		return &LimitPatternError{Pattern: pattern, HelpCmd: "gemini /help"}
 	}
 	if pattern := matchPattern(recentText, e.ErrorPatterns); pattern != "" {
-		return &PatternMatchError{Pattern: pattern, HelpCmd: "claude /usage"}
+		return &PatternMatchError{Pattern: pattern, HelpCmd: "gemini /help"}
 	}
 	return nil
 }
 
-// parseStream reads and parses the JSON stream from claude CLI.
+// parseStream reads and parses the JSON stream from gemini CLI.
 // uses readLines internally, so there is no line length limit.
 // checks ctx.Done() between reads so cancellation is not blocked by slow pipe reads.
 // idleTouch resets the idle timer on each line of output; pass no-op when idle timeout is disabled.
-func (e *ClaudeExecutor) parseStream(ctx context.Context, r io.Reader, idleTouch func()) Result {
+func (e *GeminiExecutor) parseStream(ctx context.Context, r io.Reader, idleTouch func()) Result {
 	var output strings.Builder
 	var signal string
 	var recentBlocks [recentBlockCount]string
@@ -449,7 +449,7 @@ func (e *ClaudeExecutor) parseStream(ctx context.Context, r io.Reader, idleTouch
 }
 
 // extractText extracts text content from various event types.
-func (e *ClaudeExecutor) extractText(event *streamEvent) string {
+func (e *GeminiExecutor) extractText(event *streamEvent) string {
 	switch event.Type {
 	case "assistant":
 		// assistant events contain message.content array with text blocks

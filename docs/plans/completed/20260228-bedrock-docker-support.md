@@ -2,14 +2,14 @@
 
 ## Overview
 - Add AWS Bedrock authentication support to the `ralphex-dk.sh` Docker wrapper
-- Enable users to run ralphex in Docker with AWS Bedrock-hosted Claude models
+- Enable users to run ralphex in Docker with AWS Bedrock-hosted Gemini models
 - Support profile-based auth (via `aws configure export-credentials`) and explicit credentials
 - **Security:** Never mount `~/.aws` - only export specific credentials needed
 
 ## Context (from discovery)
 - files/components involved: `scripts/ralphex-dk.sh` (Python, ~1960 lines)
 - related patterns found: `RALPHEX_EXTRA_VOLUMES` env var, `RALPHEX_EXTRA_ENV` env var, argparse CLI with `-E/--env` and `-v/--volume` flags
-- dependencies identified: AWS SDK credential chain, Claude Code Bedrock integration
+- dependencies identified: AWS SDK credential chain, Gemini CLI Bedrock integration
 
 ## Already Implemented (merged to master)
 - **RALPHEX_EXTRA_ENV support** (PR #179): `build_env_vars()`, `validate_env_entry()`, `merge_env_flags()`, `is_sensitive_name()` with comprehensive tests
@@ -38,20 +38,20 @@
 
 ## Implementation Steps
 
-### Task 1: Add --claude-provider CLI flag
+### Task 1: Add --gemini-provider CLI flag
 
 **Files:**
 - Modify: `scripts/ralphex-dk.sh`
 
-- [x] add `--claude-provider` flag to argparse (values: `default`, `bedrock`; default: `default`)
+- [x] add `--gemini-provider` flag to argparse (values: `default`, `bedrock`; default: `default`)
 - [x] add `RALPHEX_CLAUDE_PROVIDER` env var as fallback (CLI flag takes precedence)
 - [x] add `BEDROCK_ENV_VARS` constant with list of AWS/Bedrock-related env vars to passthrough
-- [x] add `get_claude_provider()` function returning provider from CLI or env var
+- [x] add `get_gemini_provider()` function returning provider from CLI or env var
 - [x] add `build_bedrock_env_args()` function to pass BEDROCK_ENV_VARS when provider is `bedrock`
 - [x] integrate into `run_docker()` alongside extra env vars
-- [x] write `TestClaudeProvider` test class with cases:
+- [x] write `TestGeminiProvider` test class with cases:
   - `test_default_provider_no_bedrock_env` - no flag, no env → provider is "default", no AWS vars
-  - `test_cli_flag_bedrock` - `--claude-provider bedrock` → provider is "bedrock"
+  - `test_cli_flag_bedrock` - `--gemini-provider bedrock` → provider is "bedrock"
   - `test_env_var_fallback` - no flag, `RALPHEX_CLAUDE_PROVIDER=bedrock` → provider is "bedrock"
   - `test_cli_overrides_env` - flag and env var set → CLI wins
   - `test_bedrock_passes_set_vars` - only passes BEDROCK_ENV_VARS that are actually set
@@ -83,17 +83,17 @@ Instead, use `aws configure export-credentials` to export only the needed creden
   - `test_parses_json_output` - correctly extracts AccessKeyId/SecretAccessKey/SessionToken from JSON
 - [x] run tests - must pass before next task
 
-### Task 3: Skip keychain and claude_home checks for Bedrock
+### Task 3: Skip keychain and gemini_home checks for Bedrock
 
 **Files:**
 - Modify: `scripts/ralphex-dk.sh`
 
 - [x] modify `main()` to skip `extract_macos_credentials()` when provider is `bedrock`
-- [x] modify `main()` to skip `claude_home.is_dir()` check when provider is `bedrock`
+- [x] modify `main()` to skip `gemini_home.is_dir()` check when provider is `bedrock`
 - [x] add startup message indicating bedrock mode and keychain skip
 - [x] write `TestBedrockSkipKeychain` test class with cases:
   - `test_skips_credentials_extraction_when_bedrock` - creds_temp is None
-  - `test_skips_claude_home_check_when_bedrock` - no error if ~/.claude missing
+  - `test_skips_gemini_home_check_when_bedrock` - no error if ~/.gemini missing
   - `test_normal_mode_still_extracts_credentials` - backwards compat with default provider
   - `test_startup_message_shows_bedrock_mode` - output includes "bedrock" and "keychain skipped"
 - [x] run tests - must pass before next task
@@ -104,13 +104,13 @@ Instead, use `aws configure export-credentials` to export only the needed creden
 - Modify: `scripts/ralphex-dk.sh`
 
 - [x] add `validate_bedrock_config()` function returning list of warning strings (only called when provider is `bedrock`)
-- [x] check: CLAUDE_CODE_USE_BEDROCK set (warn if not - required for Claude Code inside container)
+- [x] check: CLAUDE_CODE_USE_BEDROCK set (warn if not - required for Gemini CLI inside container)
 - [x] check: AWS_REGION set (warn if not)
 - [x] check: AWS_PROFILE set OR AWS_ACCESS_KEY_ID set (warn if neither)
 - [x] call `validate_bedrock_config()` in `main()` after startup message, print warnings before `run_docker()`
 - [x] print provider mode and passed env vars on startup
 - [x] write `TestBedrockValidation` test class with cases:
-  - `test_warns_missing_claude_code_use_bedrock`
+  - `test_warns_missing_gemini_code_use_bedrock`
   - `test_warns_missing_aws_region`
   - `test_warns_no_credentials_found`
   - `test_no_warning_with_profile`
@@ -119,7 +119,7 @@ Instead, use `aws configure export-credentials` to export only the needed creden
 
 ### Task 5: Verify acceptance criteria
 
-- [x] verify `--claude-provider bedrock` enables bedrock mode
+- [x] verify `--gemini-provider bedrock` enables bedrock mode
 - [x] verify `RALPHEX_CLAUDE_PROVIDER=bedrock` env var works as fallback
 - [x] verify credentials exported via `aws configure export-credentials` when profile set
 - [x] verify explicit creds (AWS_ACCESS_KEY_ID) skip credential export
@@ -134,7 +134,7 @@ Instead, use `aws configure export-credentials` to export only the needed creden
   - example IAM policy for Bedrock access (see Technical Details)
   - step-by-step setup instructions for SSO and IAM user scenarios
   - troubleshooting common auth errors
-- [x] update llms.txt with new flag (`--claude-provider`) and env var (`RALPHEX_CLAUDE_PROVIDER`)
+- [x] update llms.txt with new flag (`--gemini-provider`) and env var (`RALPHEX_CLAUDE_PROVIDER`)
 - [x] add example usage for Bedrock mode
 - [x] move this plan to `docs/plans/completed/`
 
@@ -142,7 +142,7 @@ Instead, use `aws configure export-credentials` to export only the needed creden
 
 ### Security: Minimal IAM Policy for Bedrock
 
-Create a dedicated AWS profile with only the permissions needed for Claude via Bedrock.
+Create a dedicated AWS profile with only the permissions needed for Gemini via Bedrock.
 This follows the principle of least privilege.
 
 **Minimal IAM policy (foundation models + inference profiles):**
@@ -158,7 +158,7 @@ This follows the principle of least privilege.
                 "bedrock:InvokeModelWithResponseStream"
             ],
             "Resource": [
-                "arn:aws:bedrock:*::foundation-model/anthropic.claude-*"
+                "arn:aws:bedrock:*::foundation-model/gemini.gemini-*"
             ]
         },
         {
@@ -169,7 +169,7 @@ This follows the principle of least privilege.
                 "bedrock:InvokeModelWithResponseStream"
             ],
             "Resource": [
-                "arn:aws:bedrock:*:*:inference-profile/*anthropic.claude*"
+                "arn:aws:bedrock:*:*:inference-profile/*gemini.gemini*"
             ]
         }
     ]
@@ -182,34 +182,34 @@ This follows the principle of least privilege.
     "Version": "2012-10-17",
     "Statement": [
         {
-            "Sid": "BedrockInvokeClaudeFoundationModels",
+            "Sid": "BedrockInvokeGeminiFoundationModels",
             "Effect": "Allow",
             "Action": [
                 "bedrock:InvokeModel",
                 "bedrock:InvokeModelWithResponseStream"
             ],
             "Resource": [
-                "arn:aws:bedrock:us-east-1::foundation-model/anthropic.claude-sonnet-4-20250514-v1:0",
-                "arn:aws:bedrock:us-east-1::foundation-model/anthropic.claude-haiku-4-20250514-v1:0"
+                "arn:aws:bedrock:us-east-1::foundation-model/gemini.gemini-sonnet-4-20250514-v1:0",
+                "arn:aws:bedrock:us-east-1::foundation-model/gemini.gemini-haiku-4-20250514-v1:0"
             ]
         },
         {
-            "Sid": "BedrockInvokeClaudeInferenceProfiles",
+            "Sid": "BedrockInvokeGeminiInferenceProfiles",
             "Effect": "Allow",
             "Action": [
                 "bedrock:InvokeModel",
                 "bedrock:InvokeModelWithResponseStream"
             ],
             "Resource": [
-                "arn:aws:bedrock:us-east-1:*:inference-profile/us.anthropic.claude-sonnet-4-20250514-v1:0",
-                "arn:aws:bedrock:us-east-1:*:inference-profile/us.anthropic.claude-haiku-4-20250514-v1:0"
+                "arn:aws:bedrock:us-east-1:*:inference-profile/us.gemini.gemini-sonnet-4-20250514-v1:0",
+                "arn:aws:bedrock:us-east-1:*:inference-profile/us.gemini.gemini-haiku-4-20250514-v1:0"
             ]
         }
     ]
 }
 ```
 
-**Note:** Inference profiles use cross-region prefixes (e.g., `us.anthropic.claude-*` for US regions).
+**Note:** Inference profiles use cross-region prefixes (e.g., `us.gemini.gemini-*` for US regions).
 Check your Bedrock console for exact inference profile IDs available in your account.
 
 **Setup options:**
@@ -258,7 +258,7 @@ BEDROCK_ENV_VARS = [
 
 **Example usage (recommended - dedicated profile with minimal permissions):**
 ```bash
-# set required env vars for Claude Code inside container
+# set required env vars for Gemini CLI inside container
 export CLAUDE_CODE_USE_BEDROCK=1
 export AWS_PROFILE=ralphex-bedrock
 export AWS_REGION=us-east-1
@@ -267,7 +267,7 @@ export AWS_REGION=us-east-1
 aws sso login --profile=ralphex-bedrock
 
 # run with bedrock provider
-ralphex --claude-provider bedrock docs/plans/feature.md
+ralphex --gemini-provider bedrock docs/plans/feature.md
 
 # or use env var for session-wide setting
 export RALPHEX_CLAUDE_PROVIDER=bedrock
@@ -281,7 +281,7 @@ export AWS_REGION=us-east-1
 export AWS_ACCESS_KEY_ID=AKIA...
 export AWS_SECRET_ACCESS_KEY=...
 
-ralphex --claude-provider bedrock docs/plans/feature.md
+ralphex --gemini-provider bedrock docs/plans/feature.md
 ```
 
 **Example usage (with extra env vars):**
@@ -292,13 +292,13 @@ export AWS_REGION=us-east-1
 export CLAUDE_CODE_MAX_OUTPUT_TOKENS=32000
 
 # pass extra env vars to container
-ralphex --claude-provider bedrock -E CLAUDE_CODE_MAX_OUTPUT_TOKENS docs/plans/feature.md
+ralphex --gemini-provider bedrock -E CLAUDE_CODE_MAX_OUTPUT_TOKENS docs/plans/feature.md
 ```
 
 **Startup output (bedrock mode with profile):**
 ```
 using image: ghcr.io/umputun/ralphex-go:latest
-claude provider: bedrock (keychain skipped)
+gemini provider: bedrock (keychain skipped)
   exporting credentials from profile: my-sso-profile
   passing: AWS_REGION, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_SESSION_TOKEN, CLAUDE_CODE_USE_BEDROCK
 ```
@@ -306,7 +306,7 @@ claude provider: bedrock (keychain skipped)
 **Startup output (bedrock mode with explicit creds):**
 ```
 using image: ghcr.io/umputun/ralphex-go:latest
-claude provider: bedrock (keychain skipped)
+gemini provider: bedrock (keychain skipped)
   using explicit credentials
   passing: AWS_REGION, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, CLAUDE_CODE_USE_BEDROCK
 ```
@@ -316,6 +316,6 @@ claude provider: bedrock (keychain skipped)
 **Manual verification:**
 - test with AWS SSO profile (verify `aws configure export-credentials` works)
 - test with explicit AWS credentials (verify credential export is skipped)
-- test on Linux without ~/.claude directory
-- verify Claude Code connects to Bedrock inside container
+- test on Linux without ~/.gemini directory
+- verify Gemini CLI connects to Bedrock inside container
 - verify ~/.aws is NOT mounted (security requirement)

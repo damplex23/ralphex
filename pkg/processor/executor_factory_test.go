@@ -161,7 +161,7 @@ func TestParseModelSpec(t *testing.T) {
 		{name: "model and effort", input: "opus:high", model: "opus", effort: "high"},
 		{name: "effort only", input: ":high", model: "", effort: "high"},
 		{name: "trailing colon", input: "opus:", model: "opus", effort: ""},
-		{name: "full model id with effort", input: "claude-sonnet-4-6:medium", model: "claude-sonnet-4-6", effort: "medium"},
+		{name: "full model id with effort", input: "gemini-sonnet-4-6:medium", model: "gemini-sonnet-4-6", effort: "medium"},
 		{name: "multiple colons — split on first", input: "opus:high:extra", model: "opus", effort: "high:extra"},
 	}
 
@@ -245,13 +245,13 @@ func TestRunner_New_ModelEffortWiring(t *testing.T) {
 			}
 			_, execs := (&executorFactory{}).Build(cfg, log)
 
-			taskExec, ok := execs.Task.(*executor.ClaudeExecutor)
-			require.True(t, ok, "task executor should be *executor.ClaudeExecutor")
+			taskExec, ok := execs.Task.(*executor.GeminiExecutor)
+			require.True(t, ok, "task executor should be *executor.GeminiExecutor")
 			assert.Equal(t, tc.wantTask[0], taskExec.Model, "task model")
 			assert.Equal(t, tc.wantTask[1], taskExec.Effort, "task effort")
 
-			reviewExec, ok := effectiveReviewExecutor(execs).(*executor.ClaudeExecutor)
-			require.True(t, ok, "review executor should be *executor.ClaudeExecutor")
+			reviewExec, ok := effectiveReviewExecutor(execs).(*executor.GeminiExecutor)
+			require.True(t, ok, "review executor should be *executor.GeminiExecutor")
 			assert.Equal(t, tc.wantReview[0], reviewExec.Model, "review model")
 			assert.Equal(t, tc.wantReview[1], reviewExec.Effort, "review effort")
 
@@ -322,17 +322,17 @@ func TestRunner_New_ExecutorRouting(t *testing.T) {
 	log := newRunnerMockLogger("progress.txt")
 	holder := &status.PhaseHolder{}
 
-	t.Run("default executor: claude for task/review, codex for external", func(t *testing.T) {
+	t.Run("default executor: gemini for task/review, codex for external", func(t *testing.T) {
 		appCfg := testAppConfig(t)
-		appCfg.Executor = config.ExecutorClaude
+		appCfg.Executor = config.ExecutorGemini
 		cfg := Config{Mode: ModeReview, MaxIterations: 50, CodexEnabled: false, AppConfig: appCfg}
 		_, execs := (&executorFactory{}).Build(cfg, log)
 
-		_, ok := execs.Task.(*executor.ClaudeExecutor)
-		assert.True(t, ok, "task executor should be *executor.ClaudeExecutor when Executor is default")
+		_, ok := execs.Task.(*executor.GeminiExecutor)
+		assert.True(t, ok, "task executor should be *executor.GeminiExecutor when Executor is default")
 
-		_, ok = effectiveReviewExecutor(execs).(*executor.ClaudeExecutor)
-		assert.True(t, ok, "review executor should be *executor.ClaudeExecutor when Executor is default")
+		_, ok = effectiveReviewExecutor(execs).(*executor.GeminiExecutor)
+		assert.True(t, ok, "review executor should be *executor.GeminiExecutor when Executor is default")
 
 		externalExec, ok := execs.External.(*executor.CodexExecutor)
 		assert.True(t, ok, "external executor should be *executor.CodexExecutor by default")
@@ -409,38 +409,38 @@ func setIsolatedHome(t *testing.T) string {
 	t.Setenv("USERPROFILE", home)
 	t.Setenv("HOMEDRIVE", "")
 	t.Setenv("HOMEPATH", "")
-	claudeMdHintOnce = sync.Once{}
+	geminiMdHintOnce = sync.Once{}
 	return home
 }
 
-func TestRunner_New_PassClaudeMd_PropagatesToCodexExecutor(t *testing.T) {
+func TestRunner_New_PassGeminiMd_PropagatesToCodexExecutor(t *testing.T) {
 	setIsolatedHome(t)
 	log := newRunnerMockLogger("")
 
 	appCfg := testAppConfig(t)
 	appCfg.Executor = config.ExecutorCodex
-	appCfg.PassClaudeMd = true
+	appCfg.PassGeminiMd = true
 	cfg := Config{Mode: ModeReview, MaxIterations: 50, CodexEnabled: false, AppConfig: appCfg}
 
 	_, execs := (&executorFactory{}).Build(cfg, log)
 	codexExec, ok := execs.Task.(*executor.CodexExecutor)
 	require.True(t, ok, "task executor should be *executor.CodexExecutor when Executor=codex")
-	assert.True(t, codexExec.PassClaudeMd, "PassClaudeMd should propagate from cfg.AppConfig to CodexExecutor")
+	assert.True(t, codexExec.PassGeminiMd, "PassGeminiMd should propagate from cfg.AppConfig to CodexExecutor")
 }
 
-func TestRunner_New_PassClaudeMdFalse_DoesNotSetField(t *testing.T) {
+func TestRunner_New_PassGeminiMdFalse_DoesNotSetField(t *testing.T) {
 	setIsolatedHome(t)
 	log := newRunnerMockLogger("")
 
 	appCfg := testAppConfig(t)
 	appCfg.Executor = config.ExecutorCodex
-	appCfg.PassClaudeMd = false
+	appCfg.PassGeminiMd = false
 	cfg := Config{Mode: ModeReview, MaxIterations: 50, CodexEnabled: false, AppConfig: appCfg}
 
 	_, execs := (&executorFactory{}).Build(cfg, log)
 	codexExec, ok := execs.Task.(*executor.CodexExecutor)
 	require.True(t, ok, "task executor should be *executor.CodexExecutor when Executor=codex")
-	assert.False(t, codexExec.PassClaudeMd, "PassClaudeMd should be false when cfg disabled")
+	assert.False(t, codexExec.PassGeminiMd, "PassGeminiMd should be false when cfg disabled")
 }
 
 func TestRunner_New_CodexExecutor_TaskAndReviewShareInstance(t *testing.T) {
@@ -466,32 +466,32 @@ func TestRunner_New_CodexExecutor_TaskAndReviewShareInstance(t *testing.T) {
 	assert.True(t, taskExec.MultiAgent, "codex executor must have MultiAgent=true so any phase can spawn sub-agents")
 }
 
-func TestRunner_ClaudeMdSetupHint_EmitsOnce(t *testing.T) {
+func TestRunner_GeminiMdSetupHint_EmitsOnce(t *testing.T) {
 	home := setIsolatedHome(t)
 
-	// arrange: ~/.claude/CLAUDE.md exists, ~/.codex/AGENTS.md does not
-	claudeDir := filepath.Join(home, ".claude")
-	require.NoError(t, os.MkdirAll(claudeDir, 0o750))
-	require.NoError(t, os.WriteFile(filepath.Join(claudeDir, "CLAUDE.md"), []byte("user CLAUDE.md\n"), 0o600))
+	// arrange: ~/.gemini/GEMINI.md exists, ~/.codex/AGENTS.md does not
+	geminiDir := filepath.Join(home, ".gemini")
+	require.NoError(t, os.MkdirAll(geminiDir, 0o750))
+	require.NoError(t, os.WriteFile(filepath.Join(geminiDir, "GEMINI.md"), []byte("user GEMINI.md\n"), 0o600))
 
 	var captured []string
 	log := newCapturingLogger(&captured)
 
 	// emit twice; only the first call should record output
-	maybeEmitClaudeMdSetupHint(log)
-	maybeEmitClaudeMdSetupHint(log)
+	maybeEmitGeminiMdSetupHint(log)
+	maybeEmitGeminiMdSetupHint(log)
 
 	require.Len(t, captured, 1, "hint should emit exactly once")
-	assert.Contains(t, captured[0], "~/.claude/CLAUDE.md exists but ~/.codex/AGENTS.md does not")
-	assert.Contains(t, captured[0], "ln -s ~/.claude/CLAUDE.md ~/.codex/AGENTS.md")
+	assert.Contains(t, captured[0], "~/.gemini/GEMINI.md exists but ~/.codex/AGENTS.md does not")
+	assert.Contains(t, captured[0], "ln -s ~/.gemini/GEMINI.md ~/.codex/AGENTS.md")
 }
 
-func TestRunner_ClaudeMdSetupHint_SkippedWhenCodexAgentsMdExists(t *testing.T) {
+func TestRunner_GeminiMdSetupHint_SkippedWhenCodexAgentsMdExists(t *testing.T) {
 	home := setIsolatedHome(t)
 
-	claudeDir := filepath.Join(home, ".claude")
-	require.NoError(t, os.MkdirAll(claudeDir, 0o750))
-	require.NoError(t, os.WriteFile(filepath.Join(claudeDir, "CLAUDE.md"), []byte("user CLAUDE.md\n"), 0o600))
+	geminiDir := filepath.Join(home, ".gemini")
+	require.NoError(t, os.MkdirAll(geminiDir, 0o750))
+	require.NoError(t, os.WriteFile(filepath.Join(geminiDir, "GEMINI.md"), []byte("user GEMINI.md\n"), 0o600))
 
 	codexDir := filepath.Join(home, ".codex")
 	require.NoError(t, os.MkdirAll(codexDir, 0o750))
@@ -499,48 +499,48 @@ func TestRunner_ClaudeMdSetupHint_SkippedWhenCodexAgentsMdExists(t *testing.T) {
 
 	var captured []string
 	log := newCapturingLogger(&captured)
-	maybeEmitClaudeMdSetupHint(log)
+	maybeEmitGeminiMdSetupHint(log)
 
 	assert.Empty(t, captured, "hint must not emit when ~/.codex/AGENTS.md already exists")
 }
 
-func TestRunner_ClaudeMdSetupHint_SkippedWhenClaudeMdMissing(t *testing.T) {
+func TestRunner_GeminiMdSetupHint_SkippedWhenGeminiMdMissing(t *testing.T) {
 	setIsolatedHome(t)
 
 	var captured []string
 	log := newCapturingLogger(&captured)
-	maybeEmitClaudeMdSetupHint(log)
+	maybeEmitGeminiMdSetupHint(log)
 
-	assert.Empty(t, captured, "hint must not emit when ~/.claude/CLAUDE.md does not exist")
+	assert.Empty(t, captured, "hint must not emit when ~/.gemini/GEMINI.md does not exist")
 }
 
-func TestRunner_ClaudeMdSetupHint_NotFiredWhenExecutorIsNotCodex(t *testing.T) {
+func TestRunner_GeminiMdSetupHint_NotFiredWhenExecutorIsNotCodex(t *testing.T) {
 	home := setIsolatedHome(t)
 
-	claudeDir := filepath.Join(home, ".claude")
-	require.NoError(t, os.MkdirAll(claudeDir, 0o750))
-	require.NoError(t, os.WriteFile(filepath.Join(claudeDir, "CLAUDE.md"), []byte("user CLAUDE.md\n"), 0o600))
+	geminiDir := filepath.Join(home, ".gemini")
+	require.NoError(t, os.MkdirAll(geminiDir, 0o750))
+	require.NoError(t, os.WriteFile(filepath.Join(geminiDir, "GEMINI.md"), []byte("user GEMINI.md\n"), 0o600))
 
 	var captured []string
 	log := newCapturingLogger(&captured)
 	holder := &status.PhaseHolder{}
 
-	// claude executor with PassClaudeMd=true should NOT fire hint (gated by Executor=codex)
+	// gemini executor with PassGeminiMd=true should NOT fire hint (gated by Executor=codex)
 	appCfg := testAppConfig(t)
-	appCfg.Executor = config.ExecutorClaude
-	appCfg.PassClaudeMd = true
+	appCfg.Executor = config.ExecutorGemini
+	appCfg.PassGeminiMd = true
 	cfg := Config{Mode: ModeReview, MaxIterations: 50, CodexEnabled: false, AppConfig: appCfg}
 
 	_ = New(cfg, log, holder)
 	assert.Empty(t, captured, "hint must not fire when Executor is not codex")
 }
 
-func TestRunner_ClaudeMdSetupHint_NotFiredWhenPassClaudeMdFalse(t *testing.T) {
+func TestRunner_GeminiMdSetupHint_NotFiredWhenPassGeminiMdFalse(t *testing.T) {
 	home := setIsolatedHome(t)
 
-	claudeDir := filepath.Join(home, ".claude")
-	require.NoError(t, os.MkdirAll(claudeDir, 0o750))
-	require.NoError(t, os.WriteFile(filepath.Join(claudeDir, "CLAUDE.md"), []byte("user CLAUDE.md\n"), 0o600))
+	geminiDir := filepath.Join(home, ".gemini")
+	require.NoError(t, os.MkdirAll(geminiDir, 0o750))
+	require.NoError(t, os.WriteFile(filepath.Join(geminiDir, "GEMINI.md"), []byte("user GEMINI.md\n"), 0o600))
 
 	var captured []string
 	log := newCapturingLogger(&captured)
@@ -548,19 +548,19 @@ func TestRunner_ClaudeMdSetupHint_NotFiredWhenPassClaudeMdFalse(t *testing.T) {
 
 	appCfg := testAppConfig(t)
 	appCfg.Executor = config.ExecutorCodex
-	appCfg.PassClaudeMd = false
+	appCfg.PassGeminiMd = false
 	cfg := Config{Mode: ModeReview, MaxIterations: 50, CodexEnabled: false, AppConfig: appCfg}
 
 	_ = New(cfg, log, holder)
-	assert.Empty(t, captured, "hint must not fire when PassClaudeMd is false")
+	assert.Empty(t, captured, "hint must not fire when PassGeminiMd is false")
 }
 
-func TestRunner_ClaudeMdSetupHint_FiredOnceAcrossMultipleRunnerConstructions(t *testing.T) {
+func TestRunner_GeminiMdSetupHint_FiredOnceAcrossMultipleRunnerConstructions(t *testing.T) {
 	home := setIsolatedHome(t)
 
-	claudeDir := filepath.Join(home, ".claude")
-	require.NoError(t, os.MkdirAll(claudeDir, 0o750))
-	require.NoError(t, os.WriteFile(filepath.Join(claudeDir, "CLAUDE.md"), []byte("user CLAUDE.md\n"), 0o600))
+	geminiDir := filepath.Join(home, ".gemini")
+	require.NoError(t, os.MkdirAll(geminiDir, 0o750))
+	require.NoError(t, os.WriteFile(filepath.Join(geminiDir, "GEMINI.md"), []byte("user GEMINI.md\n"), 0o600))
 
 	var captured []string
 	log := newCapturingLogger(&captured)
@@ -568,7 +568,7 @@ func TestRunner_ClaudeMdSetupHint_FiredOnceAcrossMultipleRunnerConstructions(t *
 
 	appCfg := testAppConfig(t)
 	appCfg.Executor = config.ExecutorCodex
-	appCfg.PassClaudeMd = true
+	appCfg.PassGeminiMd = true
 	cfg := Config{Mode: ModeReview, MaxIterations: 50, CodexEnabled: false, AppConfig: appCfg}
 
 	// build two runners back to back; hint should emit on the first only
@@ -576,7 +576,7 @@ func TestRunner_ClaudeMdSetupHint_FiredOnceAcrossMultipleRunnerConstructions(t *
 	_ = New(cfg, log, holder)
 
 	require.Len(t, captured, 1, "hint must emit once per process across multiple runner constructions")
-	assert.Contains(t, captured[0], "ln -s ~/.claude/CLAUDE.md ~/.codex/AGENTS.md")
+	assert.Contains(t, captured[0], "ln -s ~/.gemini/GEMINI.md ~/.codex/AGENTS.md")
 }
 
 func TestRunner_WaitOnLimit_RetriesLimitFromConfig(t *testing.T) {

@@ -18,7 +18,7 @@ import (
 	"github.com/umputun/ralphex/pkg/status"
 )
 
-func TestClaudeExecutor_Run_Success(t *testing.T) {
+func TestGeminiExecutor_Run_Success(t *testing.T) {
 	jsonStream := `{"type":"content_block_delta","delta":{"type":"text_delta","text":"Hello world <<<RALPHEX:ALL_TASKS_DONE>>>"}}`
 
 	mock := &mocks.CommandRunnerMock{
@@ -26,7 +26,7 @@ func TestClaudeExecutor_Run_Success(t *testing.T) {
 			return strings.NewReader(jsonStream), func() error { return nil }, nil
 		},
 	}
-	e := &ClaudeExecutor{cmdRunner: mock}
+	e := &GeminiExecutor{cmdRunner: mock}
 
 	result := e.Run(context.Background(), "test prompt")
 
@@ -35,13 +35,13 @@ func TestClaudeExecutor_Run_Success(t *testing.T) {
 	assert.Equal(t, "<<<RALPHEX:ALL_TASKS_DONE>>>", result.Signal)
 }
 
-func TestClaudeExecutor_Run_StartError(t *testing.T) {
+func TestGeminiExecutor_Run_StartError(t *testing.T) {
 	mock := &mocks.CommandRunnerMock{
 		RunFunc: func(_ context.Context, _ string, _ ...string) (io.Reader, func() error, error) {
 			return nil, nil, errors.New("command not found")
 		},
 	}
-	e := &ClaudeExecutor{cmdRunner: mock}
+	e := &GeminiExecutor{cmdRunner: mock}
 
 	result := e.Run(context.Background(), "test prompt")
 
@@ -49,7 +49,7 @@ func TestClaudeExecutor_Run_StartError(t *testing.T) {
 	assert.Contains(t, result.Error.Error(), "command not found")
 }
 
-func TestClaudeExecutor_Run_WaitError_WithOutput(t *testing.T) {
+func TestGeminiExecutor_Run_WaitError_WithOutput(t *testing.T) {
 	// non-zero exit with output but no signal should propagate error
 	jsonStream := `{"type":"content_block_delta","delta":{"type":"text_delta","text":"partial output"}}`
 
@@ -58,16 +58,16 @@ func TestClaudeExecutor_Run_WaitError_WithOutput(t *testing.T) {
 			return strings.NewReader(jsonStream), func() error { return errors.New("exit status 1") }, nil
 		},
 	}
-	e := &ClaudeExecutor{cmdRunner: mock}
+	e := &GeminiExecutor{cmdRunner: mock}
 
 	result := e.Run(context.Background(), "test prompt")
 
 	require.Error(t, result.Error)
-	assert.Contains(t, result.Error.Error(), "claude exited with error")
+	assert.Contains(t, result.Error.Error(), "gemini exited with error")
 	assert.Equal(t, "partial output", result.Output)
 }
 
-func TestClaudeExecutor_Run_WaitError_WithOutputAndSignal(t *testing.T) {
+func TestGeminiExecutor_Run_WaitError_WithOutputAndSignal(t *testing.T) {
 	// non-zero exit with output AND signal should ignore exit code (useful work was done)
 	jsonStream := `{"type":"content_block_delta","delta":{"type":"text_delta","text":"task done <<<RALPHEX:ALL_TASKS_DONE>>>"}}`
 
@@ -76,7 +76,7 @@ func TestClaudeExecutor_Run_WaitError_WithOutputAndSignal(t *testing.T) {
 			return strings.NewReader(jsonStream), func() error { return errors.New("exit status 1") }, nil
 		},
 	}
-	e := &ClaudeExecutor{cmdRunner: mock}
+	e := &GeminiExecutor{cmdRunner: mock}
 
 	result := e.Run(context.Background(), "test prompt")
 
@@ -85,21 +85,21 @@ func TestClaudeExecutor_Run_WaitError_WithOutputAndSignal(t *testing.T) {
 	assert.Equal(t, "<<<RALPHEX:ALL_TASKS_DONE>>>", result.Signal)
 }
 
-func TestClaudeExecutor_Run_WaitError_NoOutput(t *testing.T) {
+func TestGeminiExecutor_Run_WaitError_NoOutput(t *testing.T) {
 	mock := &mocks.CommandRunnerMock{
 		RunFunc: func(_ context.Context, _ string, _ ...string) (io.Reader, func() error, error) {
 			return strings.NewReader(""), func() error { return errors.New("exit status 1") }, nil
 		},
 	}
-	e := &ClaudeExecutor{cmdRunner: mock}
+	e := &GeminiExecutor{cmdRunner: mock}
 
 	result := e.Run(context.Background(), "test prompt")
 
 	require.Error(t, result.Error)
-	assert.Contains(t, result.Error.Error(), "claude exited with error")
+	assert.Contains(t, result.Error.Error(), "gemini exited with error")
 }
 
-func TestClaudeExecutor_Run_ContextCanceled(t *testing.T) {
+func TestGeminiExecutor_Run_ContextCanceled(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
@@ -108,14 +108,14 @@ func TestClaudeExecutor_Run_ContextCanceled(t *testing.T) {
 			return strings.NewReader(""), func() error { return context.Canceled }, nil
 		},
 	}
-	e := &ClaudeExecutor{cmdRunner: mock}
+	e := &GeminiExecutor{cmdRunner: mock}
 
 	result := e.Run(ctx, "test prompt")
 
 	require.ErrorIs(t, result.Error, context.Canceled)
 }
 
-func TestClaudeExecutor_Run_WithOutputHandler(t *testing.T) {
+func TestGeminiExecutor_Run_WithOutputHandler(t *testing.T) {
 	jsonStream := `{"type":"content_block_delta","delta":{"type":"text_delta","text":"chunk1"}}
 {"type":"content_block_delta","delta":{"type":"text_delta","text":"chunk2"}}`
 
@@ -125,7 +125,7 @@ func TestClaudeExecutor_Run_WithOutputHandler(t *testing.T) {
 			return strings.NewReader(jsonStream), func() error { return nil }, nil
 		},
 	}
-	e := &ClaudeExecutor{
+	e := &GeminiExecutor{
 		cmdRunner:     mock,
 		OutputHandler: func(text string) { chunks = append(chunks, text) },
 	}
@@ -137,7 +137,7 @@ func TestClaudeExecutor_Run_WithOutputHandler(t *testing.T) {
 	assert.Equal(t, []string{"chunk1", "chunk2"}, chunks)
 }
 
-func TestClaudeExecutor_parseStream(t *testing.T) {
+func TestGeminiExecutor_parseStream(t *testing.T) {
 	tests := []struct {
 		name       string
 		input      string
@@ -221,7 +221,7 @@ func TestClaudeExecutor_parseStream(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			e := &ClaudeExecutor{}
+			e := &GeminiExecutor{}
 			result := e.parseStream(context.Background(), strings.NewReader(tc.input), func() {})
 
 			assert.Equal(t, tc.wantOutput, result.Output)
@@ -230,12 +230,12 @@ func TestClaudeExecutor_parseStream(t *testing.T) {
 	}
 }
 
-func TestClaudeExecutor_parseStream_withHandler(t *testing.T) {
+func TestGeminiExecutor_parseStream_withHandler(t *testing.T) {
 	input := `{"type":"content_block_delta","delta":{"type":"text_delta","text":"chunk1"}}
 {"type":"content_block_delta","delta":{"type":"text_delta","text":"chunk2"}}`
 
 	var chunks []string
-	e := &ClaudeExecutor{
+	e := &GeminiExecutor{
 		OutputHandler: func(text string) {
 			chunks = append(chunks, text)
 		},
@@ -247,18 +247,18 @@ func TestClaudeExecutor_parseStream_withHandler(t *testing.T) {
 	assert.Equal(t, []string{"chunk1", "chunk2"}, chunks)
 }
 
-func TestClaudeExecutor_parseStream_withDebug(t *testing.T) {
+func TestGeminiExecutor_parseStream_withDebug(t *testing.T) {
 	// non-json lines should be printed as-is (with debug message)
 	input := "not json\n" + `{"type":"content_block_delta","delta":{"type":"text_delta","text":"valid"}}`
 
-	e := &ClaudeExecutor{Debug: true}
+	e := &GeminiExecutor{Debug: true}
 	result := e.parseStream(context.Background(), strings.NewReader(input), func() {})
 
 	assert.Equal(t, "not json\nvalid", result.Output)
 }
 
-func TestClaudeExecutor_extractText(t *testing.T) {
-	e := &ClaudeExecutor{}
+func TestGeminiExecutor_extractText(t *testing.T) {
+	e := &GeminiExecutor{}
 
 	t.Run("assistant event with text", func(t *testing.T) {
 		event := streamEvent{Type: "assistant"}
@@ -385,7 +385,7 @@ Note: a minor formatting preference was noted but not flagged.`, status.CodexDon
 	}
 }
 
-func TestClaudeExecutor_Run_WithCustomCommand(t *testing.T) {
+func TestGeminiExecutor_Run_WithCustomCommand(t *testing.T) {
 	var capturedCmd string
 	var capturedArgs []string
 	mock := &mocks.CommandRunnerMock{
@@ -395,20 +395,20 @@ func TestClaudeExecutor_Run_WithCustomCommand(t *testing.T) {
 			return strings.NewReader(`{"type":"content_block_delta","delta":{"type":"text_delta","text":"ok"}}`), func() error { return nil }, nil
 		},
 	}
-	e := &ClaudeExecutor{
+	e := &GeminiExecutor{
 		cmdRunner: mock,
-		Command:   "my-claude",
+		Command:   "my-gemini",
 	}
 
 	result := e.Run(context.Background(), "test prompt")
 
 	require.NoError(t, result.Error)
-	assert.Equal(t, "my-claude", capturedCmd)
+	assert.Equal(t, "my-gemini", capturedCmd)
 	// should still use default args
-	assert.Contains(t, capturedArgs, "--dangerously-skip-permissions")
+	assert.Contains(t, capturedArgs, "--non-interactive")
 }
 
-func TestClaudeExecutor_Run_WithCustomArgs(t *testing.T) {
+func TestGeminiExecutor_Run_WithCustomArgs(t *testing.T) {
 	var capturedArgs []string
 	mock := &mocks.CommandRunnerMock{
 		RunFunc: func(_ context.Context, _ string, args ...string) (io.Reader, func() error, error) {
@@ -416,7 +416,7 @@ func TestClaudeExecutor_Run_WithCustomArgs(t *testing.T) {
 			return strings.NewReader(`{"type":"content_block_delta","delta":{"type":"text_delta","text":"ok"}}`), func() error { return nil }, nil
 		},
 	}
-	e := &ClaudeExecutor{
+	e := &GeminiExecutor{
 		cmdRunner: mock,
 		Args:      "--custom-arg --another-arg value",
 	}
@@ -428,7 +428,7 @@ func TestClaudeExecutor_Run_WithCustomArgs(t *testing.T) {
 	assert.Equal(t, []string{"--custom-arg", "--another-arg", "value", "--print"}, capturedArgs)
 }
 
-func TestClaudeExecutor_Run_WithExplicitEmptyArgs(t *testing.T) {
+func TestGeminiExecutor_Run_WithExplicitEmptyArgs(t *testing.T) {
 	var capturedArgs []string
 	mock := &mocks.CommandRunnerMock{
 		RunFunc: func(_ context.Context, _ string, args ...string) (io.Reader, func() error, error) {
@@ -436,7 +436,7 @@ func TestClaudeExecutor_Run_WithExplicitEmptyArgs(t *testing.T) {
 			return strings.NewReader(`{"type":"content_block_delta","delta":{"type":"text_delta","text":"ok"}}`), func() error { return nil }, nil
 		},
 	}
-	e := &ClaudeExecutor{
+	e := &GeminiExecutor{
 		cmdRunner: mock,
 		ArgsSet:   true,
 	}
@@ -447,7 +447,7 @@ func TestClaudeExecutor_Run_WithExplicitEmptyArgs(t *testing.T) {
 	assert.Equal(t, []string{"--print"}, capturedArgs)
 }
 
-func TestClaudeExecutor_Run_WithCustomCommandAndArgs(t *testing.T) {
+func TestGeminiExecutor_Run_WithCustomCommandAndArgs(t *testing.T) {
 	var capturedCmd string
 	var capturedArgs []string
 	mock := &mocks.CommandRunnerMock{
@@ -457,16 +457,16 @@ func TestClaudeExecutor_Run_WithCustomCommandAndArgs(t *testing.T) {
 			return strings.NewReader(`{"type":"content_block_delta","delta":{"type":"text_delta","text":"ok"}}`), func() error { return nil }, nil
 		},
 	}
-	e := &ClaudeExecutor{
+	e := &GeminiExecutor{
 		cmdRunner: mock,
-		Command:   "custom-claude",
+		Command:   "custom-gemini",
 		Args:      "--skip-perms --verbose",
 	}
 
 	result := e.Run(context.Background(), "the prompt")
 
 	require.NoError(t, result.Error)
-	assert.Equal(t, "custom-claude", capturedCmd)
+	assert.Equal(t, "custom-gemini", capturedCmd)
 	assert.Equal(t, []string{"--skip-perms", "--verbose", "--print"}, capturedArgs)
 }
 
@@ -484,7 +484,7 @@ func TestSplitArgs(t *testing.T) {
 		{name: "multiple spaces between", input: "arg1   arg2", want: []string{"arg1", "arg2"}},
 		{name: "mixed quotes", input: `--a "b" --c 'd'`, want: []string{"--a", "b", "--c", "d"}},
 		{name: "escaped quote", input: `--flag \"quoted\"`, want: []string{"--flag", `"quoted"`}},
-		{name: "real claude args", input: "--dangerously-skip-permissions --output-format stream-json --verbose", want: []string{"--dangerously-skip-permissions", "--output-format", "stream-json", "--verbose"}},
+		{name: "real gemini args", input: "--non-interactive --output-format stream-json --verbose", want: []string{"--non-interactive", "--output-format", "stream-json", "--verbose"}},
 	}
 
 	for _, tc := range tests {
@@ -532,8 +532,8 @@ func TestFilterEnv(t *testing.T) {
 	}{
 		{
 			name:   "removes single key",
-			env:    []string{"FOO=bar", "BAZ=qux", "ANTHROPIC_API_KEY=secret"},
-			remove: []string{"ANTHROPIC_API_KEY"},
+			env:    []string{"FOO=bar", "BAZ=qux", "GEMINI_API_KEY=secret"},
+			remove: []string{"GEMINI_API_KEY"},
 			want:   []string{"FOO=bar", "BAZ=qux"},
 		},
 		{
@@ -556,14 +556,14 @@ func TestFilterEnv(t *testing.T) {
 		},
 		{
 			name:   "partial key match not removed",
-			env:    []string{"ANTHROPIC_API_KEY_OLD=secret", "ANTHROPIC_API_KEY=new"},
-			remove: []string{"ANTHROPIC_API_KEY"},
-			want:   []string{"ANTHROPIC_API_KEY_OLD=secret"},
+			env:    []string{"GEMINI_API_KEY_OLD=secret", "GEMINI_API_KEY=new"},
+			remove: []string{"GEMINI_API_KEY"},
+			want:   []string{"GEMINI_API_KEY_OLD=secret"},
 		},
 		{
-			name:   "removes CLAUDECODE and ANTHROPIC_API_KEY together",
-			env:    []string{"PATH=/usr/bin", "CLAUDECODE=1", "ANTHROPIC_API_KEY=secret", "HOME=/home/user"},
-			remove: []string{"ANTHROPIC_API_KEY", "CLAUDECODE"},
+			name:   "removes GEMINICODE and GEMINI_API_KEY together",
+			env:    []string{"PATH=/usr/bin", "GEMINICODE=1", "GEMINI_API_KEY=secret", "HOME=/home/user"},
+			remove: []string{"GEMINI_API_KEY", "GEMINICODE"},
 			want:   []string{"PATH=/usr/bin", "HOME=/home/user"},
 		},
 	}
@@ -576,7 +576,7 @@ func TestFilterEnv(t *testing.T) {
 	}
 }
 
-func TestClaudeChildEnv(t *testing.T) {
+func TestGeminiChildEnv(t *testing.T) {
 	tests := []struct {
 		name           string
 		env            []string
@@ -584,46 +584,46 @@ func TestClaudeChildEnv(t *testing.T) {
 		want           []string
 	}{
 		{
-			name:           "default strips both ANTHROPIC_API_KEY and CLAUDECODE",
-			env:            []string{"PATH=/usr/bin", "CLAUDECODE=1", "ANTHROPIC_API_KEY=secret", "HOME=/home/user"},
+			name:           "default strips both GEMINI_API_KEY and GEMINICODE",
+			env:            []string{"PATH=/usr/bin", "GEMINICODE=1", "GEMINI_API_KEY=secret", "HOME=/home/user"},
 			preserveAPIKey: false,
 			want:           []string{"PATH=/usr/bin", "HOME=/home/user"},
 		},
 		{
-			name:           "preserve keeps ANTHROPIC_API_KEY but still strips CLAUDECODE",
-			env:            []string{"PATH=/usr/bin", "CLAUDECODE=1", "ANTHROPIC_API_KEY=secret", "HOME=/home/user"},
+			name:           "preserve keeps GEMINI_API_KEY but still strips GEMINICODE",
+			env:            []string{"PATH=/usr/bin", "GEMINICODE=1", "GEMINI_API_KEY=secret", "HOME=/home/user"},
 			preserveAPIKey: true,
-			want:           []string{"PATH=/usr/bin", "ANTHROPIC_API_KEY=secret", "HOME=/home/user"},
+			want:           []string{"PATH=/usr/bin", "GEMINI_API_KEY=secret", "HOME=/home/user"},
 		},
 		{
-			name:           "preserve with no api key in env keeps everything except CLAUDECODE",
-			env:            []string{"PATH=/usr/bin", "CLAUDECODE=1", "HOME=/home/user"},
+			name:           "preserve with no api key in env keeps everything except GEMINICODE",
+			env:            []string{"PATH=/usr/bin", "GEMINICODE=1", "HOME=/home/user"},
 			preserveAPIKey: true,
 			want:           []string{"PATH=/usr/bin", "HOME=/home/user"},
 		},
 		{
-			name:           "default with no api key in env still strips CLAUDECODE",
-			env:            []string{"PATH=/usr/bin", "CLAUDECODE=1", "HOME=/home/user"},
+			name:           "default with no api key in env still strips GEMINICODE",
+			env:            []string{"PATH=/usr/bin", "GEMINICODE=1", "HOME=/home/user"},
 			preserveAPIKey: false,
 			want:           []string{"PATH=/usr/bin", "HOME=/home/user"},
 		},
 		{
-			name:           "preserve does not affect partial-match keys like ANTHROPIC_API_KEY_OLD",
-			env:            []string{"ANTHROPIC_API_KEY_OLD=old", "ANTHROPIC_API_KEY=new", "CLAUDECODE=1"},
+			name:           "preserve does not affect partial-match keys like GEMINI_API_KEY_OLD",
+			env:            []string{"GEMINI_API_KEY_OLD=old", "GEMINI_API_KEY=new", "GEMINICODE=1"},
 			preserveAPIKey: true,
-			want:           []string{"ANTHROPIC_API_KEY_OLD=old", "ANTHROPIC_API_KEY=new"},
+			want:           []string{"GEMINI_API_KEY_OLD=old", "GEMINI_API_KEY=new"},
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			got := claudeChildEnv(tc.env, tc.preserveAPIKey)
+			got := geminiChildEnv(tc.env, tc.preserveAPIKey)
 			assert.Equal(t, tc.want, got)
 		})
 	}
 }
 
-func TestClaudeExecutor_parseStream_largeLines(t *testing.T) {
+func TestGeminiExecutor_parseStream_largeLines(t *testing.T) {
 	// test that lines of arbitrary length are handled without limit
 
 	tests := []struct {
@@ -646,7 +646,7 @@ func TestClaudeExecutor_parseStream_largeLines(t *testing.T) {
 			largeText := strings.Repeat("x", tc.size)
 			jsonLine := `{"type":"content_block_delta","delta":{"type":"text_delta","text":"` + largeText + `"}}`
 
-			e := &ClaudeExecutor{}
+			e := &GeminiExecutor{}
 			result := e.parseStream(context.Background(), strings.NewReader(jsonLine), func() {})
 
 			require.NoError(t, result.Error, "should handle %d byte line without error", tc.size)
@@ -655,7 +655,7 @@ func TestClaudeExecutor_parseStream_largeLines(t *testing.T) {
 	}
 }
 
-func TestClaudeExecutor_parseStream_multipleLargeLines(t *testing.T) {
+func TestGeminiExecutor_parseStream_multipleLargeLines(t *testing.T) {
 	// test multiple large lines in sequence (simulates parallel agent output)
 	lineSize := 200 * 1024 // 200KB per line
 	numLines := 5          // simulate 5 parallel agents
@@ -667,7 +667,7 @@ func TestClaudeExecutor_parseStream_multipleLargeLines(t *testing.T) {
 	}
 	input := strings.Join(lines, "\n")
 
-	e := &ClaudeExecutor{}
+	e := &GeminiExecutor{}
 	result := e.parseStream(context.Background(), strings.NewReader(input), func() {})
 
 	require.NoError(t, result.Error)
@@ -675,7 +675,7 @@ func TestClaudeExecutor_parseStream_multipleLargeLines(t *testing.T) {
 }
 
 func TestPatternMatchError_Error(t *testing.T) {
-	err := &PatternMatchError{Pattern: "rate limit exceeded", HelpCmd: "claude /usage"}
+	err := &PatternMatchError{Pattern: "rate limit exceeded", HelpCmd: "gemini /help"}
 	assert.Equal(t, `detected error pattern: "rate limit exceeded"`, err.Error())
 }
 
@@ -710,7 +710,7 @@ func TestMatchPattern(t *testing.T) {
 	}
 }
 
-func TestClaudeExecutor_Run_ErrorPattern(t *testing.T) {
+func TestGeminiExecutor_Run_ErrorPattern(t *testing.T) {
 	tests := []struct {
 		name        string
 		output      string
@@ -740,7 +740,7 @@ func TestClaudeExecutor_Run_ErrorPattern(t *testing.T) {
 			patterns:    []string{"hit your limit"},
 			wantError:   true,
 			wantPattern: "hit your limit",
-			wantHelpCmd: "claude /usage",
+			wantHelpCmd: "gemini /help",
 			wantOutput:  "Error: You've hit your limit for today",
 		},
 		{
@@ -749,7 +749,7 @@ func TestClaudeExecutor_Run_ErrorPattern(t *testing.T) {
 			patterns:    []string{"rate limit exceeded"},
 			wantError:   true,
 			wantPattern: "rate limit exceeded",
-			wantHelpCmd: "claude /usage",
+			wantHelpCmd: "gemini /help",
 			wantOutput:  "RATE LIMIT EXCEEDED",
 		},
 		{
@@ -758,7 +758,7 @@ func TestClaudeExecutor_Run_ErrorPattern(t *testing.T) {
 			patterns:    []string{"rate limit", "quota exceeded"},
 			wantError:   true,
 			wantPattern: "rate limit",
-			wantHelpCmd: "claude /usage",
+			wantHelpCmd: "gemini /help",
 			wantOutput:  "rate limit and quota exceeded",
 		},
 		{
@@ -767,7 +767,7 @@ func TestClaudeExecutor_Run_ErrorPattern(t *testing.T) {
 			patterns:    []string{"Not logged in"},
 			wantError:   true,
 			wantPattern: "Not logged in",
-			wantHelpCmd: "claude /usage",
+			wantHelpCmd: "gemini /help",
 			wantOutput:  "Not logged in \u00b7 Please run /login\n",
 		},
 	}
@@ -779,7 +779,7 @@ func TestClaudeExecutor_Run_ErrorPattern(t *testing.T) {
 					return strings.NewReader(tc.output), func() error { return nil }, nil
 				},
 			}
-			e := &ClaudeExecutor{
+			e := &GeminiExecutor{
 				cmdRunner:     mock,
 				ErrorPatterns: tc.patterns,
 			}
@@ -801,18 +801,18 @@ func TestClaudeExecutor_Run_ErrorPattern(t *testing.T) {
 	}
 }
 
-func TestClaudeExecutor_Run_WaitError_WithOutputAndErrorPattern(t *testing.T) {
+func TestGeminiExecutor_Run_WaitError_WithOutputAndErrorPattern(t *testing.T) {
 	// non-zero exit + output matching error pattern → PatternMatchError takes precedence
-	jsonStream := "Error: Claude Code cannot be launched inside another Claude Code session.\n"
+	jsonStream := "Error: Gemini Code cannot be launched inside another Gemini Code session.\n"
 
 	mock := &mocks.CommandRunnerMock{
 		RunFunc: func(_ context.Context, _ string, _ ...string) (io.Reader, func() error, error) {
 			return strings.NewReader(jsonStream), func() error { return errors.New("exit status 1") }, nil
 		},
 	}
-	e := &ClaudeExecutor{
+	e := &GeminiExecutor{
 		cmdRunner:     mock,
-		ErrorPatterns: []string{"cannot be launched inside another Claude Code session"},
+		ErrorPatterns: []string{"cannot be launched inside another Gemini Code session"},
 	}
 
 	result := e.Run(context.Background(), "test prompt")
@@ -820,12 +820,12 @@ func TestClaudeExecutor_Run_WaitError_WithOutputAndErrorPattern(t *testing.T) {
 	require.Error(t, result.Error)
 	var patternErr *PatternMatchError
 	require.ErrorAs(t, result.Error, &patternErr)
-	assert.Equal(t, "cannot be launched inside another Claude Code session", patternErr.Pattern)
-	assert.Contains(t, result.Output, "cannot be launched inside another Claude Code session")
+	assert.Equal(t, "cannot be launched inside another Gemini Code session", patternErr.Pattern)
+	assert.Contains(t, result.Output, "cannot be launched inside another Gemini Code session")
 	assert.Empty(t, result.Signal)
 }
 
-func TestClaudeExecutor_Run_WaitError_WithSignalAndErrorPattern(t *testing.T) {
+func TestGeminiExecutor_Run_WaitError_WithSignalAndErrorPattern(t *testing.T) {
 	// non-zero exit + output with signal + error pattern → PatternMatchError takes precedence (signal present skips exit error)
 	jsonStream := `{"type":"content_block_delta","delta":{"type":"text_delta","text":"You've hit your limit <<<RALPHEX:ALL_TASKS_DONE>>>"}}`
 
@@ -834,7 +834,7 @@ func TestClaudeExecutor_Run_WaitError_WithSignalAndErrorPattern(t *testing.T) {
 			return strings.NewReader(jsonStream), func() error { return errors.New("exit status 1") }, nil
 		},
 	}
-	e := &ClaudeExecutor{
+	e := &GeminiExecutor{
 		cmdRunner:     mock,
 		ErrorPatterns: []string{"hit your limit"},
 	}
@@ -849,7 +849,7 @@ func TestClaudeExecutor_Run_WaitError_WithSignalAndErrorPattern(t *testing.T) {
 	assert.Equal(t, "<<<RALPHEX:ALL_TASKS_DONE>>>", result.Signal)
 }
 
-func TestClaudeExecutor_Run_ErrorPattern_WithSignal(t *testing.T) {
+func TestGeminiExecutor_Run_ErrorPattern_WithSignal(t *testing.T) {
 	// error pattern should still be detected even when output contains a signal
 	jsonStream := `{"type":"content_block_delta","delta":{"type":"text_delta","text":"You've hit your limit <<<RALPHEX:ALL_TASKS_DONE>>>"}}`
 
@@ -858,7 +858,7 @@ func TestClaudeExecutor_Run_ErrorPattern_WithSignal(t *testing.T) {
 			return strings.NewReader(jsonStream), func() error { return nil }, nil
 		},
 	}
-	e := &ClaudeExecutor{
+	e := &GeminiExecutor{
 		cmdRunner:     mock,
 		ErrorPatterns: []string{"hit your limit"},
 	}
@@ -877,7 +877,7 @@ func TestClaudeExecutor_Run_ErrorPattern_WithSignal(t *testing.T) {
 }
 
 func TestLimitPatternError_Error(t *testing.T) {
-	err := &LimitPatternError{Pattern: "You've hit your limit", HelpCmd: "claude /usage"}
+	err := &LimitPatternError{Pattern: "You've hit your limit", HelpCmd: "gemini /help"}
 	assert.Equal(t, `detected limit pattern: "You've hit your limit"`, err.Error())
 }
 
@@ -886,15 +886,15 @@ func TestRetryPatternError_Error(t *testing.T) {
 	assert.Equal(t, `detected retry pattern: "FYA_TRANSIENT_TIMEOUT"`, err.Error())
 }
 
-func TestClaudeExecutor_Run_DetectsRetryPatternFromNonJSONLine(t *testing.T) {
+func TestGeminiExecutor_Run_DetectsRetryPatternFromNonJSONLine(t *testing.T) {
 	mock := &mocks.CommandRunnerMock{
 		RunFunc: func(_ context.Context, _ string, _ ...string) (io.Reader, func() error, error) {
 			out := "2026/06/02 13:18:04.138 [ERROR] run turn: turn canceled: " +
-				"context deadline exceeded: FYA_TRANSIENT_TIMEOUT: claude turn did not complete before fya turn timeout\n"
+				"context deadline exceeded: FYA_TRANSIENT_TIMEOUT: gemini turn did not complete before fya turn timeout\n"
 			return strings.NewReader(out), func() error { return errors.New("exit status 1") }, nil
 		},
 	}
-	e := &ClaudeExecutor{cmdRunner: mock, RetryPatterns: []string{"FYA_TRANSIENT_TIMEOUT"}}
+	e := &GeminiExecutor{cmdRunner: mock, RetryPatterns: []string{"FYA_TRANSIENT_TIMEOUT"}}
 
 	result := e.Run(context.Background(), "test prompt")
 
@@ -904,7 +904,7 @@ func TestClaudeExecutor_Run_DetectsRetryPatternFromNonJSONLine(t *testing.T) {
 	assert.Contains(t, result.Output, "FYA_TRANSIENT_TIMEOUT")
 }
 
-func TestClaudeExecutor_Run_RetryPatternTakesPriorityOverLimitAndError(t *testing.T) {
+func TestGeminiExecutor_Run_RetryPatternTakesPriorityOverLimitAndError(t *testing.T) {
 	// when recent text matches retry, limit, and error patterns at once, retry wins (highest priority)
 	jsonStream := `{"type":"content_block_delta","delta":{"type":"text_delta",` +
 		`"text":"FYA_TRANSIENT_TIMEOUT and You've hit your limit and API Error: 500"}}`
@@ -913,7 +913,7 @@ func TestClaudeExecutor_Run_RetryPatternTakesPriorityOverLimitAndError(t *testin
 			return strings.NewReader(jsonStream), func() error { return nil }, nil
 		},
 	}
-	e := &ClaudeExecutor{
+	e := &GeminiExecutor{
 		cmdRunner:     mock,
 		RetryPatterns: []string{"FYA_TRANSIENT_TIMEOUT"},
 		LimitPatterns: []string{"You've hit your limit"},
@@ -927,8 +927,8 @@ func TestClaudeExecutor_Run_RetryPatternTakesPriorityOverLimitAndError(t *testin
 	assert.Equal(t, "FYA_TRANSIENT_TIMEOUT", retryErr.Pattern)
 }
 
-func TestClaudeExecutor_Run_RetryPatternSkippedWhenSignalPresent(t *testing.T) {
-	// a stray retry marker must not discard a completed run: when claude emits a completion
+func TestGeminiExecutor_Run_RetryPatternSkippedWhenSignalPresent(t *testing.T) {
+	// a stray retry marker must not discard a completed run: when gemini emits a completion
 	// signal, retry detection is skipped so the signal survives instead of forcing a re-run.
 	jsonStream := `{"type":"content_block_delta","delta":{"type":"text_delta",` +
 		`"text":"done FYA_TRANSIENT_TIMEOUT <<<RALPHEX:ALL_TASKS_DONE>>>"}}`
@@ -937,7 +937,7 @@ func TestClaudeExecutor_Run_RetryPatternSkippedWhenSignalPresent(t *testing.T) {
 			return strings.NewReader(jsonStream), func() error { return nil }, nil
 		},
 	}
-	e := &ClaudeExecutor{cmdRunner: mock, RetryPatterns: []string{"FYA_TRANSIENT_TIMEOUT"}}
+	e := &GeminiExecutor{cmdRunner: mock, RetryPatterns: []string{"FYA_TRANSIENT_TIMEOUT"}}
 
 	result := e.Run(context.Background(), "test prompt")
 
@@ -945,7 +945,7 @@ func TestClaudeExecutor_Run_RetryPatternSkippedWhenSignalPresent(t *testing.T) {
 	assert.Equal(t, status.Completed, result.Signal, "completion signal must survive")
 }
 
-func TestClaudeExecutor_Run_IdleTimeoutDetectsRetryPattern(t *testing.T) {
+func TestGeminiExecutor_Run_IdleTimeoutDetectsRetryPattern(t *testing.T) {
 	// when idle timeout fires after a transient retry marker, the retry pattern should be detected
 	// instead of silently returning an idle timeout, so the phase retries the session.
 	pr, pw := io.Pipe()
@@ -964,7 +964,7 @@ func TestClaudeExecutor_Run_IdleTimeoutDetectsRetryPattern(t *testing.T) {
 		},
 	}
 
-	e := &ClaudeExecutor{
+	e := &GeminiExecutor{
 		cmdRunner:     mock,
 		IdleTimeout:   100 * time.Millisecond,
 		RetryPatterns: []string{"FYA_TRANSIENT_TIMEOUT"},
@@ -977,7 +977,7 @@ func TestClaudeExecutor_Run_IdleTimeoutDetectsRetryPattern(t *testing.T) {
 	assert.False(t, result.IdleTimedOut, "IdleTimedOut should not be set when pattern matched")
 }
 
-func TestClaudeExecutor_Run_IdleTimeoutFires(t *testing.T) {
+func TestGeminiExecutor_Run_IdleTimeoutFires(t *testing.T) {
 	// idle timeout fires when no output comes after the first line
 	pr, pw := io.Pipe()
 
@@ -996,7 +996,7 @@ func TestClaudeExecutor_Run_IdleTimeoutFires(t *testing.T) {
 		},
 	}
 
-	e := &ClaudeExecutor{cmdRunner: mock, IdleTimeout: 100 * time.Millisecond}
+	e := &GeminiExecutor{cmdRunner: mock, IdleTimeout: 100 * time.Millisecond}
 	result := e.Run(context.Background(), "test prompt")
 
 	require.NoError(t, result.Error)
@@ -1004,7 +1004,7 @@ func TestClaudeExecutor_Run_IdleTimeoutFires(t *testing.T) {
 	assert.True(t, result.IdleTimedOut, "IdleTimedOut should be set when idle timeout fires")
 }
 
-func TestClaudeExecutor_Run_IdleTimeoutNotFiredOnContinuousOutput(t *testing.T) {
+func TestGeminiExecutor_Run_IdleTimeoutNotFiredOnContinuousOutput(t *testing.T) {
 	// continuous output keeps resetting the timer, so idle timeout never fires
 	pr, pw := io.Pipe()
 
@@ -1021,14 +1021,14 @@ func TestClaudeExecutor_Run_IdleTimeoutNotFiredOnContinuousOutput(t *testing.T) 
 		},
 	}
 
-	e := &ClaudeExecutor{cmdRunner: mock, IdleTimeout: 200 * time.Millisecond}
+	e := &GeminiExecutor{cmdRunner: mock, IdleTimeout: 200 * time.Millisecond}
 	result := e.Run(context.Background(), "test prompt")
 
 	require.NoError(t, result.Error)
 	assert.Equal(t, "xxxxx", result.Output)
 }
 
-func TestClaudeExecutor_Run_IdleTimeoutDisabledWhenZero(t *testing.T) {
+func TestGeminiExecutor_Run_IdleTimeoutDisabledWhenZero(t *testing.T) {
 	// default behavior: IdleTimeout=0 means no idle timeout, runs normally
 	jsonStream := `{"type":"content_block_delta","delta":{"type":"text_delta","text":"output"}}`
 
@@ -1037,7 +1037,7 @@ func TestClaudeExecutor_Run_IdleTimeoutDisabledWhenZero(t *testing.T) {
 			return strings.NewReader(jsonStream), func() error { return nil }, nil
 		},
 	}
-	e := &ClaudeExecutor{cmdRunner: mock} // IdleTimeout is zero (default)
+	e := &GeminiExecutor{cmdRunner: mock} // IdleTimeout is zero (default)
 
 	result := e.Run(context.Background(), "test prompt")
 
@@ -1047,7 +1047,7 @@ func TestClaudeExecutor_Run_IdleTimeoutDisabledWhenZero(t *testing.T) {
 	assert.False(t, result.IdleTimedOut, "IdleTimedOut should be false when idle timeout is disabled")
 }
 
-func TestClaudeExecutor_Run_IdleTimeoutWithSessionTimeout(t *testing.T) {
+func TestGeminiExecutor_Run_IdleTimeoutWithSessionTimeout(t *testing.T) {
 	// when both session timeout and idle timeout are set, idle timeout fires first
 	// if the session goes silent, even though session timeout is still alive
 	pr, pw := io.Pipe()
@@ -1070,7 +1070,7 @@ func TestClaudeExecutor_Run_IdleTimeoutWithSessionTimeout(t *testing.T) {
 	sessionCtx, sessionCancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer sessionCancel()
 
-	e := &ClaudeExecutor{cmdRunner: mock, IdleTimeout: 100 * time.Millisecond}
+	e := &GeminiExecutor{cmdRunner: mock, IdleTimeout: 100 * time.Millisecond}
 	result := e.Run(sessionCtx, "test prompt")
 
 	require.NoError(t, result.Error, "idle timeout should not produce an error")
@@ -1079,7 +1079,7 @@ func TestClaudeExecutor_Run_IdleTimeoutWithSessionTimeout(t *testing.T) {
 	assert.True(t, result.IdleTimedOut, "IdleTimedOut should be set when idle timeout fires")
 }
 
-func TestClaudeExecutor_Run_IdleTimeoutDetectsLimitPattern(t *testing.T) {
+func TestGeminiExecutor_Run_IdleTimeoutDetectsLimitPattern(t *testing.T) {
 	// when idle timeout fires after a rate-limit message, the limit pattern should be detected
 	// instead of silently returning success. this ensures runWithLimitRetry can wait-and-retry.
 	pr, pw := io.Pipe()
@@ -1099,7 +1099,7 @@ func TestClaudeExecutor_Run_IdleTimeoutDetectsLimitPattern(t *testing.T) {
 		},
 	}
 
-	e := &ClaudeExecutor{
+	e := &GeminiExecutor{
 		cmdRunner:     mock,
 		IdleTimeout:   100 * time.Millisecond,
 		LimitPatterns: []string{"You've hit your limit"},
@@ -1112,7 +1112,7 @@ func TestClaudeExecutor_Run_IdleTimeoutDetectsLimitPattern(t *testing.T) {
 	assert.False(t, result.IdleTimedOut, "IdleTimedOut should not be set when pattern matched")
 }
 
-func TestClaudeExecutor_Run_IdleTimeoutDetectsErrorPattern(t *testing.T) {
+func TestGeminiExecutor_Run_IdleTimeoutDetectsErrorPattern(t *testing.T) {
 	// when idle timeout fires after an error pattern message, the error pattern should be detected
 	pr, pw := io.Pipe()
 
@@ -1130,7 +1130,7 @@ func TestClaudeExecutor_Run_IdleTimeoutDetectsErrorPattern(t *testing.T) {
 		},
 	}
 
-	e := &ClaudeExecutor{
+	e := &GeminiExecutor{
 		cmdRunner:     mock,
 		IdleTimeout:   100 * time.Millisecond,
 		ErrorPatterns: []string{"API Error:"},
@@ -1143,7 +1143,7 @@ func TestClaudeExecutor_Run_IdleTimeoutDetectsErrorPattern(t *testing.T) {
 	assert.False(t, result.IdleTimedOut, "IdleTimedOut should not be set when pattern matched")
 }
 
-func TestClaudeExecutor_Run_IdleTimeoutNotFiredResult(t *testing.T) {
+func TestGeminiExecutor_Run_IdleTimeoutNotFiredResult(t *testing.T) {
 	// verify IdleTimedOut is false on normal (non-idle-timeout) completion with idle timeout configured
 	mock := &mocks.CommandRunnerMock{
 		RunFunc: func(_ context.Context, _ string, _ ...string) (io.Reader, func() error, error) {
@@ -1151,7 +1151,7 @@ func TestClaudeExecutor_Run_IdleTimeoutNotFiredResult(t *testing.T) {
 				func() error { return nil }, nil
 		},
 	}
-	e := &ClaudeExecutor{cmdRunner: mock, IdleTimeout: 5 * time.Second}
+	e := &GeminiExecutor{cmdRunner: mock, IdleTimeout: 5 * time.Second}
 	result := e.Run(context.Background(), "test prompt")
 
 	require.NoError(t, result.Error)
@@ -1160,11 +1160,11 @@ func TestClaudeExecutor_Run_IdleTimeoutNotFiredResult(t *testing.T) {
 }
 
 // printFlag is registered so the test binary accepts --print without erroring.
-// ClaudeExecutor.Run() always appends --print to the command args; when the test
+// GeminiExecutor.Run() always appends --print to the command args; when the test
 // binary is used as the subprocess command, this flag must be registered.
 var _ = flag.Bool("print", false, "consumed by subprocess tests")
 
-// TestHelperProcess is not a real test — it is used as a subprocess by TestExecClaudeRunner_StdinSet.
+// TestHelperProcess is not a real test — it is used as a subprocess by TestExecGeminiRunner_StdinSet.
 // It reads all of stdin and writes it to stdout, then exits.
 func TestHelperProcess(t *testing.T) {
 	if os.Getenv("GO_WANT_HELPER_PROCESS") != "1" {
@@ -1176,8 +1176,8 @@ func TestHelperProcess(t *testing.T) {
 }
 
 // TestHelperProcessStreamJSON is not a real test — used as a subprocess by
-// TestClaudeExecutor_Run_RealRunner_StdinWired. Reads stdin and emits it as a
-// stream-json content_block_delta event so ClaudeExecutor.parseStream can parse it.
+// TestGeminiExecutor_Run_RealRunner_StdinWired. Reads stdin and emits it as a
+// stream-json content_block_delta event so GeminiExecutor.parseStream can parse it.
 func TestHelperProcessStreamJSON(t *testing.T) {
 	if os.Getenv("GO_WANT_HELPER_PROCESS_JSON") != "1" {
 		return
@@ -1189,19 +1189,19 @@ func TestHelperProcessStreamJSON(t *testing.T) {
 	os.Exit(0)
 }
 
-func TestClaudeExecutor_Run_RealRunner_StdinWired(t *testing.T) {
-	// verify the full wiring: ClaudeExecutor.Run() with cmdRunner == nil constructs
-	// execClaudeRunner{stdin: stdinReader} and the subprocess receives the prompt via stdin.
-	// if the wiring is broken (e.g. execClaudeRunner{} without stdin), the subprocess reads
+func TestGeminiExecutor_Run_RealRunner_StdinWired(t *testing.T) {
+	// verify the full wiring: GeminiExecutor.Run() with cmdRunner == nil constructs
+	// execGeminiRunner{stdin: stdinReader} and the subprocess receives the prompt via stdin.
+	// if the wiring is broken (e.g. execGeminiRunner{} without stdin), the subprocess reads
 	// empty stdin and result.Output would be empty.
 	t.Setenv("GO_WANT_HELPER_PROCESS_JSON", "1")
 	exe, err := os.Executable()
 	require.NoError(t, err)
 
-	e := &ClaudeExecutor{
+	e := &GeminiExecutor{
 		Command: exe,
 		Args:    "-test.run=TestHelperProcessStreamJSON",
-		// cmdRunner is nil — exercises the real execClaudeRunner construction path
+		// cmdRunner is nil — exercises the real execGeminiRunner construction path
 	}
 
 	result := e.Run(context.Background(), "hello stdin wiring")
@@ -1209,8 +1209,8 @@ func TestClaudeExecutor_Run_RealRunner_StdinWired(t *testing.T) {
 	assert.Contains(t, result.Output, "hello stdin wiring")
 }
 
-func TestExecClaudeRunner_StdinSet(t *testing.T) {
-	// verify that when execClaudeRunner.stdin is set, it is piped to the child process's stdin.
+func TestExecGeminiRunner_StdinSet(t *testing.T) {
+	// verify that when execGeminiRunner.stdin is set, it is piped to the child process's stdin.
 	// uses the test binary re-invocation pattern: the subprocess runs TestHelperProcess which
 	// echoes stdin to stdout, letting us confirm the pipe is connected.
 	t.Setenv("GO_WANT_HELPER_PROCESS", "1")
@@ -1218,7 +1218,7 @@ func TestExecClaudeRunner_StdinSet(t *testing.T) {
 	require.NoError(t, err)
 
 	input := "hello from stdin"
-	r := &execClaudeRunner{stdin: strings.NewReader(input)}
+	r := &execGeminiRunner{stdin: strings.NewReader(input)}
 
 	output, wait, err := r.Run(context.Background(), exe, "-test.run=TestHelperProcess")
 	require.NoError(t, err)
@@ -1229,7 +1229,7 @@ func TestExecClaudeRunner_StdinSet(t *testing.T) {
 	assert.Equal(t, input, string(data))
 }
 
-func TestClaudeExecutor_Run_NoPromptInArgs(t *testing.T) {
+func TestGeminiExecutor_Run_NoPromptInArgs(t *testing.T) {
 	// verify that args never include -p: prompt is always passed via stdin, not CLI arg.
 	// also verify --print is present for non-interactive mode in both default and custom-args paths.
 	jsonStream := `{"type":"content_block_delta","delta":{"type":"text_delta","text":"ok"}}`
@@ -1239,12 +1239,12 @@ func TestClaudeExecutor_Run_NoPromptInArgs(t *testing.T) {
 		args string
 	}{
 		{name: "default args", args: ""},
-		{name: "custom args", args: "--dangerously-skip-permissions --output-format stream-json"},
+		{name: "custom args", args: "--non-interactive --output-format stream-json"},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			var capturedArgs []string
-			e := &ClaudeExecutor{
+			e := &GeminiExecutor{
 				Args: tc.args,
 				cmdRunner: &mocks.CommandRunnerMock{
 					RunFunc: func(_ context.Context, _ string, args ...string) (io.Reader, func() error, error) {
@@ -1264,7 +1264,7 @@ func TestClaudeExecutor_Run_NoPromptInArgs(t *testing.T) {
 	}
 }
 
-func TestClaudeExecutor_Run_LimitPattern(t *testing.T) {
+func TestGeminiExecutor_Run_LimitPattern(t *testing.T) {
 	tests := []struct {
 		name        string
 		output      string
@@ -1318,7 +1318,7 @@ func TestClaudeExecutor_Run_LimitPattern(t *testing.T) {
 					return strings.NewReader(tc.output), func() error { return nil }, nil
 				},
 			}
-			e := &ClaudeExecutor{
+			e := &GeminiExecutor{
 				cmdRunner:     mock,
 				LimitPatterns: tc.limitPat,
 				ErrorPatterns: tc.errorPat,
@@ -1332,7 +1332,7 @@ func TestClaudeExecutor_Run_LimitPattern(t *testing.T) {
 				var limitErr *LimitPatternError
 				require.ErrorAs(t, result.Error, &limitErr)
 				assert.Equal(t, tc.wantPattern, limitErr.Pattern)
-				assert.Equal(t, "claude /usage", limitErr.HelpCmd)
+				assert.Equal(t, "gemini /help", limitErr.HelpCmd)
 			case tc.wantError:
 				require.Error(t, result.Error)
 				var patternErr *PatternMatchError
@@ -1345,7 +1345,7 @@ func TestClaudeExecutor_Run_LimitPattern(t *testing.T) {
 	}
 }
 
-func TestClaudeExecutor_Run_PatternFalsePositive_InAnalysisText(t *testing.T) {
+func TestGeminiExecutor_Run_PatternFalsePositive_InAnalysisText(t *testing.T) {
 	// pattern appears in early output (analysis text) but is followed by many blocks of real work.
 	// should NOT trigger pattern match because the pattern falls outside the recent blocks window.
 	lines := make([]string, 0, recentBlockCount+2)
@@ -1362,7 +1362,7 @@ func TestClaudeExecutor_Run_PatternFalsePositive_InAnalysisText(t *testing.T) {
 			return strings.NewReader(jsonStream), func() error { return nil }, nil
 		},
 	}
-	e := &ClaudeExecutor{cmdRunner: mock, LimitPatterns: []string{"You've hit your limit"}, ErrorPatterns: []string{"hit your limit"}}
+	e := &GeminiExecutor{cmdRunner: mock, LimitPatterns: []string{"You've hit your limit"}, ErrorPatterns: []string{"hit your limit"}}
 
 	result := e.Run(context.Background(), "test prompt")
 
@@ -1371,7 +1371,7 @@ func TestClaudeExecutor_Run_PatternFalsePositive_InAnalysisText(t *testing.T) {
 	assert.NotContains(t, result.RecentText, "You've hit your limit", "recent blocks should not contain old text")
 }
 
-func TestClaudeExecutor_Run_PatternInRecentBlock(t *testing.T) {
+func TestGeminiExecutor_Run_PatternInRecentBlock(t *testing.T) {
 	// pattern in the last block (real rate limit) — should be detected
 	jsonStream := `{"type":"content_block_delta","delta":{"type":"text_delta","text":"some work done"}}
 {"type":"content_block_delta","delta":{"type":"text_delta","text":"You've hit your limit · resets 5pm"}}`
@@ -1381,7 +1381,7 @@ func TestClaudeExecutor_Run_PatternInRecentBlock(t *testing.T) {
 			return strings.NewReader(jsonStream), func() error { return nil }, nil
 		},
 	}
-	e := &ClaudeExecutor{cmdRunner: mock, LimitPatterns: []string{"You've hit your limit"}}
+	e := &GeminiExecutor{cmdRunner: mock, LimitPatterns: []string{"You've hit your limit"}}
 
 	result := e.Run(context.Background(), "test prompt")
 
@@ -1391,7 +1391,7 @@ func TestClaudeExecutor_Run_PatternInRecentBlock(t *testing.T) {
 	assert.Equal(t, "You've hit your limit", limitErr.Pattern)
 }
 
-func TestClaudeExecutor_Run_PatternInSecondToLastBlock(t *testing.T) {
+func TestGeminiExecutor_Run_PatternInSecondToLastBlock(t *testing.T) {
 	// pattern in second-to-last block, one more short block after (e.g., reset info) — still in window
 	jsonStream := `{"type":"content_block_delta","delta":{"type":"text_delta","text":"You've hit your limit"}}
 {"type":"content_block_delta","delta":{"type":"text_delta","text":"resets at 5pm (Europe/Vilnius)"}}`
@@ -1401,7 +1401,7 @@ func TestClaudeExecutor_Run_PatternInSecondToLastBlock(t *testing.T) {
 			return strings.NewReader(jsonStream), func() error { return nil }, nil
 		},
 	}
-	e := &ClaudeExecutor{cmdRunner: mock, LimitPatterns: []string{"You've hit your limit"}}
+	e := &GeminiExecutor{cmdRunner: mock, LimitPatterns: []string{"You've hit your limit"}}
 
 	result := e.Run(context.Background(), "test prompt")
 
@@ -1411,7 +1411,7 @@ func TestClaudeExecutor_Run_PatternInSecondToLastBlock(t *testing.T) {
 	assert.Equal(t, "You've hit your limit", limitErr.Pattern)
 }
 
-func TestClaudeExecutor_Run_ModelFlag(t *testing.T) {
+func TestGeminiExecutor_Run_ModelFlag(t *testing.T) {
 	jsonStream := `{"type":"content_block_delta","delta":{"type":"text_delta","text":"ok"}}`
 
 	var capturedArgs []string
@@ -1423,7 +1423,7 @@ func TestClaudeExecutor_Run_ModelFlag(t *testing.T) {
 	}
 
 	t.Run("model set injects --model flag", func(t *testing.T) {
-		e := &ClaudeExecutor{Model: "sonnet", cmdRunner: mock}
+		e := &GeminiExecutor{Model: "sonnet", cmdRunner: mock}
 		result := e.Run(context.Background(), "test")
 		require.NoError(t, result.Error)
 		assert.Contains(t, capturedArgs, "--model")
@@ -1431,14 +1431,14 @@ func TestClaudeExecutor_Run_ModelFlag(t *testing.T) {
 	})
 
 	t.Run("model empty does not inject --model flag", func(t *testing.T) {
-		e := &ClaudeExecutor{cmdRunner: mock}
+		e := &GeminiExecutor{cmdRunner: mock}
 		result := e.Run(context.Background(), "test")
 		require.NoError(t, result.Error)
 		assert.NotContains(t, capturedArgs, "--model")
 	})
 
 	t.Run("model overrides existing --model in args", func(t *testing.T) {
-		e := &ClaudeExecutor{Args: "--verbose --model opus --output-format json", Model: "sonnet", cmdRunner: mock}
+		e := &GeminiExecutor{Args: "--verbose --model opus --output-format json", Model: "sonnet", cmdRunner: mock}
 		result := e.Run(context.Background(), "test")
 		require.NoError(t, result.Error)
 		assert.Contains(t, capturedArgs, "sonnet")
@@ -1454,7 +1454,7 @@ func TestClaudeExecutor_Run_ModelFlag(t *testing.T) {
 	})
 }
 
-func TestClaudeExecutor_Run_EffortFlag(t *testing.T) {
+func TestGeminiExecutor_Run_EffortFlag(t *testing.T) {
 	jsonStream := `{"type":"content_block_delta","delta":{"type":"text_delta","text":"ok"}}`
 
 	// newMock returns a fresh mock whose RunFunc writes captured args into
@@ -1480,7 +1480,7 @@ func TestClaudeExecutor_Run_EffortFlag(t *testing.T) {
 
 	t.Run("effort set injects --effort flag", func(t *testing.T) {
 		var capturedArgs []string
-		e := &ClaudeExecutor{Effort: "high", cmdRunner: newMock(&capturedArgs)}
+		e := &GeminiExecutor{Effort: "high", cmdRunner: newMock(&capturedArgs)}
 		result := e.Run(context.Background(), "test")
 		require.NoError(t, result.Error)
 		assert.Contains(t, capturedArgs, "--effort")
@@ -1489,7 +1489,7 @@ func TestClaudeExecutor_Run_EffortFlag(t *testing.T) {
 
 	t.Run("effort empty does not inject --effort flag", func(t *testing.T) {
 		var capturedArgs []string
-		e := &ClaudeExecutor{cmdRunner: newMock(&capturedArgs)}
+		e := &GeminiExecutor{cmdRunner: newMock(&capturedArgs)}
 		result := e.Run(context.Background(), "test")
 		require.NoError(t, result.Error)
 		assert.NotContains(t, capturedArgs, "--effort")
@@ -1497,7 +1497,7 @@ func TestClaudeExecutor_Run_EffortFlag(t *testing.T) {
 
 	t.Run("model and effort together inject both flags", func(t *testing.T) {
 		var capturedArgs []string
-		e := &ClaudeExecutor{Model: "opus", Effort: "medium", cmdRunner: newMock(&capturedArgs)}
+		e := &GeminiExecutor{Model: "opus", Effort: "medium", cmdRunner: newMock(&capturedArgs)}
 		result := e.Run(context.Background(), "test")
 		require.NoError(t, result.Error)
 		assert.Contains(t, capturedArgs, "--model")
@@ -1508,7 +1508,7 @@ func TestClaudeExecutor_Run_EffortFlag(t *testing.T) {
 
 	t.Run("effort overrides existing --effort in args", func(t *testing.T) {
 		var capturedArgs []string
-		e := &ClaudeExecutor{Args: "--verbose --effort low --output-format json", Effort: "high", cmdRunner: newMock(&capturedArgs)}
+		e := &GeminiExecutor{Args: "--verbose --effort low --output-format json", Effort: "high", cmdRunner: newMock(&capturedArgs)}
 		result := e.Run(context.Background(), "test")
 		require.NoError(t, result.Error)
 		assert.Contains(t, capturedArgs, "high")
@@ -1518,7 +1518,7 @@ func TestClaudeExecutor_Run_EffortFlag(t *testing.T) {
 
 	t.Run("effort overrides equals form in args", func(t *testing.T) {
 		var capturedArgs []string
-		e := &ClaudeExecutor{Args: "--verbose --effort=low --output-format json", Effort: "high", cmdRunner: newMock(&capturedArgs)}
+		e := &GeminiExecutor{Args: "--verbose --effort=low --output-format json", Effort: "high", cmdRunner: newMock(&capturedArgs)}
 		result := e.Run(context.Background(), "test")
 		require.NoError(t, result.Error)
 		assert.Contains(t, capturedArgs, "high")

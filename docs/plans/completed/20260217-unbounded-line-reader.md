@@ -2,7 +2,7 @@
 
 ## Overview
 - Replace `bufio.Scanner` with `bufio.Reader` for stream parsing to eliminate the 64MB line length limit
-- Fixes issue #118: `bufio.Scanner: token too long` when claude outputs large benchmark results
+- Fixes issue #118: `bufio.Scanner: token too long` when gemini outputs large benchmark results
 - The 64MB limit has been hit 3 times already (previously increased from default 64KB to 16MB to 64MB)
 - `bufio.Reader.ReadString('\n')` has no upper bound on line length, solving the problem permanently
 
@@ -61,7 +61,7 @@
 **Files:**
 - Modify: `pkg/executor/executor.go`
 
-- [x] replace `bufio.Scanner` in `ClaudeExecutor.parseStream()` with `readLines()` call
+- [x] replace `bufio.Scanner` in `GeminiExecutor.parseStream()` with `readLines()` call
 - [x] move per-line JSON parsing and signal detection into the handler callback
 - [x] verify error propagation matches current behavior (wrapped as `"stream read: %w"`)
 - [x] update existing large-line tests to include a 65MB+ line case

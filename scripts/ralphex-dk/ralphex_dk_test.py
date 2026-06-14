@@ -25,7 +25,7 @@ from ralphex_dk import (  # noqa: E402
     DEFAULT_IMAGE,
     DEFAULT_PORT,
     DEFAULT_DOCKER_SOCKET,
-    VALID_CLAUDE_PROVIDERS,
+    VALID_GEMINI_PROVIDERS,
     ParsedEnvFlags,
     build_base_env_vars,
     build_bedrock_env_args,
@@ -40,7 +40,7 @@ from ralphex_dk import (  # noqa: E402
     export_aws_profile_credentials,
     extract_env_from_flags,
     extract_macos_credentials,
-    get_claude_provider,
+    get_gemini_provider,
     get_docker_socket_gid,
     get_global_gitignore,
     is_docker_enabled,
@@ -200,7 +200,7 @@ class _FakeHomeTestCase(unittest.TestCase):
         self.tmp = Path(tempfile.mkdtemp()).resolve()
         self.fake_home = self.tmp / "home"
         self.fake_home.mkdir()
-        (self.fake_home / ".claude").mkdir()
+        (self.fake_home / ".gemini").mkdir()
         self._home_patcher = unittest.mock.patch("ralphex_dk.Path.home", return_value=self.fake_home)
         self._home_patcher.start()
         self._env_patcher = unittest.mock.patch.dict(os.environ, {"HOME": str(self.fake_home)})
@@ -235,17 +235,17 @@ class TestBuildVolumes(_FakeHomeTestCase):
             cwd = Path(pwd_env) if pwd_env else Path(os.getcwd())
             self.assertIn(f"{cwd}:/workspace:z", vols)
 
-    def test_includes_claude_dir_without_selinux(self) -> None:
+    def test_includes_gemini_dir_without_selinux(self) -> None:
         with unittest.mock.patch("ralphex_dk.selinux_enabled", return_value=False):
             vols = build_volumes(None)
-            found = any("/mnt/claude:ro" in v for v in vols)
-            self.assertTrue(found, "should mount ~/.claude to /mnt/claude:ro")
+            found = any("/mnt/gemini:ro" in v for v in vols)
+            self.assertTrue(found, "should mount ~/.gemini to /mnt/gemini:ro")
 
-    def test_includes_claude_dir_with_selinux(self) -> None:
+    def test_includes_gemini_dir_with_selinux(self) -> None:
         with unittest.mock.patch("ralphex_dk.selinux_enabled", return_value=True):
             vols = build_volumes(None)
-            found = any("/mnt/claude:ro,z" in v for v in vols)
-            self.assertTrue(found, "should mount ~/.claude to /mnt/claude:ro,z")
+            found = any("/mnt/gemini:ro,z" in v for v in vols)
+            self.assertTrue(found, "should mount ~/.gemini to /mnt/gemini:ro,z")
 
     def test_creates_ralphex_config_dir_when_missing(self) -> None:
         """build_volumes creates ~/.config/ralphex with mode 0o700 when it does not exist."""
@@ -377,7 +377,7 @@ class TestExtractCredentials(unittest.TestCase):
         """extract_macos_credentials returns None on non-Darwin platforms."""
         if platform.system() == "Darwin":
             return  # skip on actual macOS
-        self.assertIsNone(extract_macos_credentials(Path.home() / ".claude"))
+        self.assertIsNone(extract_macos_credentials(Path.home() / ".gemini"))
 
 class TestScheduleCleanup(unittest.TestCase):
     def test_cleans_up_file(self) -> None:
@@ -436,7 +436,7 @@ class TestBuildDockerCmd(_FakeHomeTestCase):
             creds = Path(tmp_path)
             with unittest.mock.patch("ralphex_dk.selinux_enabled", return_value=False):
                 vols = build_volumes(creds)
-            mount = f"{creds}:/mnt/claude-credentials.json:ro"
+            mount = f"{creds}:/mnt/gemini-credentials.json:ro"
             self.assertIn(mount, vols)
         finally:
             os.unlink(tmp_path)
@@ -449,77 +449,77 @@ class TestBuildDockerCmd(_FakeHomeTestCase):
             creds = Path(tmp_path)
             with unittest.mock.patch("ralphex_dk.selinux_enabled", return_value=True):
                 vols = build_volumes(creds)
-            mount = f"{creds}:/mnt/claude-credentials.json:ro,z"
+            mount = f"{creds}:/mnt/gemini-credentials.json:ro,z"
             self.assertIn(mount, vols)
         finally:
             os.unlink(tmp_path)
 
 class TestKeychainServiceName(unittest.TestCase):
-    def test_default_claude_dir(self) -> None:
-        """default ~/.claude returns base service name without suffix."""
-        self.assertEqual(keychain_service_name(Path.home() / ".claude"), "Claude Code-credentials")
+    def test_default_gemini_dir(self) -> None:
+        """default ~/.gemini returns base service name without suffix."""
+        self.assertEqual(keychain_service_name(Path.home() / ".gemini"), "Gemini CLI-credentials")
 
     def test_custom_dir_returns_suffixed_name(self) -> None:
         """non-default path returns service name with sha256 suffix."""
-        name = keychain_service_name(Path.home() / ".claude2")
-        self.assertTrue(name.startswith("Claude Code-credentials-"))
-        suffix = name.removeprefix("Claude Code-credentials-")
+        name = keychain_service_name(Path.home() / ".gemini2")
+        self.assertTrue(name.startswith("Gemini CLI-credentials-"))
+        suffix = name.removeprefix("Gemini CLI-credentials-")
         self.assertEqual(len(suffix), 8)
         # verify it's a valid hex string
         int(suffix, 16)
 
     def test_same_path_same_suffix(self) -> None:
         """same path always produces the same suffix."""
-        p = Path("/tmp/test-claude-config")
+        p = Path("/tmp/test-gemini-config")
         self.assertEqual(keychain_service_name(p), keychain_service_name(p))
 
     def test_different_paths_different_suffixes(self) -> None:
         """different paths produce different suffixes."""
-        name1 = keychain_service_name(Path("/tmp/claude-a"))
-        name2 = keychain_service_name(Path("/tmp/claude-b"))
+        name1 = keychain_service_name(Path("/tmp/gemini-a"))
+        name2 = keychain_service_name(Path("/tmp/gemini-b"))
         self.assertNotEqual(name1, name2)
 
     def test_tilde_path_expansion(self) -> None:
-        """tilde path ~/.claude is expanded and recognized as default."""
-        self.assertEqual(keychain_service_name(Path("~/.claude")), "Claude Code-credentials")
+        """tilde path ~/.gemini is expanded and recognized as default."""
+        self.assertEqual(keychain_service_name(Path("~/.gemini")), "Gemini CLI-credentials")
 
-class TestBuildVolumesClaudeHome(_FakeHomeTestCase):
-    def test_custom_claude_home_mount_without_selinux(self) -> None:
-        """build_volumes with custom claude_home mounts that dir to /mnt/claude:ro."""
+class TestBuildVolumesGeminiHome(_FakeHomeTestCase):
+    def test_custom_gemini_home_mount_without_selinux(self) -> None:
+        """build_volumes with custom gemini_home mounts that dir to /mnt/gemini:ro."""
         tmp = Path(tempfile.mkdtemp()).resolve()
         try:
-            custom = tmp / "my-claude"
+            custom = tmp / "my-gemini"
             custom.mkdir()
             with unittest.mock.patch("ralphex_dk.selinux_enabled", return_value=False):
-                vols = build_volumes(None, claude_home=custom)
-            mount = f"{custom}:/mnt/claude:ro"
+                vols = build_volumes(None, gemini_home=custom)
+            mount = f"{custom}:/mnt/gemini:ro"
             self.assertIn(mount, vols)
         finally:
             shutil.rmtree(tmp)
 
-    def test_custom_claude_home_mount_with_selinux(self) -> None:
-        """build_volumes with custom claude_home mounts that dir to /mnt/claude:ro,z."""
+    def test_custom_gemini_home_mount_with_selinux(self) -> None:
+        """build_volumes with custom gemini_home mounts that dir to /mnt/gemini:ro,z."""
         tmp = Path(tempfile.mkdtemp()).resolve()
         try:
-            custom = tmp / "my-claude"
+            custom = tmp / "my-gemini"
             custom.mkdir()
             with unittest.mock.patch("ralphex_dk.selinux_enabled", return_value=True):
-                vols = build_volumes(None, claude_home=custom)
-            mount = f"{custom}:/mnt/claude:ro,z"
+                vols = build_volumes(None, gemini_home=custom)
+            mount = f"{custom}:/mnt/gemini:ro,z"
             self.assertIn(mount, vols)
         finally:
             shutil.rmtree(tmp)
 
-    def test_default_claude_home_when_none(self) -> None:
-        """build_volumes with claude_home=None defaults to ~/.claude."""
+    def test_default_gemini_home_when_none(self) -> None:
+        """build_volumes with gemini_home=None defaults to ~/.gemini."""
         with unittest.mock.patch("ralphex_dk.selinux_enabled", return_value=False):
             vols = build_volumes(None)
-        found = any("/mnt/claude:ro" in v for v in vols)
-        self.assertTrue(found, "should mount default claude dir to /mnt/claude:ro")
+        found = any("/mnt/gemini:ro" in v for v in vols)
+        self.assertTrue(found, "should mount default gemini dir to /mnt/gemini:ro")
 
-class TestExtractCredentialsClaudeHome(unittest.TestCase):
+class TestExtractCredentialsGeminiHome(unittest.TestCase):
     def test_skips_when_credentials_exist_on_darwin(self) -> None:
-        """extract_macos_credentials returns None when .credentials.json exists in claude_home."""
+        """extract_macos_credentials returns None when .credentials.json exists in gemini_home."""
         if platform.system() != "Darwin":
             return  # only testable on macOS
         tmp = Path(tempfile.mkdtemp()).resolve()
@@ -530,7 +530,7 @@ class TestExtractCredentialsClaudeHome(unittest.TestCase):
             shutil.rmtree(tmp)
 
     def test_returns_none_on_non_darwin(self) -> None:
-        """extract_macos_credentials returns None on non-Darwin regardless of claude_home."""
+        """extract_macos_credentials returns None on non-Darwin regardless of gemini_home."""
         if platform.system() == "Darwin":
             return  # skip on macOS
         tmp = Path(tempfile.mkdtemp()).resolve()
@@ -580,59 +580,59 @@ class TestSelinuxVolumeSuffix(_FakeHomeTestCase):
             self.assertFalse(vols[i].endswith(":z"),
                              f"volume {vols[i]} should not have :z without SELinux")
 
-class TestClaudeConfigDirEnv(_FakeHomeTestCase):
-    def test_env_sets_claude_home(self) -> None:
-        """CLAUDE_CONFIG_DIR env var selects alternate claude directory."""
+class TestGeminiConfigDirEnv(_FakeHomeTestCase):
+    def test_env_sets_gemini_home(self) -> None:
+        """GEMINI_CONFIG_DIR env var selects alternate gemini directory."""
         tmp = Path(tempfile.mkdtemp()).resolve()
         try:
-            custom = tmp / "my-claude"
+            custom = tmp / "my-gemini"
             custom.mkdir()
-            old = os.environ.get("CLAUDE_CONFIG_DIR")
-            os.environ["CLAUDE_CONFIG_DIR"] = str(custom)
+            old = os.environ.get("GEMINI_CONFIG_DIR")
+            os.environ["GEMINI_CONFIG_DIR"] = str(custom)
             try:
-                env_val = os.environ.get("CLAUDE_CONFIG_DIR", "")
+                env_val = os.environ.get("GEMINI_CONFIG_DIR", "")
                 self.assertTrue(env_val)
                 result = Path(env_val).expanduser().resolve()
                 self.assertEqual(result, custom)
             finally:
                 if old is None:
-                    os.environ.pop("CLAUDE_CONFIG_DIR", None)
+                    os.environ.pop("GEMINI_CONFIG_DIR", None)
                 else:
-                    os.environ["CLAUDE_CONFIG_DIR"] = old
+                    os.environ["GEMINI_CONFIG_DIR"] = old
         finally:
             shutil.rmtree(tmp)
 
-    def test_empty_env_defaults_to_dot_claude(self) -> None:
-        """empty CLAUDE_CONFIG_DIR falls back to ~/.claude in build_volumes."""
-        old = os.environ.get("CLAUDE_CONFIG_DIR")
-        os.environ.pop("CLAUDE_CONFIG_DIR", None)
+    def test_empty_env_defaults_to_dot_gemini(self) -> None:
+        """empty GEMINI_CONFIG_DIR falls back to ~/.gemini in build_volumes."""
+        old = os.environ.get("GEMINI_CONFIG_DIR")
+        os.environ.pop("GEMINI_CONFIG_DIR", None)
         try:
-            # when CLAUDE_CONFIG_DIR is unset, build_volumes uses ~/.claude as default
+            # when GEMINI_CONFIG_DIR is unset, build_volumes uses ~/.gemini as default
             with unittest.mock.patch("ralphex_dk.selinux_enabled", return_value=False):
-                vols = build_volumes(None, claude_home=None)
-            # the first volume mount should map ~/.claude -> /mnt/claude
-            default_claude = str((self.fake_home / ".claude").resolve())
+                vols = build_volumes(None, gemini_home=None)
+            # the first volume mount should map ~/.gemini -> /mnt/gemini
+            default_gemini = str((self.fake_home / ".gemini").resolve())
             vol_sources = [v.split(":")[0] for v in vols if v.startswith("/")]
-            self.assertIn(default_claude, vol_sources,
-                          f"default ~/.claude path not found in volume mounts: {vols}")
+            self.assertIn(default_gemini, vol_sources,
+                          f"default ~/.gemini path not found in volume mounts: {vols}")
         finally:
             if old is not None:
-                os.environ["CLAUDE_CONFIG_DIR"] = old
+                os.environ["GEMINI_CONFIG_DIR"] = old
 
     def test_tilde_expansion(self) -> None:
-        """CLAUDE_CONFIG_DIR with ~ is expanded correctly."""
-        old = os.environ.get("CLAUDE_CONFIG_DIR")
-        os.environ["CLAUDE_CONFIG_DIR"] = "~/.claude-test"
+        """GEMINI_CONFIG_DIR with ~ is expanded correctly."""
+        old = os.environ.get("GEMINI_CONFIG_DIR")
+        os.environ["GEMINI_CONFIG_DIR"] = "~/.gemini-test"
         try:
-            env_val = os.environ.get("CLAUDE_CONFIG_DIR", "")
+            env_val = os.environ.get("GEMINI_CONFIG_DIR", "")
             result = Path(env_val).expanduser().resolve()
-            expected = (Path.home() / ".claude-test").resolve()
+            expected = (Path.home() / ".gemini-test").resolve()
             self.assertEqual(result, expected)
         finally:
             if old is None:
-                os.environ.pop("CLAUDE_CONFIG_DIR", None)
+                os.environ.pop("GEMINI_CONFIG_DIR", None)
             else:
-                os.environ["CLAUDE_CONFIG_DIR"] = old
+                os.environ["GEMINI_CONFIG_DIR"] = old
 
 # note: TestExtraVolumes removed - RALPHEX_EXTRA_VOLUMES is now handled by
 # merge_volume_flags() in main(), tested by TestMergeVolumeFlags class.
@@ -1001,7 +1001,7 @@ class TestBuildParser(unittest.TestCase):
 class TestMainArgparse(EnvTestCase):
     """tests for main() argparse integration."""
     env_vars = ["RALPHEX_IMAGE", "RALPHEX_PORT", "RALPHEX_EXTRA_ENV",
-                "RALPHEX_EXTRA_VOLUMES", "CLAUDE_CONFIG_DIR"]
+                "RALPHEX_EXTRA_VOLUMES", "GEMINI_CONFIG_DIR"]
     save_argv = True
 
     def test_update_flag_triggers_handle_update(self) -> None:
@@ -1036,10 +1036,10 @@ class TestMainArgparse(EnvTestCase):
         """CLI -E/--env flags are converted to docker -e flags."""
         tmp = Path(tempfile.mkdtemp())
         try:
-            claude_dir = tmp / ".claude"
-            claude_dir.mkdir()
-            (claude_dir / ".credentials.json").write_text("{}")
-            os.environ["CLAUDE_CONFIG_DIR"] = str(claude_dir)
+            gemini_dir = tmp / ".gemini"
+            gemini_dir.mkdir()
+            (gemini_dir / ".credentials.json").write_text("{}")
+            os.environ["GEMINI_CONFIG_DIR"] = str(gemini_dir)
 
             captured_env: list[str] = []
 
@@ -1065,10 +1065,10 @@ class TestMainArgparse(EnvTestCase):
         """CLI -v/--volume flags are added to volume list."""
         tmp = Path(tempfile.mkdtemp())
         try:
-            claude_dir = tmp / ".claude"
-            claude_dir.mkdir()
-            (claude_dir / ".credentials.json").write_text("{}")
-            os.environ["CLAUDE_CONFIG_DIR"] = str(claude_dir)
+            gemini_dir = tmp / ".gemini"
+            gemini_dir.mkdir()
+            (gemini_dir / ".credentials.json").write_text("{}")
+            os.environ["GEMINI_CONFIG_DIR"] = str(gemini_dir)
 
             captured_volumes: list[str] = []
 
@@ -1094,10 +1094,10 @@ class TestMainArgparse(EnvTestCase):
         """unknown args pass through to run_docker."""
         tmp = Path(tempfile.mkdtemp())
         try:
-            claude_dir = tmp / ".claude"
-            claude_dir.mkdir()
-            (claude_dir / ".credentials.json").write_text("{}")
-            os.environ["CLAUDE_CONFIG_DIR"] = str(claude_dir)
+            gemini_dir = tmp / ".gemini"
+            gemini_dir.mkdir()
+            (gemini_dir / ".credentials.json").write_text("{}")
+            os.environ["GEMINI_CONFIG_DIR"] = str(gemini_dir)
 
             captured_args: list[str] = []
 
@@ -1121,10 +1121,10 @@ class TestMainArgparse(EnvTestCase):
         """args after -- pass through unchanged to ralphex, including -- itself."""
         tmp = Path(tempfile.mkdtemp())
         try:
-            claude_dir = tmp / ".claude"
-            claude_dir.mkdir()
-            (claude_dir / ".credentials.json").write_text("{}")
-            os.environ["CLAUDE_CONFIG_DIR"] = str(claude_dir)
+            gemini_dir = tmp / ".gemini"
+            gemini_dir.mkdir()
+            (gemini_dir / ".credentials.json").write_text("{}")
+            os.environ["GEMINI_CONFIG_DIR"] = str(gemini_dir)
 
             captured_args: list[str] = []
 
@@ -1150,10 +1150,10 @@ class TestMainArgparse(EnvTestCase):
         """-e (ralphex's external-only flag) passes through to ralphex."""
         tmp = Path(tempfile.mkdtemp())
         try:
-            claude_dir = tmp / ".claude"
-            claude_dir.mkdir()
-            (claude_dir / ".credentials.json").write_text("{}")
-            os.environ["CLAUDE_CONFIG_DIR"] = str(claude_dir)
+            gemini_dir = tmp / ".gemini"
+            gemini_dir.mkdir()
+            (gemini_dir / ".credentials.json").write_text("{}")
+            os.environ["GEMINI_CONFIG_DIR"] = str(gemini_dir)
 
             captured_args: list[str] = []
 
@@ -1177,10 +1177,10 @@ class TestMainArgparse(EnvTestCase):
         """wrapper args are separated from ralphex args correctly."""
         tmp = Path(tempfile.mkdtemp())
         try:
-            claude_dir = tmp / ".claude"
-            claude_dir.mkdir()
-            (claude_dir / ".credentials.json").write_text("{}")
-            os.environ["CLAUDE_CONFIG_DIR"] = str(claude_dir)
+            gemini_dir = tmp / ".gemini"
+            gemini_dir.mkdir()
+            (gemini_dir / ".credentials.json").write_text("{}")
+            os.environ["GEMINI_CONFIG_DIR"] = str(gemini_dir)
 
             captured_args: list[str] = []
             captured_env: list[str] = []
@@ -1212,10 +1212,10 @@ class TestMainArgparse(EnvTestCase):
         """invalid -E entries are skipped with warning."""
         tmp = Path(tempfile.mkdtemp())
         try:
-            claude_dir = tmp / ".claude"
-            claude_dir.mkdir()
-            (claude_dir / ".credentials.json").write_text("{}")
-            os.environ["CLAUDE_CONFIG_DIR"] = str(claude_dir)
+            gemini_dir = tmp / ".gemini"
+            gemini_dir.mkdir()
+            (gemini_dir / ".credentials.json").write_text("{}")
+            os.environ["GEMINI_CONFIG_DIR"] = str(gemini_dir)
 
             captured_env: list[str] = []
 
@@ -1244,13 +1244,13 @@ class TestMainArgparse(EnvTestCase):
             shutil.rmtree(tmp)
 
     def _run_main_capturing_image_port(self, argv: list[str]) -> tuple[str, str]:
-        """run main() with claude dir set up and capture resolved image/port."""
+        """run main() with gemini dir set up and capture resolved image/port."""
         tmp = Path(tempfile.mkdtemp())
         try:
-            claude_dir = tmp / ".claude"
-            claude_dir.mkdir()
-            (claude_dir / ".credentials.json").write_text("{}")
-            os.environ["CLAUDE_CONFIG_DIR"] = str(claude_dir)
+            gemini_dir = tmp / ".gemini"
+            gemini_dir.mkdir()
+            (gemini_dir / ".credentials.json").write_text("{}")
+            os.environ["GEMINI_CONFIG_DIR"] = str(gemini_dir)
 
             captured: dict[str, str] = {}
 
@@ -1304,12 +1304,12 @@ class TestMainArgparse(EnvTestCase):
 
 class TestHelpFlag(EnvTestCase):
     """tests for --help flag handling."""
-    env_vars = ["RALPHEX_IMAGE", "CLAUDE_CONFIG_DIR", "RALPHEX_CLAUDE_PROVIDER"]
+    env_vars = ["RALPHEX_IMAGE", "GEMINI_CONFIG_DIR", "RALPHEX_GEMINI_PROVIDER"]
     save_argv = True
 
-    def test_help_without_claude_config_shows_wrapper_help(self) -> None:
-        """--help shows wrapper help even when claude config is missing."""
-        os.environ["CLAUDE_CONFIG_DIR"] = "/tmp/nonexistent-dir-12345"
+    def test_help_without_gemini_config_shows_wrapper_help(self) -> None:
+        """--help shows wrapper help even when gemini config is missing."""
+        os.environ["GEMINI_CONFIG_DIR"] = "/tmp/nonexistent-dir-12345"
 
         captured_output: list[str] = []
 
@@ -1323,17 +1323,17 @@ class TestHelpFlag(EnvTestCase):
 
         self.assertEqual(result, 0)
         output = "\n".join(captured_output)
-        self.assertIn("ralphex options: (cannot show - claude config not found)", output)
-        self.assertIn("run 'claude' first to authenticate", output)
+        self.assertIn("ralphex options: (cannot show - gemini config not found)", output)
+        self.assertIn("run 'gemini' first to authenticate", output)
 
-    def test_help_with_claude_config_runs_container(self) -> None:
-        """--help with valid claude config runs container for ralphex help."""
+    def test_help_with_gemini_config_runs_container(self) -> None:
+        """--help with valid gemini config runs container for ralphex help."""
         tmp = Path(tempfile.mkdtemp())
         try:
-            claude_dir = tmp / ".claude"
-            claude_dir.mkdir()
-            (claude_dir / ".credentials.json").write_text("{}")
-            os.environ["CLAUDE_CONFIG_DIR"] = str(claude_dir)
+            gemini_dir = tmp / ".gemini"
+            gemini_dir.mkdir()
+            (gemini_dir / ".credentials.json").write_text("{}")
+            os.environ["GEMINI_CONFIG_DIR"] = str(gemini_dir)
 
             docker_calls: list[list[str]] = []
 
@@ -1362,7 +1362,7 @@ class TestHelpFlag(EnvTestCase):
 
     def test_h_flag_same_as_help(self) -> None:
         """-h (short form) behaves same as --help."""
-        os.environ["CLAUDE_CONFIG_DIR"] = "/tmp/nonexistent-dir-12345"
+        os.environ["GEMINI_CONFIG_DIR"] = "/tmp/nonexistent-dir-12345"
 
         captured_output: list[str] = []
 
@@ -1376,16 +1376,16 @@ class TestHelpFlag(EnvTestCase):
 
         self.assertEqual(result, 0)
         output = "\n".join(captured_output)
-        self.assertIn("cannot show - claude config not found", output)
+        self.assertIn("cannot show - gemini config not found", output)
 
     def test_help_returns_container_exit_code(self) -> None:
         """main() returns exit code from container's --help."""
         tmp = Path(tempfile.mkdtemp())
         try:
-            claude_dir = tmp / ".claude"
-            claude_dir.mkdir()
-            (claude_dir / ".credentials.json").write_text("{}")
-            os.environ["CLAUDE_CONFIG_DIR"] = str(claude_dir)
+            gemini_dir = tmp / ".gemini"
+            gemini_dir.mkdir()
+            (gemini_dir / ".credentials.json").write_text("{}")
+            os.environ["GEMINI_CONFIG_DIR"] = str(gemini_dir)
 
             def fake_run(cmd: list[str], **kwargs: object) -> unittest.mock.Mock:
                 mock_result = unittest.mock.Mock()
@@ -1407,7 +1407,7 @@ class TestHelpFlag(EnvTestCase):
 
     def test_help_with_env_flags_still_shows_help(self) -> None:
         """wrapper flags (-E, -v) before --help are parsed but help takes precedence."""
-        os.environ["CLAUDE_CONFIG_DIR"] = "/tmp/nonexistent-dir-12345"
+        os.environ["GEMINI_CONFIG_DIR"] = "/tmp/nonexistent-dir-12345"
 
         captured_output: list[str] = []
 
@@ -1422,39 +1422,39 @@ class TestHelpFlag(EnvTestCase):
 
         self.assertEqual(result, 0)
         output = "\n".join(captured_output)
-        self.assertIn("cannot show - claude config not found", output)
+        self.assertIn("cannot show - gemini config not found", output)
 
-class TestClaudeProvider(EnvTestCase):
-    """tests for claude provider selection and bedrock env var handling."""
-    env_vars = ["RALPHEX_CLAUDE_PROVIDER"] + BEDROCK_ENV_VARS
+class TestGeminiProvider(EnvTestCase):
+    """tests for gemini provider selection and bedrock env var handling."""
+    env_vars = ["RALPHEX_GEMINI_PROVIDER"] + BEDROCK_ENV_VARS
 
     def test_default_provider_no_bedrock_env(self) -> None:
         """no flag, no env → provider is 'default', bedrock args only has USE_BEDROCK=1."""
-        provider = get_claude_provider(None)
+        provider = get_gemini_provider(None)
         self.assertEqual(provider, "default")
-        # build_bedrock_env_args always sets CLAUDE_CODE_USE_BEDROCK=1
+        # build_bedrock_env_args always sets GEMINI_CODE_USE_BEDROCK=1
         args = build_bedrock_env_args()
-        self.assertEqual(args, ["-e", "CLAUDE_CODE_USE_BEDROCK=1"])
+        self.assertEqual(args, ["-e", "GEMINI_CODE_USE_BEDROCK=1"])
 
     def test_cli_flag_bedrock(self) -> None:
-        """--claude-provider bedrock → provider is 'bedrock'."""
-        provider = get_claude_provider("bedrock")
+        """--gemini-provider bedrock → provider is 'bedrock'."""
+        provider = get_gemini_provider("bedrock")
         self.assertEqual(provider, "bedrock")
 
     def test_env_var_fallback(self) -> None:
-        """no flag, RALPHEX_CLAUDE_PROVIDER=bedrock → provider is 'bedrock'."""
-        os.environ["RALPHEX_CLAUDE_PROVIDER"] = "bedrock"
-        provider = get_claude_provider(None)
+        """no flag, RALPHEX_GEMINI_PROVIDER=bedrock → provider is 'bedrock'."""
+        os.environ["RALPHEX_GEMINI_PROVIDER"] = "bedrock"
+        provider = get_gemini_provider(None)
         self.assertEqual(provider, "bedrock")
 
     def test_cli_overrides_env(self) -> None:
         """flag and env var set → CLI wins."""
-        os.environ["RALPHEX_CLAUDE_PROVIDER"] = "bedrock"
-        provider = get_claude_provider("default")
+        os.environ["RALPHEX_GEMINI_PROVIDER"] = "bedrock"
+        provider = get_gemini_provider("default")
         self.assertEqual(provider, "default")
         # also test the reverse
-        os.environ["RALPHEX_CLAUDE_PROVIDER"] = "default"
-        provider = get_claude_provider("bedrock")
+        os.environ["RALPHEX_GEMINI_PROVIDER"] = "default"
+        provider = get_gemini_provider("bedrock")
         self.assertEqual(provider, "bedrock")
 
     def test_bedrock_passes_set_vars(self) -> None:
@@ -1535,31 +1535,31 @@ class TestClaudeProvider(EnvTestCase):
 
     def test_invalid_provider_rejected(self) -> None:
         """unknown provider value → error."""
-        os.environ["RALPHEX_CLAUDE_PROVIDER"] = "invalid"
+        os.environ["RALPHEX_GEMINI_PROVIDER"] = "invalid"
         with self.assertRaises(ValueError) as ctx:
-            get_claude_provider(None)
+            get_gemini_provider(None)
         self.assertIn("invalid", str(ctx.exception))
-        self.assertIn("RALPHEX_CLAUDE_PROVIDER", str(ctx.exception))
+        self.assertIn("RALPHEX_GEMINI_PROVIDER", str(ctx.exception))
 
     def test_env_var_case_insensitive(self) -> None:
         """env var value is case-insensitive."""
-        os.environ["RALPHEX_CLAUDE_PROVIDER"] = "BEDROCK"
-        provider = get_claude_provider(None)
+        os.environ["RALPHEX_GEMINI_PROVIDER"] = "BEDROCK"
+        provider = get_gemini_provider(None)
         self.assertEqual(provider, "bedrock")
-        os.environ["RALPHEX_CLAUDE_PROVIDER"] = "Bedrock"
-        provider = get_claude_provider(None)
+        os.environ["RALPHEX_GEMINI_PROVIDER"] = "Bedrock"
+        provider = get_gemini_provider(None)
         self.assertEqual(provider, "bedrock")
 
     def test_env_var_whitespace_trimmed(self) -> None:
         """env var value whitespace is trimmed."""
-        os.environ["RALPHEX_CLAUDE_PROVIDER"] = "  bedrock  "
-        provider = get_claude_provider(None)
+        os.environ["RALPHEX_GEMINI_PROVIDER"] = "  bedrock  "
+        provider = get_gemini_provider(None)
         self.assertEqual(provider, "bedrock")
 
     def test_empty_env_var_defaults(self) -> None:
         """empty env var falls back to default."""
-        os.environ["RALPHEX_CLAUDE_PROVIDER"] = ""
-        provider = get_claude_provider(None)
+        os.environ["RALPHEX_GEMINI_PROVIDER"] = ""
+        provider = get_gemini_provider(None)
         self.assertEqual(provider, "default")
 
 class TestDockerEnabled(EnvTestCase):
@@ -1839,8 +1839,8 @@ class TestAwsCredentialExport(EnvTestCase):
         self.assertIn("failed to run aws CLI", warning)
 
 class TestBedrockSkipKeychain(EnvTestCase):
-    """tests for bedrock mode skipping keychain and claude_home checks."""
-    env_vars = ["RALPHEX_CLAUDE_PROVIDER"] + BEDROCK_ENV_VARS
+    """tests for bedrock mode skipping keychain and gemini_home checks."""
+    env_vars = ["RALPHEX_GEMINI_PROVIDER"] + BEDROCK_ENV_VARS
     save_argv = True
 
     def test_skips_credentials_extraction_when_bedrock(self) -> None:
@@ -1856,7 +1856,7 @@ class TestBedrockSkipKeychain(EnvTestCase):
 
         extract_calls = [0]
 
-        def fake_extract(claude_home: Path) -> Optional[Path]:
+        def fake_extract(gemini_home: Path) -> Optional[Path]:
             extract_calls[0] += 1
             return None
 
@@ -1866,15 +1866,15 @@ class TestBedrockSkipKeychain(EnvTestCase):
             with unittest.mock.patch("ralphex_dk.run_docker", side_effect=fake_run_docker):
                 with unittest.mock.patch("ralphex_dk.extract_macos_credentials", side_effect=fake_extract):
                     with unittest.mock.patch("ralphex_dk.export_aws_profile_credentials", return_value={}):
-                        sys.argv = ["ralphex-dk", "--claude-provider", "bedrock", "plan.md"]
+                        sys.argv = ["ralphex-dk", "--gemini-provider", "bedrock", "plan.md"]
                         result = main()
 
         self.assertEqual(result, 0)
         # extract_macos_credentials should NOT be called for bedrock
         self.assertEqual(extract_calls[0], 0)
 
-    def test_skips_claude_home_check_when_bedrock(self) -> None:
-        """bedrock provider skips claude_home.is_dir() check - no error if ~/.claude missing."""
+    def test_skips_gemini_home_check_when_bedrock(self) -> None:
+        """bedrock provider skips gemini_home.is_dir() check - no error if ~/.gemini missing."""
         import io
         captured_stderr = io.StringIO()
 
@@ -1884,18 +1884,18 @@ class TestBedrockSkipKeychain(EnvTestCase):
         ) -> int:
             return 0
 
-        # use a non-existent claude home path
+        # use a non-existent gemini home path
         with tempfile.TemporaryDirectory() as tmpdir:
-            fake_claude_home = Path(tmpdir) / "nonexistent_claude"
+            fake_gemini_home = Path(tmpdir) / "nonexistent_gemini"
             # do NOT create the directory
 
             with unittest.mock.patch("sys.stderr", captured_stderr):
                 with unittest.mock.patch("ralphex_dk.run_docker", side_effect=fake_run_docker):
                     with unittest.mock.patch("ralphex_dk.extract_macos_credentials", return_value=None):
                         with unittest.mock.patch("ralphex_dk.export_aws_profile_credentials", return_value={}):
-                            # mock Path.home to return our temp dir so claude_home resolves to nonexistent
+                            # mock Path.home to return our temp dir so gemini_home resolves to nonexistent
                             with unittest.mock.patch.object(Path, "home", return_value=Path(tmpdir)):
-                                sys.argv = ["ralphex-dk", "--claude-provider", "bedrock", "plan.md"]
+                                sys.argv = ["ralphex-dk", "--gemini-provider", "bedrock", "plan.md"]
                                 result = main()
 
         self.assertEqual(result, 0)
@@ -1906,7 +1906,7 @@ class TestBedrockSkipKeychain(EnvTestCase):
         """default provider still calls extract_macos_credentials for backwards compat."""
         extract_calls = [0]
 
-        def fake_extract(claude_home: Path) -> Optional[Path]:
+        def fake_extract(gemini_home: Path) -> Optional[Path]:
             extract_calls[0] += 1
             return None
 
@@ -1918,21 +1918,21 @@ class TestBedrockSkipKeychain(EnvTestCase):
 
         import io
         captured_stderr = io.StringIO()
-        fake_claude_dir = tempfile.mkdtemp()
+        fake_gemini_dir = tempfile.mkdtemp()
         # place a fake credentials.json so fail-fast doesn't trigger on macOS
-        (Path(fake_claude_dir) / ".credentials.json").write_text("{}")
+        (Path(fake_gemini_dir) / ".credentials.json").write_text("{}")
         try:
             with unittest.mock.patch("sys.stderr", captured_stderr):
                 with unittest.mock.patch("ralphex_dk.run_docker", side_effect=fake_run_docker):
                     with unittest.mock.patch("ralphex_dk.extract_macos_credentials", side_effect=fake_extract):
                         sys.argv = ["ralphex-dk", "plan.md"]
-                        os.environ["CLAUDE_CONFIG_DIR"] = fake_claude_dir
+                        os.environ["GEMINI_CONFIG_DIR"] = fake_gemini_dir
                         try:
                             result = main()
                         finally:
-                            os.environ.pop("CLAUDE_CONFIG_DIR", None)
+                            os.environ.pop("GEMINI_CONFIG_DIR", None)
         finally:
-            shutil.rmtree(fake_claude_dir, ignore_errors=True)
+            shutil.rmtree(fake_gemini_dir, ignore_errors=True)
 
         self.assertEqual(result, 0)
         # extract_macos_credentials SHOULD be called for default provider
@@ -1950,7 +1950,7 @@ class TestBedrockSkipKeychain(EnvTestCase):
             return 0
 
         captured_stderr = io.StringIO()
-        fake_claude_dir = tempfile.mkdtemp()
+        fake_gemini_dir = tempfile.mkdtemp()
         # no .credentials.json on disk
         try:
             with unittest.mock.patch("sys.stderr", captured_stderr):
@@ -1958,18 +1958,18 @@ class TestBedrockSkipKeychain(EnvTestCase):
                     with unittest.mock.patch("ralphex_dk.run_docker", side_effect=fake_run_docker):
                         with unittest.mock.patch("ralphex_dk.extract_macos_credentials", return_value=None):
                             sys.argv = ["ralphex-dk", "plan.md"]
-                            os.environ["CLAUDE_CONFIG_DIR"] = fake_claude_dir
+                            os.environ["GEMINI_CONFIG_DIR"] = fake_gemini_dir
                             try:
                                 result = main()
                             finally:
-                                os.environ.pop("CLAUDE_CONFIG_DIR", None)
+                                os.environ.pop("GEMINI_CONFIG_DIR", None)
         finally:
-            shutil.rmtree(fake_claude_dir, ignore_errors=True)
+            shutil.rmtree(fake_gemini_dir, ignore_errors=True)
 
         self.assertEqual(result, 1)
         self.assertEqual(run_calls[0], 0)
         err = captured_stderr.getvalue()
-        self.assertIn("no Claude credentials found", err)
+        self.assertIn("no Gemini credentials found", err)
         self.assertIn("keychain", err)
 
     def test_no_fail_fast_when_credentials_on_disk(self) -> None:
@@ -1984,21 +1984,21 @@ class TestBedrockSkipKeychain(EnvTestCase):
             return 0
 
         captured_stderr = io.StringIO()
-        fake_claude_dir = tempfile.mkdtemp()
-        (Path(fake_claude_dir) / ".credentials.json").write_text("{}")
+        fake_gemini_dir = tempfile.mkdtemp()
+        (Path(fake_gemini_dir) / ".credentials.json").write_text("{}")
         try:
             with unittest.mock.patch("sys.stderr", captured_stderr):
                 with unittest.mock.patch("ralphex_dk.platform.system", return_value="Darwin"):
                     with unittest.mock.patch("ralphex_dk.run_docker", side_effect=fake_run_docker):
                         with unittest.mock.patch("ralphex_dk.extract_macos_credentials", return_value=None):
                             sys.argv = ["ralphex-dk", "plan.md"]
-                            os.environ["CLAUDE_CONFIG_DIR"] = fake_claude_dir
+                            os.environ["GEMINI_CONFIG_DIR"] = fake_gemini_dir
                             try:
                                 result = main()
                             finally:
-                                os.environ.pop("CLAUDE_CONFIG_DIR", None)
+                                os.environ.pop("GEMINI_CONFIG_DIR", None)
         finally:
-            shutil.rmtree(fake_claude_dir, ignore_errors=True)
+            shutil.rmtree(fake_gemini_dir, ignore_errors=True)
 
         self.assertEqual(result, 0)
         self.assertEqual(run_calls[0], 1)
@@ -2015,20 +2015,20 @@ class TestBedrockSkipKeychain(EnvTestCase):
             return 0
 
         captured_stderr = io.StringIO()
-        fake_claude_dir = tempfile.mkdtemp()
+        fake_gemini_dir = tempfile.mkdtemp()
         try:
             with unittest.mock.patch("sys.stderr", captured_stderr):
                 with unittest.mock.patch("ralphex_dk.platform.system", return_value="Linux"):
                     with unittest.mock.patch("ralphex_dk.run_docker", side_effect=fake_run_docker):
                         with unittest.mock.patch("ralphex_dk.extract_macos_credentials", return_value=None):
                             sys.argv = ["ralphex-dk", "plan.md"]
-                            os.environ["CLAUDE_CONFIG_DIR"] = fake_claude_dir
+                            os.environ["GEMINI_CONFIG_DIR"] = fake_gemini_dir
                             try:
                                 result = main()
                             finally:
-                                os.environ.pop("CLAUDE_CONFIG_DIR", None)
+                                os.environ.pop("GEMINI_CONFIG_DIR", None)
         finally:
-            shutil.rmtree(fake_claude_dir, ignore_errors=True)
+            shutil.rmtree(fake_gemini_dir, ignore_errors=True)
 
         self.assertEqual(result, 0)
         self.assertEqual(run_calls[0], 1)
@@ -2047,7 +2047,7 @@ class TestBedrockSkipKeychain(EnvTestCase):
             with unittest.mock.patch("ralphex_dk.run_docker", side_effect=fake_run_docker):
                 with unittest.mock.patch("ralphex_dk.extract_macos_credentials", return_value=None):
                     with unittest.mock.patch("ralphex_dk.export_aws_profile_credentials", return_value={}):
-                        sys.argv = ["ralphex-dk", "--claude-provider", "bedrock", "plan.md"]
+                        sys.argv = ["ralphex-dk", "--gemini-provider", "bedrock", "plan.md"]
                         result = main()
 
         self.assertEqual(result, 0)
@@ -2057,13 +2057,13 @@ class TestBedrockSkipKeychain(EnvTestCase):
 
 class TestBedrockValidation(EnvTestCase):
     """tests for validate_bedrock_config() function."""
-    env_vars = ["CLAUDE_CODE_USE_BEDROCK", "AWS_REGION", "AWS_PROFILE",
+    env_vars = ["GEMINI_CODE_USE_BEDROCK", "AWS_REGION", "AWS_PROFILE",
                 "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_BEARER_TOKEN_BEDROCK"]
 
     def test_warns_missing_aws_region(self) -> None:
         """warns when AWS_REGION is not set."""
         # set other vars, but not AWS_REGION
-        os.environ["CLAUDE_CODE_USE_BEDROCK"] = "1"
+        os.environ["GEMINI_CODE_USE_BEDROCK"] = "1"
         os.environ["AWS_ACCESS_KEY_ID"] = "AKIATEST"
         os.environ["AWS_SECRET_ACCESS_KEY"] = "secret"
 
@@ -2074,7 +2074,7 @@ class TestBedrockValidation(EnvTestCase):
 
     def test_warns_no_credentials_found(self) -> None:
         """warns when neither AWS_PROFILE nor AWS_ACCESS_KEY_ID is set."""
-        os.environ["CLAUDE_CODE_USE_BEDROCK"] = "1"
+        os.environ["GEMINI_CODE_USE_BEDROCK"] = "1"
         os.environ["AWS_REGION"] = "us-east-1"
         # no credentials set
 
@@ -2085,7 +2085,7 @@ class TestBedrockValidation(EnvTestCase):
 
     def test_no_warning_with_profile(self) -> None:
         """no credential warning when AWS_PROFILE is set."""
-        os.environ["CLAUDE_CODE_USE_BEDROCK"] = "1"
+        os.environ["GEMINI_CODE_USE_BEDROCK"] = "1"
         os.environ["AWS_REGION"] = "us-east-1"
         os.environ["AWS_PROFILE"] = "my-profile"
 
@@ -2095,7 +2095,7 @@ class TestBedrockValidation(EnvTestCase):
 
     def test_no_warning_with_explicit_creds(self) -> None:
         """no credential warning when both access key and secret key are set."""
-        os.environ["CLAUDE_CODE_USE_BEDROCK"] = "1"
+        os.environ["GEMINI_CODE_USE_BEDROCK"] = "1"
         os.environ["AWS_REGION"] = "us-east-1"
         os.environ["AWS_ACCESS_KEY_ID"] = "AKIATEST"
         os.environ["AWS_SECRET_ACCESS_KEY"] = "secret"
@@ -2106,7 +2106,7 @@ class TestBedrockValidation(EnvTestCase):
 
     def test_no_warning_with_bearer_token(self) -> None:
         """no credential warning when AWS_BEARER_TOKEN_BEDROCK is set."""
-        os.environ["CLAUDE_CODE_USE_BEDROCK"] = "1"
+        os.environ["GEMINI_CODE_USE_BEDROCK"] = "1"
         os.environ["AWS_REGION"] = "us-east-1"
         os.environ["AWS_BEARER_TOKEN_BEDROCK"] = "token123"
 
@@ -2116,7 +2116,7 @@ class TestBedrockValidation(EnvTestCase):
 
     def test_warns_missing_secret_key(self) -> None:
         """warns when AWS_ACCESS_KEY_ID is set but AWS_SECRET_ACCESS_KEY is missing."""
-        os.environ["CLAUDE_CODE_USE_BEDROCK"] = "1"
+        os.environ["GEMINI_CODE_USE_BEDROCK"] = "1"
         os.environ["AWS_REGION"] = "us-east-1"
         os.environ["AWS_ACCESS_KEY_ID"] = "AKIATEST"
         # AWS_SECRET_ACCESS_KEY is NOT set
@@ -2130,7 +2130,7 @@ class TestBedrockValidation(EnvTestCase):
         """no warning when vars are provided via -E flags."""
         # nothing in os.environ
         extra_env = [
-            "-e", "CLAUDE_CODE_USE_BEDROCK=1",
+            "-e", "GEMINI_CODE_USE_BEDROCK=1",
             "-e", "AWS_REGION=us-east-1",
             "-e", "AWS_ACCESS_KEY_ID=AKIATEST",
             "-e", "AWS_SECRET_ACCESS_KEY=secret",
@@ -2143,10 +2143,10 @@ class TestBedrockValidation(EnvTestCase):
     def test_e_flag_overrides_env(self) -> None:
         """values from -E flags take precedence over os.environ."""
         # os.environ has empty/unset value
-        os.environ["CLAUDE_CODE_USE_BEDROCK"] = ""
+        os.environ["GEMINI_CODE_USE_BEDROCK"] = ""
         # -E flag has proper value
         extra_env = [
-            "-e", "CLAUDE_CODE_USE_BEDROCK=1",
+            "-e", "GEMINI_CODE_USE_BEDROCK=1",
             "-e", "AWS_REGION=us-east-1",
             "-e", "AWS_ACCESS_KEY_ID=AKIATEST",
             "-e", "AWS_SECRET_ACCESS_KEY=secret",
@@ -2161,7 +2161,7 @@ class TestBedrockValidation(EnvTestCase):
         os.environ["AWS_ACCESS_KEY_ID"] = "AKIATEST"
         os.environ["AWS_SECRET_ACCESS_KEY"] = "secret"
         extra_env = [
-            "-e", "CLAUDE_CODE_USE_BEDROCK=1",
+            "-e", "GEMINI_CODE_USE_BEDROCK=1",
             "-e", "AWS_REGION=us-east-1",
             "-e", "AWS_ACCESS_KEY_ID",  # inherit form
             "-e", "AWS_SECRET_ACCESS_KEY",  # inherit form
@@ -2283,7 +2283,7 @@ class TestBuildDockerCommand(unittest.TestCase):
         self.assertIn("--rm", cmd)
 
         # verify base env vars are present (check one key one)
-        self.assertIn("CLAUDE_CONFIG_DIR=/home/app/.claude", cmd)
+        self.assertIn("GEMINI_CONFIG_DIR=/home/app/.gemini", cmd)
 
         # verify extra env var is present
         self.assertIn("FOO=bar", cmd)
@@ -2487,7 +2487,7 @@ class TestDryRun(EnvTestCase):
     """tests for --dry-run functionality."""
 
     env_vars = ["RALPHEX_IMAGE", "RALPHEX_PORT", "RALPHEX_EXTRA_ENV",
-                "RALPHEX_EXTRA_VOLUMES", "RALPHEX_CLAUDE_PROVIDER", "CLAUDE_CONFIG_DIR",
+                "RALPHEX_EXTRA_VOLUMES", "RALPHEX_GEMINI_PROVIDER", "GEMINI_CONFIG_DIR",
                 "RALPHEX_WEB_HOST"]
     save_argv = True
 
@@ -2497,9 +2497,9 @@ class TestDryRun(EnvTestCase):
 
         with tempfile.TemporaryDirectory() as tmpdir:
             tmp = Path(tmpdir)
-            claude_home = tmp / ".claude"
-            claude_home.mkdir()
-            (claude_home / ".credentials.json").write_text("{}")
+            gemini_home = tmp / ".gemini"
+            gemini_home.mkdir()
+            (gemini_home / ".credentials.json").write_text("{}")
 
             sys.argv = ["ralphex-dk", "--dry-run"]
 
@@ -2533,9 +2533,9 @@ class TestDryRun(EnvTestCase):
         """verify warning printed for inherited (no value) env vars."""
         with tempfile.TemporaryDirectory() as tmpdir:
             tmp = Path(tmpdir)
-            claude_home = tmp / ".claude"
-            claude_home.mkdir()
-            (claude_home / ".credentials.json").write_text("{}")
+            gemini_home = tmp / ".gemini"
+            gemini_home.mkdir()
+            (gemini_home / ".credentials.json").write_text("{}")
 
             sys.argv = ["ralphex-dk", "--dry-run", "-E", "FOO"]
 
@@ -2558,9 +2558,9 @@ class TestDryRun(EnvTestCase):
         """verify no warning when all env vars have explicit values."""
         with tempfile.TemporaryDirectory() as tmpdir:
             tmp = Path(tmpdir)
-            claude_home = tmp / ".claude"
-            claude_home.mkdir()
-            (claude_home / ".credentials.json").write_text("{}")
+            gemini_home = tmp / ".gemini"
+            gemini_home.mkdir()
+            (gemini_home / ".credentials.json").write_text("{}")
 
             sys.argv = ["ralphex-dk", "--dry-run", "-E", "FOO=bar"]
 
@@ -2582,9 +2582,9 @@ class TestDryRun(EnvTestCase):
         """verify warning printed for explicit values of sensitive env vars."""
         with tempfile.TemporaryDirectory() as tmpdir:
             tmp = Path(tmpdir)
-            claude_home = tmp / ".claude"
-            claude_home.mkdir()
-            (claude_home / ".credentials.json").write_text("{}")
+            gemini_home = tmp / ".gemini"
+            gemini_home.mkdir()
+            (gemini_home / ".credentials.json").write_text("{}")
 
             sys.argv = ["ralphex-dk", "--dry-run", "-E", "API_KEY=secret123"]
 
@@ -2607,9 +2607,9 @@ class TestDryRun(EnvTestCase):
         """verify no secrets warning when sensitive vars use inherited form."""
         with tempfile.TemporaryDirectory() as tmpdir:
             tmp = Path(tmpdir)
-            claude_home = tmp / ".claude"
-            claude_home.mkdir()
-            (claude_home / ".credentials.json").write_text("{}")
+            gemini_home = tmp / ".gemini"
+            gemini_home.mkdir()
+            (gemini_home / ".credentials.json").write_text("{}")
 
             # API_KEY without =value - inherited form, should NOT trigger warning
             sys.argv = ["ralphex-dk", "--dry-run", "-E", "API_KEY"]
@@ -2634,9 +2634,9 @@ class TestDryRun(EnvTestCase):
         """verify --dry-run returns without calling run_docker."""
         with tempfile.TemporaryDirectory() as tmpdir:
             tmp = Path(tmpdir)
-            claude_home = tmp / ".claude"
-            claude_home.mkdir()
-            (claude_home / ".credentials.json").write_text("{}")
+            gemini_home = tmp / ".gemini"
+            gemini_home.mkdir()
+            (gemini_home / ".credentials.json").write_text("{}")
 
             sys.argv = ["ralphex-dk", "--dry-run"]
 
@@ -2700,7 +2700,7 @@ class TestDockerSocketGid(unittest.TestCase):
 class TestDockerSocketMount(EnvTestCase):
     """tests for docker socket mount in main()."""
     env_vars = ["RALPHEX_IMAGE", "RALPHEX_PORT", "RALPHEX_EXTRA_ENV",
-                "RALPHEX_EXTRA_VOLUMES", "RALPHEX_CLAUDE_PROVIDER", "CLAUDE_CONFIG_DIR",
+                "RALPHEX_EXTRA_VOLUMES", "RALPHEX_GEMINI_PROVIDER", "GEMINI_CONFIG_DIR",
                 "RALPHEX_WEB_HOST", "RALPHEX_DOCKER_SOCKET", "DOCKER_HOST"]
     save_argv = True
 
@@ -2710,9 +2710,9 @@ class TestDockerSocketMount(EnvTestCase):
         """helper: run main() with docker flag and mock socket, return (rc, captured_volumes, run_docker_calls)."""
         with tempfile.TemporaryDirectory() as tmpdir:
             tmp = Path(tmpdir)
-            claude_home = tmp / ".claude"
-            claude_home.mkdir()
-            (claude_home / ".credentials.json").write_text("{}")
+            gemini_home = tmp / ".gemini"
+            gemini_home.mkdir()
+            (gemini_home / ".credentials.json").write_text("{}")
 
             argv = ["ralphex-dk"]
             if docker_flag:
@@ -2824,9 +2824,9 @@ class TestDockerSocketMount(EnvTestCase):
         """error printed to stderr and exit 1 when --docker set but socket doesn't exist."""
         with tempfile.TemporaryDirectory() as tmpdir:
             tmp = Path(tmpdir)
-            claude_home = tmp / ".claude"
-            claude_home.mkdir()
-            (claude_home / ".credentials.json").write_text("{}")
+            gemini_home = tmp / ".gemini"
+            gemini_home.mkdir()
+            (gemini_home / ".credentials.json").write_text("{}")
 
             sys.argv = ["ralphex-dk", "--docker", "plan.md"]
 
@@ -2867,9 +2867,9 @@ class TestDockerSocketMount(EnvTestCase):
 
         with tempfile.TemporaryDirectory() as tmpdir:
             tmp = Path(tmpdir)
-            claude_home = tmp / ".claude"
-            claude_home.mkdir()
-            (claude_home / ".credentials.json").write_text("{}")
+            gemini_home = tmp / ".gemini"
+            gemini_home.mkdir()
+            (gemini_home / ".credentials.json").write_text("{}")
 
             sys.argv = ["ralphex-dk", "--docker", "plan.md"]
 
@@ -2970,7 +2970,7 @@ class TestBuildDockerCommandDockerGid(unittest.TestCase):
 class TestDockerLinuxWarning(EnvTestCase):
     """tests for Linux security warning when --docker is used."""
     env_vars = ["RALPHEX_IMAGE", "RALPHEX_PORT", "RALPHEX_EXTRA_ENV",
-                "RALPHEX_EXTRA_VOLUMES", "RALPHEX_CLAUDE_PROVIDER", "CLAUDE_CONFIG_DIR",
+                "RALPHEX_EXTRA_VOLUMES", "RALPHEX_GEMINI_PROVIDER", "GEMINI_CONFIG_DIR",
                 "RALPHEX_WEB_HOST", "RALPHEX_DOCKER_SOCKET", "DOCKER_HOST"]
     save_argv = True
 
@@ -2979,9 +2979,9 @@ class TestDockerLinuxWarning(EnvTestCase):
         """helper: run main() with --docker, mocked platform, return stderr output."""
         with tempfile.TemporaryDirectory() as tmpdir:
             tmp = Path(tmpdir)
-            claude_home = tmp / ".claude"
-            claude_home.mkdir()
-            (claude_home / ".credentials.json").write_text("{}")
+            gemini_home = tmp / ".gemini"
+            gemini_home.mkdir()
+            (gemini_home / ".credentials.json").write_text("{}")
 
             sys.argv = ["ralphex-dk", "--docker", "plan.md"]
 
@@ -3036,7 +3036,7 @@ class TestDockerLinuxWarning(EnvTestCase):
 class TestDryRunDocker(EnvTestCase):
     """tests for --dry-run with --docker flag."""
     env_vars = ["RALPHEX_IMAGE", "RALPHEX_PORT", "RALPHEX_EXTRA_ENV",
-                "RALPHEX_EXTRA_VOLUMES", "RALPHEX_CLAUDE_PROVIDER", "CLAUDE_CONFIG_DIR",
+                "RALPHEX_EXTRA_VOLUMES", "RALPHEX_GEMINI_PROVIDER", "GEMINI_CONFIG_DIR",
                 "RALPHEX_WEB_HOST", "RALPHEX_DOCKER_SOCKET", "DOCKER_HOST"]
     save_argv = True
 
@@ -3046,9 +3046,9 @@ class TestDryRunDocker(EnvTestCase):
 
         with tempfile.TemporaryDirectory() as tmpdir:
             tmp = Path(tmpdir)
-            claude_home = tmp / ".claude"
-            claude_home.mkdir()
-            (claude_home / ".credentials.json").write_text("{}")
+            gemini_home = tmp / ".gemini"
+            gemini_home.mkdir()
+            (gemini_home / ".credentials.json").write_text("{}")
 
             sys.argv = ["ralphex-dk", "--dry-run", "--docker"]
 
@@ -3100,11 +3100,11 @@ def run_tests() -> None:
     for tc in [TestResolvePath, TestSymlinkTargetDirs, TestShouldBindPort, TestBuildVolumes,
                TestBuildVolumesGitignore, TestDetectGitWorktree, TestDetectTimezone,
                TestExtractCredentials, TestScheduleCleanup,
-               TestBuildDockerCmd, TestKeychainServiceName, TestBuildVolumesClaudeHome,
-               TestExtractCredentialsClaudeHome, TestSelinuxEnabled, TestSelinuxVolumeSuffix,
-               TestClaudeConfigDirEnv, TestIsSensitiveName, TestBuildEnvVars,
+               TestBuildDockerCmd, TestKeychainServiceName, TestBuildVolumesGeminiHome,
+               TestExtractCredentialsGeminiHome, TestSelinuxEnabled, TestSelinuxVolumeSuffix,
+               TestGeminiConfigDirEnv, TestIsSensitiveName, TestBuildEnvVars,
                TestMergeEnvFlags, TestMergeVolumeFlags, TestBuildParser,
-               TestMainArgparse, TestHelpFlag, TestClaudeProvider, TestDockerEnabled, TestResolveDockerSocket, TestAwsCredentialExport,
+               TestMainArgparse, TestHelpFlag, TestGeminiProvider, TestDockerEnabled, TestResolveDockerSocket, TestAwsCredentialExport,
                TestBedrockSkipKeychain, TestBedrockValidation, TestParseEnvFlags, TestExtractEnvFromFlags,
                TestBuildDockerCommand, TestDetectInheritedEnvVars, TestDetectExplicitSecrets, TestDryRun,
                TestDockerSocketGid, TestDockerSocketMount, TestBuildDockerCommandDockerGid,

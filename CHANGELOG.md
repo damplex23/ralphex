@@ -40,8 +40,8 @@
 ### Improved
 
 - Retry claude 5xx API errors via limit patterns 810840f
-- Dedup CLAUDE.md against llms.txt to clear size threshold b858c05
-- Trim CLAUDE.md verbosity a4853c7
+- Dedup GEMINI.md against llms.txt to clear size threshold b858c05
+- Trim GEMINI.md verbosity a4853c7
 
 ### Fixed
 
@@ -185,7 +185,7 @@ First stable release. From this point forward, ralphex follows Semantic Versioni
 
 - Bump github.com/go-jose/go-jose/v3 from 3.0.4 to 3.0.5 #264 @app/dependabot
 - Update all dependencies 3f4d7d44
-- Document agent fallback behavior in CLAUDE.md and llms.txt 1c898c15
+- Document agent fallback behavior in GEMINI.md and llms.txt 1c898c15
 - Clarify agent customization and disable mechanism in README b4e03548
 
 ### Fixed

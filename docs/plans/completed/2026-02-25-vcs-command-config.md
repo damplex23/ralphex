@@ -4,13 +4,13 @@
 - add `vcs_command` config option so ralphex's git backend can call a custom VCS command instead of hardcoded `git`
 - provide a reference `scripts/hg2git.sh` translation script that maps the ~15 git subcommands ralphex uses to Mercurial equivalents
 - the script uses **phase-based commit logic**: on a draft (unsent) commit it uses `hg amend` instead of creating new commits; on a public commit (master-equivalent) it uses `hg commit` to create a new draft
-- document the setup for using ralphex with hg repos (configurable backend + custom prompts for Claude)
+- document the setup for using ralphex with hg repos (configurable backend + custom prompts for Gemini)
 - this enables hg users to use ralphex without any native hg backend code
 
 ## Context (from discovery)
 - `pkg/git/external.go` — `externalBackend` hardcodes `"git"` in `run()` and 8 direct `exec.CommandContext` calls (constructor, `hasCommits`, `currentBranch`, `getDefaultBranch`, `diffStats`, `isIgnored`, `refExists`, `resolveRef`)
 - `pkg/git/service.go` — `NewService(path, log)` creates `externalBackend` with no command override
-- `pkg/config/values.go` — follows established pattern for string config fields (see `ClaudeCommand`, `CodexCommand`)
+- `pkg/config/values.go` — follows established pattern for string config fields (see `GeminiCommand`, `CodexCommand`)
 - `pkg/config/config.go` — `Config` struct assembled in `loadConfigFromDirs()` from `Values`
 - `pkg/config/defaults/config` — INI format with commented sections
 - `cmd/ralphex/main.go:616-621` — `openGitService()` calls `git.NewService(".", colors.Info())`
@@ -173,7 +173,7 @@
 - [x] write setup steps: config, script placement, making executable
 - [x] write custom prompts section with example hg prompt snippets for review_first.txt, review_second.txt
 - [x] document `.hgignore` manual setup — ralphex writes `.gitignore` internally (hardcoded in `EnsureIgnored`); for hg repos, users must manually add `.ralphex/` patterns to `.hgignore` and the `.gitignore` file created by ralphex can be safely ignored or deleted
-- [x] document limitations (no worktree mode, Claude Code's own git awareness, unbounded command surface)
+- [x] document limitations (no worktree mode, Gemini CLI's own git awareness, unbounded command surface)
 - [x] add troubleshooting section (common issues, debugging tips)
 
 ### Task 6: Verify acceptance criteria
@@ -202,7 +202,7 @@ Run these tests from a Mercurial repo with a draft commit:
 
 ### Task 7: [Final] Update documentation
 
-- [x] update CLAUDE.md with `vcs_command` config option
+- [x] update GEMINI.md with `vcs_command` config option
 - [x] update llms.txt if needed (mention vcs_command in customization section)
 - [x] move this plan to `docs/plans/completed/`
 
@@ -245,7 +245,7 @@ Run these tests from a Mercurial repo with a draft commit:
 
 **Prompt customisation** (out of scope for this plan, but important context):
 - the hg2git.sh script only handles commands from ralphex's Go backend (`pkg/git/external.go`)
-- Claude's bash commands in prompts (e.g., `git log`, `git diff` in review prompts) are NOT intercepted by the script
+- Gemini's bash commands in prompts (e.g., `git log`, `git diff` in review prompts) are NOT intercepted by the script
 - users must customise `~/.config/ralphex/prompts/*.txt` to replace `git log`/`git diff` with hg equivalents
 - example: `git log {{DEFAULT_BRANCH}}..HEAD --oneline` → `hg log -r "::. and not ::{{DEFAULT_BRANCH}}" --template '{node|short} {desc|firstline}\n'`
 
@@ -265,5 +265,5 @@ Run these tests from a Mercurial repo with a draft commit:
 **Manual verification:**
 - test full ralphex execution with `vcs_command` pointing to hg2git.sh in a parent hg repo
 - verify the amend-vs-commit logic by running a plan: first commit should be new (from public), subsequent should amend
-- verify Claude Code's own bash commands don't break when vcs_command is set (Claude runs git/hg directly, not through the script)
+- verify Gemini CLI's own bash commands don't break when vcs_command is set (Gemini runs git/hg directly, not through the script)
 - test custom prompts with hg-specific diff/log commands in review_first.txt, review_second.txt

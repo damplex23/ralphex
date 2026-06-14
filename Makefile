@@ -90,8 +90,8 @@ prep_site:
 	cp -fv llms.txt site/site/
 	# build site into site/site/docs/ (use venv for PEP 668 compliance)
 	cd site && python3 -m venv .venv && .venv/bin/pip install -r requirements.txt && .venv/bin/zensical build
-	# copy raw claude assets (not rendered by build)
-	rm -rf site/site/docs/assets/claude && cp -rv assets/claude site/site/docs/assets/
+	# copy raw gemini assets (not rendered by build)
+	rm -rf site/site/docs/assets/gemini && cp -rv assets/gemini site/site/docs/assets/
 
 docker-build:
 	docker build -t ghcr.io/umputun/ralphex:latest .

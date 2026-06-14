@@ -18,7 +18,7 @@ func Test_defaultsFS(t *testing.T) {
 
 	data, err := fs.ReadFile("defaults/config")
 	require.NoError(t, err)
-	assert.Contains(t, string(data), "claude_command")
+	assert.Contains(t, string(data), "gemini_command")
 	assert.Contains(t, string(data), "codex_enabled")
 	assert.Contains(t, string(data), "iteration_delay_ms")
 }
@@ -117,8 +117,8 @@ func TestLoad_PopulatesAllFields(t *testing.T) {
 	require.NoError(t, err)
 
 	// should have config values from defaults
-	assert.NotEmpty(t, cfg.ClaudeCommand)
-	assert.NotEmpty(t, cfg.ClaudeArgs)
+	assert.NotEmpty(t, cfg.GeminiCommand)
+	assert.NotEmpty(t, cfg.GeminiArgs)
 	assert.NotEmpty(t, cfg.CodexCommand)
 
 	// should have prompts loaded
@@ -137,7 +137,7 @@ func TestLoad_WithUserConfig(t *testing.T) {
 	require.NoError(t, os.MkdirAll(filepath.Join(configDir, "agents"), 0o700))
 
 	userConfig := `
-claude_command = /custom/claude
+gemini_command = /custom/gemini
 iteration_delay_ms = 9999
 `
 	require.NoError(t, os.WriteFile(filepath.Join(configDir, "config"), []byte(userConfig), 0o600))
@@ -145,7 +145,7 @@ iteration_delay_ms = 9999
 	cfg, err := Load(configDir)
 	require.NoError(t, err)
 
-	assert.Equal(t, "/custom/claude", cfg.ClaudeCommand)
+	assert.Equal(t, "/custom/gemini", cfg.GeminiCommand)
 	assert.Equal(t, 9999, cfg.IterationDelayMs)
 	// prompts should fall back to embedded defaults
 	assert.NotEmpty(t, cfg.TaskPrompt)
@@ -170,7 +170,7 @@ func TestEmbeddedDefaultsColorValues(t *testing.T) {
 	assert.Equal(t, "46,139,87", cfg.Colors.Task, "task color should be sea green (#2e8b57)")
 	assert.Equal(t, "26,158,158", cfg.Colors.Review, "review color should be teal (#1a9e9e)")
 	assert.Equal(t, "155,89,182", cfg.Colors.Codex, "codex color should be purple (#9b59b6)")
-	assert.Equal(t, "91,141,217", cfg.Colors.ClaudeEval, "claude_eval color should be blue (#5b8dd9)")
+	assert.Equal(t, "91,141,217", cfg.Colors.GeminiEval, "gemini_eval color should be blue (#5b8dd9)")
 	assert.Equal(t, "212,147,13", cfg.Colors.Warn, "warn color should be amber (#d4930d)")
 	assert.Equal(t, "204,0,0", cfg.Colors.Error, "error color should be red (#cc0000)")
 	assert.Equal(t, "210,82,82", cfg.Colors.Signal, "signal color should be red (#d25252)")
@@ -196,8 +196,8 @@ func TestLoad_PartialConfig(t *testing.T) {
 	assert.Equal(t, "custom/plans", cfg.PlansDir)
 
 	// missing values filled from embedded defaults
-	assert.Equal(t, "claude", cfg.ClaudeCommand)
-	assert.Equal(t, "--dangerously-skip-permissions --output-format stream-json --verbose", cfg.ClaudeArgs)
+	assert.Equal(t, "gemini", cfg.GeminiCommand)
+	assert.Equal(t, "--non-interactive --output-format stream-json --verbose", cfg.GeminiArgs)
 	assert.Equal(t, "codex", cfg.CodexCommand)
 	assert.Equal(t, "gpt-5.5", cfg.CodexModel, "codex_model defaults to embedded gpt-5.5")
 	assert.Equal(t, "xhigh", cfg.CodexReasoningEffort)
@@ -223,8 +223,8 @@ func TestLoad_EmptyConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	// all values should come from embedded defaults
-	assert.Equal(t, "claude", cfg.ClaudeCommand)
-	assert.Equal(t, "--dangerously-skip-permissions --output-format stream-json --verbose", cfg.ClaudeArgs)
+	assert.Equal(t, "gemini", cfg.GeminiCommand)
+	assert.Equal(t, "--non-interactive --output-format stream-json --verbose", cfg.GeminiArgs)
 	assert.Equal(t, "codex", cfg.CodexCommand)
 	assert.Equal(t, "gpt-5.5", cfg.CodexModel, "codex_model defaults to embedded gpt-5.5")
 	assert.Equal(t, "xhigh", cfg.CodexReasoningEffort)
@@ -387,7 +387,7 @@ func TestLoad_MovePlanOnCompletion(t *testing.T) {
 	}
 }
 
-func TestLoad_PreserveAnthropicAPIKey(t *testing.T) {
+func TestLoad_PreserveGeminiAPIKey(t *testing.T) {
 	testCases := []struct {
 		name       string
 		configBody string
@@ -400,12 +400,12 @@ func TestLoad_PreserveAnthropicAPIKey(t *testing.T) {
 		},
 		{
 			name:       "explicit true yields true",
-			configBody: "preserve_anthropic_api_key = true",
+			configBody: "preserve_gemini_api_key = true",
 			want:       true,
 		},
 		{
 			name:       "explicit false yields false",
-			configBody: "preserve_anthropic_api_key = false",
+			configBody: "preserve_gemini_api_key = false",
 			want:       false,
 		},
 	}
@@ -423,23 +423,23 @@ func TestLoad_PreserveAnthropicAPIKey(t *testing.T) {
 			cfg, err := Load(configDir)
 			require.NoError(t, err)
 
-			assert.Equal(t, tc.want, cfg.PreserveAnthropicAPIKey)
+			assert.Equal(t, tc.want, cfg.PreserveGeminiAPIKey)
 		})
 	}
 }
 
-func TestLoad_PreserveAnthropicAPIKey_InvalidValue(t *testing.T) {
+func TestLoad_PreserveGeminiAPIKey_InvalidValue(t *testing.T) {
 	tmpDir := t.TempDir()
 	configDir := filepath.Join(tmpDir, "ralphex")
 	require.NoError(t, os.MkdirAll(configDir, 0o700))
 	require.NoError(t, os.MkdirAll(filepath.Join(configDir, "prompts"), 0o700))
 	require.NoError(t, os.MkdirAll(filepath.Join(configDir, "agents"), 0o700))
 
-	require.NoError(t, os.WriteFile(filepath.Join(configDir, "config"), []byte("preserve_anthropic_api_key = notabool"), 0o600))
+	require.NoError(t, os.WriteFile(filepath.Join(configDir, "config"), []byte("preserve_gemini_api_key = notabool"), 0o600))
 
 	_, err := Load(configDir)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "preserve_anthropic_api_key")
+	assert.Contains(t, err.Error(), "preserve_gemini_api_key")
 }
 
 func TestLoad_Executor(t *testing.T) {
@@ -473,14 +473,14 @@ func TestLoad_Executor(t *testing.T) {
 
 func TestLoad_Executor_RejectsInvalidValue(t *testing.T) {
 	// regression: config-file `executor = clyde` (typo) used to flow through silently
-	// and be treated as claude. validation now rejects unknown values explicitly so
-	// users get a clear error instead of mysterious "claude was selected" behavior.
+	// and be treated as gemini. validation now rejects unknown values explicitly so
+	// users get a clear error instead of mysterious "gemini was selected" behavior.
 	tests := []struct {
 		name       string
 		configBody string
 	}{
 		{name: "typo", configBody: "executor = clyde"},
-		{name: "claude_spelled_out", configBody: "executor = claude"},
+		{name: "gemini_spelled_out", configBody: "executor = gemini"},
 		{name: "uppercase_codex", configBody: "executor = CODEX"},
 	}
 	for _, tc := range tests {
@@ -499,15 +499,15 @@ func TestLoad_Executor_RejectsInvalidValue(t *testing.T) {
 	}
 }
 
-func TestLoad_PassClaudeMd(t *testing.T) {
+func TestLoad_PassGeminiMd(t *testing.T) {
 	testCases := []struct {
 		name       string
 		configBody string
 		want       bool
 	}{
 		{name: "default not set yields false", configBody: "", want: false},
-		{name: "explicit true yields true", configBody: "pass_claude_md = true", want: true},
-		{name: "explicit false yields false", configBody: "pass_claude_md = false", want: false},
+		{name: "explicit true yields true", configBody: "pass_gemini_md = true", want: true},
+		{name: "explicit false yields false", configBody: "pass_gemini_md = false", want: false},
 	}
 
 	for _, tc := range testCases {
@@ -523,23 +523,23 @@ func TestLoad_PassClaudeMd(t *testing.T) {
 			cfg, err := Load(configDir)
 			require.NoError(t, err)
 
-			assert.Equal(t, tc.want, cfg.PassClaudeMd)
+			assert.Equal(t, tc.want, cfg.PassGeminiMd)
 		})
 	}
 }
 
-func TestLoad_PassClaudeMd_InvalidValue(t *testing.T) {
+func TestLoad_PassGeminiMd_InvalidValue(t *testing.T) {
 	tmpDir := t.TempDir()
 	configDir := filepath.Join(tmpDir, "ralphex")
 	require.NoError(t, os.MkdirAll(configDir, 0o700))
 	require.NoError(t, os.MkdirAll(filepath.Join(configDir, "prompts"), 0o700))
 	require.NoError(t, os.MkdirAll(filepath.Join(configDir, "agents"), 0o700))
 
-	require.NoError(t, os.WriteFile(filepath.Join(configDir, "config"), []byte("pass_claude_md = notabool"), 0o600))
+	require.NoError(t, os.WriteFile(filepath.Join(configDir, "config"), []byte("pass_gemini_md = notabool"), 0o600))
 
 	_, err := Load(configDir)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "pass_claude_md")
+	assert.Contains(t, err.Error(), "pass_gemini_md")
 }
 
 func TestLoad_AllUserValues(t *testing.T) {
@@ -551,8 +551,8 @@ func TestLoad_AllUserValues(t *testing.T) {
 
 	// set all values to custom values
 	configContent := `
-claude_command = /custom/claude
-claude_args = --custom
+gemini_command = /custom/gemini
+gemini_args = --custom
 plan_model = opus:high
 codex_enabled = false
 codex_command = /custom/codex
@@ -570,8 +570,8 @@ plans_dir = my/plans
 	require.NoError(t, err)
 
 	// all values should be user-specified, not defaults
-	assert.Equal(t, "/custom/claude", cfg.ClaudeCommand)
-	assert.Equal(t, "--custom", cfg.ClaudeArgs)
+	assert.Equal(t, "/custom/gemini", cfg.GeminiCommand)
+	assert.Equal(t, "--custom", cfg.GeminiArgs)
 	assert.Equal(t, "opus:high", cfg.PlanModel)
 	assert.False(t, cfg.CodexEnabled)
 	assert.Equal(t, "/custom/codex", cfg.CodexCommand)
@@ -623,8 +623,8 @@ func TestLocalConfig_LocalOverridesGlobal(t *testing.T) {
 
 	// global config
 	globalConfig := `
-claude_command = global-claude
-claude_args = --global-args
+gemini_command = global-gemini
+gemini_args = --global-args
 iteration_delay_ms = 1000
 plans_dir = global/plans
 `
@@ -632,7 +632,7 @@ plans_dir = global/plans
 
 	// local config overrides some values
 	localConfig := `
-claude_command = local-claude
+gemini_command = local-gemini
 plans_dir = local/plans
 `
 	require.NoError(t, os.WriteFile(filepath.Join(localDir, "config"), []byte(localConfig), 0o600))
@@ -641,11 +641,11 @@ plans_dir = local/plans
 	require.NoError(t, err)
 
 	// local values override global
-	assert.Equal(t, "local-claude", cfg.ClaudeCommand)
+	assert.Equal(t, "local-gemini", cfg.GeminiCommand)
 	assert.Equal(t, "local/plans", cfg.PlansDir)
 
 	// global values preserved when not overridden in local
-	assert.Equal(t, "--global-args", cfg.ClaudeArgs)
+	assert.Equal(t, "--global-args", cfg.GeminiArgs)
 	assert.Equal(t, 1000, cfg.IterationDelayMs)
 }
 
@@ -742,14 +742,14 @@ func TestLocalConfig_NoLocalConfigFile(t *testing.T) {
 	require.NoError(t, os.MkdirAll(filepath.Join(globalDir, "agents"), 0o700))
 	require.NoError(t, os.MkdirAll(localDir, 0o700)) // local dir exists but no config file
 
-	globalConfig := `claude_command = global-claude`
+	globalConfig := `gemini_command = global-gemini`
 	require.NoError(t, os.WriteFile(filepath.Join(globalDir, "config"), []byte(globalConfig), 0o600))
 
 	cfg, err := loadWithLocal(globalDir, localDir)
 	require.NoError(t, err)
 
 	// global values used since no local config file
-	assert.Equal(t, "global-claude", cfg.ClaudeCommand)
+	assert.Equal(t, "global-gemini", cfg.GeminiCommand)
 	assert.Equal(t, localDir, cfg.LocalDir())
 }
 
@@ -849,7 +849,7 @@ func TestLoad_PartialOverridesAllComponents(t *testing.T) {
 
 	// global config: partial values + partial colors
 	globalConfig := `
-claude_command = global-claude
+gemini_command = global-gemini
 iteration_delay_ms = 5000
 task_retry_count = 3
 color_task = #ff0000
@@ -871,7 +871,7 @@ color_error = #00ff00
 
 	// local config: override some values + different color
 	localConfig := `
-claude_command = local-claude
+gemini_command = local-gemini
 codex_enabled = false
 color_task = #0000ff
 `
@@ -888,7 +888,7 @@ color_task = #0000ff
 
 	// --- verify values merge chain: embedded → global → local ---
 	// local override
-	assert.Equal(t, "local-claude", cfg.ClaudeCommand)
+	assert.Equal(t, "local-gemini", cfg.GeminiCommand)
 	assert.False(t, cfg.CodexEnabled, "local codex_enabled=false should override")
 	assert.True(t, cfg.CodexEnabledSet)
 
@@ -897,7 +897,7 @@ color_task = #0000ff
 	assert.Equal(t, 3, cfg.TaskRetryCount)
 
 	// embedded defaults (not in global or local)
-	assert.Equal(t, "--dangerously-skip-permissions --output-format stream-json --verbose", cfg.ClaudeArgs)
+	assert.Equal(t, "--non-interactive --output-format stream-json --verbose", cfg.GeminiArgs)
 	assert.Equal(t, "codex", cfg.CodexCommand)
 	assert.Equal(t, "gpt-5.5", cfg.CodexModel, "codex_model defaults to embedded gpt-5.5")
 
@@ -941,7 +941,7 @@ func TestLoad_SymlinkedConfigDir(t *testing.T) {
 	require.NoError(t, os.MkdirAll(filepath.Join(realDir, "agents"), 0o700))
 
 	configContent := `
-claude_command = symlink-claude
+gemini_command = symlink-gemini
 iteration_delay_ms = 2500
 color_task = #123456
 `
@@ -958,7 +958,7 @@ color_task = #123456
 	require.NoError(t, err)
 
 	// verify values loaded correctly through symlink
-	assert.Equal(t, "symlink-claude", cfg.ClaudeCommand)
+	assert.Equal(t, "symlink-gemini", cfg.GeminiCommand)
 	assert.Equal(t, 2500, cfg.IterationDelayMs)
 	assert.Equal(t, "18,52,86", cfg.Colors.Task) // #123456 converted to RGB
 
@@ -1200,7 +1200,7 @@ func TestLoad_SymlinkedLocalDir(t *testing.T) {
 	require.NoError(t, os.MkdirAll(filepath.Join(globalDir, "prompts"), 0o700))
 	require.NoError(t, os.MkdirAll(filepath.Join(globalDir, "agents"), 0o700))
 	globalConfig := `
-claude_command = global-claude
+gemini_command = global-gemini
 iteration_delay_ms = 1000
 `
 	require.NoError(t, os.WriteFile(filepath.Join(globalDir, "config"), []byte(globalConfig), 0o600))
@@ -1209,7 +1209,7 @@ iteration_delay_ms = 1000
 	realLocalDir := filepath.Join(tmpDir, "shared-configs", "project-a")
 	require.NoError(t, os.MkdirAll(realLocalDir, 0o700))
 	localConfig := `
-claude_command = local-symlinked-claude
+gemini_command = local-symlinked-gemini
 `
 	require.NoError(t, os.WriteFile(filepath.Join(realLocalDir, "config"), []byte(localConfig), 0o600))
 
@@ -1222,7 +1222,7 @@ claude_command = local-symlinked-claude
 	require.NoError(t, err)
 
 	// verify local override works through symlink
-	assert.Equal(t, "local-symlinked-claude", cfg.ClaudeCommand)
+	assert.Equal(t, "local-symlinked-gemini", cfg.GeminiCommand)
 
 	// verify global fallback still works
 	assert.Equal(t, 1000, cfg.IterationDelayMs)
@@ -1458,8 +1458,8 @@ func TestConfig_JSONShape(t *testing.T) {
 	// do not catch tag changes, but the marshaled shape is a real dashboard/API surface
 	// consumed by pkg/web.
 	c := Config{
-		ClaudeCommand:           "claude",
-		ClaudeArgs:              "--foo",
+		GeminiCommand:           "gemini",
+		GeminiArgs:              "--foo",
 		PlanModel:               "opus:high",
 		TaskModel:               "sonnet:medium",
 		ReviewModel:             "sonnet:low",
@@ -1477,9 +1477,9 @@ func TestConfig_JSONShape(t *testing.T) {
 		MaxExternalIterations:   5,
 		ReviewPatience:          3,
 		FinalizeEnabled:         true,
-		PreserveAnthropicAPIKey: true,
+		PreserveGeminiAPIKey: true,
 		Executor:                ExecutorCodex,
-		PassClaudeMd:            true,
+		PassGeminiMd:            true,
 		MovePlanOnCompletion:    true,
 		WorktreeEnabled:         true,
 		PlansDir:                "docs/plans",
@@ -1487,11 +1487,11 @@ func TestConfig_JSONShape(t *testing.T) {
 		DefaultBranch:           "main",
 		VcsCommand:              "git",
 		CommitTrailer:           "Co-authored-by: x <x@y>",
-		ClaudeErrorPatterns:     []string{"e1"},
+		GeminiErrorPatterns:     []string{"e1"},
 		CodexErrorPatterns:      []string{"e2"},
-		ClaudeLimitPatterns:     []string{"l1"},
+		GeminiLimitPatterns:     []string{"l1"},
 		CodexLimitPatterns:      []string{"l2"},
-		ClaudeRetryPatterns:     []string{"r1"},
+		GeminiRetryPatterns:     []string{"r1"},
 		WaitOnLimit:             time.Hour,
 		SessionTimeout:          30 * time.Minute,
 		IdleTimeout:             5 * time.Minute,
@@ -1504,15 +1504,15 @@ func TestConfig_JSONShape(t *testing.T) {
 	require.NoError(t, json.Unmarshal(data, &got))
 
 	wantKeys := []string{
-		"claude_command", "claude_args", "plan_model", "task_model", "review_model",
+		"gemini_command", "gemini_args", "plan_model", "task_model", "review_model",
 		"codex_enabled", "codex_command", "codex_model", "codex_reasoning_effort",
 		"codex_timeout_ms", "codex_sandbox", "external_review_tool", "custom_review_script",
 		"iteration_delay_ms", "task_retry_count", "max_iterations", "max_external_iterations",
-		"review_patience", "finalize_enabled", "preserve_anthropic_api_key", "executor",
-		"pass_claude_md", "move_plan_on_completion", "worktree_enabled", "plans_dir",
+		"review_patience", "finalize_enabled", "preserve_gemini_api_key", "executor",
+		"pass_gemini_md", "move_plan_on_completion", "worktree_enabled", "plans_dir",
 		"watch_dirs", "default_branch", "vcs_command", "commit_trailer",
-		"claude_error_patterns", "codex_error_patterns", "claude_limit_patterns",
-		"codex_limit_patterns", "claude_retry_patterns", "wait_on_limit", "session_timeout", "idle_timeout",
+		"gemini_error_patterns", "codex_error_patterns", "gemini_limit_patterns",
+		"codex_limit_patterns", "gemini_retry_patterns", "wait_on_limit", "session_timeout", "idle_timeout",
 	}
 
 	gotKeys := make([]string, 0, len(got))
@@ -1521,14 +1521,14 @@ func TestConfig_JSONShape(t *testing.T) {
 	}
 	assert.ElementsMatch(t, wantKeys, gotKeys, "marshaled Config key set drifted")
 
-	assert.JSONEq(t, `["e1"]`, string(got["claude_error_patterns"]))
+	assert.JSONEq(t, `["e1"]`, string(got["gemini_error_patterns"]))
 	assert.JSONEq(t, `["e2"]`, string(got["codex_error_patterns"]))
-	assert.JSONEq(t, `["l1"]`, string(got["claude_limit_patterns"]))
+	assert.JSONEq(t, `["l1"]`, string(got["gemini_limit_patterns"]))
 	assert.JSONEq(t, `["l2"]`, string(got["codex_limit_patterns"]))
-	assert.JSONEq(t, `["r1"]`, string(got["claude_retry_patterns"]))
+	assert.JSONEq(t, `["r1"]`, string(got["gemini_retry_patterns"]))
 
 	// the *Set sentinels and the loaded-from-files fields carry json:"-" and must be absent
-	for _, absent := range []string{"claude_args_set", "wait_on_limit_set", "notify_params", "colors", "task_prompt"} {
+	for _, absent := range []string{"gemini_args_set", "wait_on_limit_set", "notify_params", "colors", "task_prompt"} {
 		_, present := got[absent]
 		assert.False(t, present, "unexpected json key %q present", absent)
 	}

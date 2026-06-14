@@ -80,7 +80,7 @@ Add optional post-completion finalize step that runs after successful review pha
 - Modify: `pkg/processor/runner.go`
 
 - [x] Add `runFinalize(ctx context.Context)` method
-- [x] Set phase, print section header, run claude, handle errors (best effort)
+- [x] Set phase, print section header, run gemini, handle errors (best effort)
 
 ### 10. Call Finalize from Modes
 
@@ -114,7 +114,7 @@ Add optional post-completion finalize step that runs after successful review pha
 ### 13. Update Documentation
 
 **Files:**
-- Modify: `CLAUDE.md`
+- Modify: `GEMINI.md`
 
 - [x] Document finalize step in "Key Patterns" or new section
 - [x] Document config option and prompt file

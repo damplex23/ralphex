@@ -1,18 +1,18 @@
 # opencode
 
-OpenCode CLI wrappers for ralphex, allowing OpenCode to replace Claude Code in task/review phases.
+OpenCode CLI wrappers for ralphex, allowing OpenCode to replace Gemini CLI in task/review phases.
 
 ## Scripts
 
-### opencode-as-claude.sh
+### opencode-as-gemini.sh
 
-Wraps OpenCode CLI to produce Claude-compatible stream-json output. Acts as a drop-in replacement for `claude` in task and review phases.
+Wraps OpenCode CLI to produce Gemini-compatible stream-json output. Acts as a drop-in replacement for `gemini` in task and review phases.
 
 **Configuration** (`~/.config/ralphex/config` or `.ralphex/config`):
 
 ```ini
-claude_command = /path/to/scripts/opencode/opencode-as-claude.sh
-claude_args =
+gemini_command = /path/to/scripts/opencode/opencode-as-gemini.sh
+gemini_args =
 ```
 
 **Environment variables:**
@@ -23,7 +23,7 @@ claude_args =
 - `OPENCODE_REASONING` — alias for `OPENCODE_VARIANT` when `OPENCODE_VARIANT` and `OPENCODE_EFFORT` are unset
 - `OPENCODE_VERBOSE` — set to `1` to include tool execution events in output (default: `0`)
 
-The wrapper also honors Claude-compatible `--model` and `--effort` flags. Ralphex `--task-model=model:effort`, `--review-model=model:effort`, and `--plan-model=model:effort` are translated to OpenCode as `--model model --variant effort`.
+The wrapper also honors Gemini-compatible `--model` and `--effort` flags. Ralphex `--task-model=model:effort`, `--review-model=model:effort`, and `--plan-model=model:effort` are translated to OpenCode as `--model model --variant effort`.
 
 ### opencode-review.sh
 
@@ -46,7 +46,7 @@ custom_review_script = /path/to/scripts/opencode/opencode-review.sh
 ## Testing
 
 ```bash
-bash scripts/opencode/opencode-as-claude_test.sh
+bash scripts/opencode/opencode-as-gemini_test.sh
 bash scripts/opencode/opencode-review_test.sh
 ```
 

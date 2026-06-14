@@ -18,7 +18,7 @@ import (
 func TestNewSelector(t *testing.T) {
 	colors := progress.NewColors(config.ColorConfig{
 		Task: "0,255,0", Review: "255,255,0", Codex: "255,165,0",
-		ClaudeEval: "0,255,255", Warn: "255,165,0", Error: "255,0,0",
+		GeminiEval: "0,255,255", Warn: "255,165,0", Error: "255,0,0",
 		Signal: "255,0,255", Timestamp: "128,128,128", Info: "255,255,255",
 	})
 
@@ -30,7 +30,7 @@ func TestNewSelector(t *testing.T) {
 func TestSelector_Select(t *testing.T) {
 	colors := progress.NewColors(config.ColorConfig{
 		Task: "0,255,0", Review: "255,255,0", Codex: "255,165,0",
-		ClaudeEval: "0,255,255", Warn: "255,165,0", Error: "255,0,0",
+		GeminiEval: "0,255,255", Warn: "255,165,0", Error: "255,0,0",
 		Signal: "255,0,255", Timestamp: "128,128,128", Info: "255,255,255",
 	})
 
@@ -74,7 +74,7 @@ func TestSelector_Select(t *testing.T) {
 func TestSelector_SelectWithFzf(t *testing.T) {
 	colors := progress.NewColors(config.ColorConfig{
 		Task: "0,255,0", Review: "255,255,0", Codex: "255,165,0",
-		ClaudeEval: "0,255,255", Warn: "255,165,0", Error: "255,0,0",
+		GeminiEval: "0,255,255", Warn: "255,165,0", Error: "255,0,0",
 		Signal: "255,0,255", Timestamp: "128,128,128", Info: "255,255,255",
 	})
 
@@ -108,7 +108,7 @@ func TestSelector_SelectWithFzf(t *testing.T) {
 func TestSelector_FindRecent(t *testing.T) {
 	colors := progress.NewColors(config.ColorConfig{
 		Task: "0,255,0", Review: "255,255,0", Codex: "255,165,0",
-		ClaudeEval: "0,255,255", Warn: "255,165,0", Error: "255,0,0",
+		GeminiEval: "0,255,255", Warn: "255,165,0", Error: "255,0,0",
 		Signal: "255,0,255", Timestamp: "128,128,128", Info: "255,255,255",
 	})
 
@@ -198,7 +198,7 @@ func TestExtractBranchName(t *testing.T) {
 func TestPromptDescription(t *testing.T) {
 	colors := progress.NewColors(config.ColorConfig{
 		Task: "0,255,0", Review: "255,255,0", Codex: "255,165,0",
-		ClaudeEval: "0,255,255", Warn: "255,165,0", Error: "255,0,0",
+		GeminiEval: "0,255,255", Warn: "255,165,0", Error: "255,0,0",
 		Signal: "255,0,255", Timestamp: "128,128,128", Info: "255,255,255",
 	})
 

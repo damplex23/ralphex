@@ -25,7 +25,7 @@ Add support for custom external review tools alongside codex. Users can specify 
 
 **Prompt files:**
 - `custom_review.txt` - instructions for custom tool (supports `{{DIFF_INSTRUCTION}}`, `{{GOAL}}`, `{{PLAN_FILE}}`, etc.)
-- `custom_eval.txt` - Claude evaluates custom tool output
+- `custom_eval.txt` - Gemini evaluates custom tool output
 
 **CLI:**
 - `--external-only` (-e) primary flag
@@ -60,7 +60,7 @@ Add support for custom external review tools alongside codex. Users can specify 
 - Create: `pkg/config/defaults/prompts/custom_eval.txt`
 
 - [x] Create `custom_review.txt` with `{{DIFF_INSTRUCTION}}`, `{{GOAL}}`, `{{PLAN_FILE}}`, `{{DEFAULT_BRANCH}}`
-- [x] Create `custom_eval.txt` for Claude to evaluate custom tool output (similar to codex.txt but generic)
+- [x] Create `custom_eval.txt` for Gemini to evaluate custom tool output (similar to codex.txt but generic)
 - [x] Add prompts to Config struct
 - [x] Add loading in prompt loader
 - [x] Add tests for prompt loading
@@ -101,7 +101,7 @@ Add support for custom external review tools alongside codex. Users can specify 
 - [x] Initialize in `New()` based on `ExternalReviewTool` config
 - [x] Modify `runCodexLoop()` to dispatch to codex or custom based on config
 - [x] Build custom prompt with `{{DIFF_INSTRUCTION}}` expanded per iteration
-- [x] Use `custom_eval.txt` prompt for Claude evaluation when tool is custom
+- [x] Use `custom_eval.txt` prompt for Gemini evaluation when tool is custom
 - [x] Handle `external_review_tool = none` (skip external review)
 - [x] Backward compat: `codex_enabled = false` → treat as `none`
 - [x] Add tests for custom review flow
@@ -124,7 +124,7 @@ Add support for custom external review tools alongside codex. Users can specify 
 **Files:**
 - Modify: `README.md`
 - Modify: `llms.txt`
-- Modify: `CLAUDE.md`
+- Modify: `GEMINI.md`
 
 - [x] Add "Custom External Review" section to README.md
 - [x] Document script interface (single arg: prompt file)
@@ -133,7 +133,7 @@ Add support for custom external review tools alongside codex. Users can specify 
 - [x] Document Docker considerations (script location, dependencies)
 - [x] Add example custom script
 - [x] Update llms.txt with custom review usage
-- [x] Update CLAUDE.md with internal notes
+- [x] Update GEMINI.md with internal notes
 
 ### 8. Final Validation
 

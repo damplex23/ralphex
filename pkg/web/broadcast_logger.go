@@ -90,8 +90,8 @@ func (b *BroadcastLogger) PrintSection(section status.Section) {
 	case status.SectionCodexIteration:
 		b.broadcast(NewIterationStartEvent(b.holder.Get(), section.Iteration, section.Label))
 
-	case status.SectionGeneric, status.SectionClaudeEval:
-		// no additional events for generic sections or claude eval
+	case status.SectionGeneric, status.SectionGeminiEval:
+		// no additional events for generic sections or gemini eval
 
 	default:
 		// unknown section type - no additional events, but section event still emitted below

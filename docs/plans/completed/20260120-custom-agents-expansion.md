@@ -1,13 +1,13 @@
 # Custom Agents with Template Expansion
 
 ## Overview
-Create a set of general-purpose agent files that can be referenced in prompts via `{{agent:name}}` syntax. When expanded, these agents get wrapped with Task tool invocation instructions, telling Claude to run them as separate parallel tasks.
+Create a set of general-purpose agent files that can be referenced in prompts via `{{agent:name}}` syntax. When expanded, these agents get wrapped with Task tool invocation instructions, telling Gemini to run them as separate parallel tasks.
 
 **This completely replaces the existing custom agents implementation.** The old system (hardcoded `buildFirstReviewPromptWithCustomAgents()` that bypassed prompt files) is removed. The new system uses `{{agent:name}}` template syntax in prompt files, which get expanded during normal template processing.
 
 Users can reference both:
 - Custom ralphex agents via `{{agent:name}}` - expands to Task tool instructions with agent content
-- Built-in Claude Code agents (like `qa-expert`, `go-smells-expert`) - referenced directly by name in prompts
+- Built-in Gemini CLI agents (like `qa-expert`, `go-smells-expert`) - referenced directly by name in prompts
 
 ## Context (from discovery)
 - Files involved: `pkg/config/config.go`, `pkg/processor/prompts.go`, `pkg/config/defaults/`
@@ -47,20 +47,20 @@ Report findings only - no positive observations.
 ### Default Agents (5 universal agents)
 Installed to `~/.config/ralphex/agents/` on first run.
 
-Base these on Claude Code's built-in agents but make them **language-agnostic**:
+Base these on Gemini CLI's built-in agents but make them **language-agnostic**:
 
-| ralphex agent | Based on Claude Code agent | Purpose |
+| ralphex agent | Based on Gemini CLI agent | Purpose |
 |---------------|---------------------------|---------|
 | **implementation.txt** | `implementation-reviewer` | Verifies code achieves stated goals, checks proper wiring |
 | **quality.txt** | `qa-expert` | Reviews for bugs, security issues, race conditions, logic errors |
-| **documentation.txt** | `documentation-expert` | Checks if README.md, CLAUDE.md need updates |
+| **documentation.txt** | `documentation-expert` | Checks if README.md, GEMINI.md need updates |
 | **simplification.txt** | `go-simplify-expert` | Detects over-engineering, unnecessary complexity (remove Go-specific parts) |
 | **testing.txt** | `go-test-expert` | Reviews test coverage, quality, missing edge cases (remove Go-specific parts) |
 
-Reference the Claude Code agent descriptions from the Task tool documentation:
+Reference the Gemini CLI agent descriptions from the Task tool documentation:
 - `qa-expert` - "Reviews code for bugs, logic errors, security vulnerabilities, code quality issues"
 - `implementation-reviewer` - "Verifies correctness of approach, proper wiring, complete coverage of requirements"
-- `documentation-expert` - "Checks README.md, CLAUDE.md, and plan files for required updates"
+- `documentation-expert` - "Checks README.md, GEMINI.md, and plan files for required updates"
 - `go-simplify-expert` - "Detect over-engineered and overcomplicated code - unnecessary abstractions, excessive layers"
 - `go-test-expert` - "Write, review, enhance, or modernize tests - coverage, table-driven tests, mocks"
 
@@ -109,7 +109,7 @@ Strip Go-specific references (like "table-driven tests", "moq", "testify") and k
 ### Task 5: Update review prompts to use agent syntax
 - [x] update `review_first.txt` to use `{{agent:*}}` syntax for custom agents (e.g., `{{agent:quality}}`, `{{agent:testing}}`)
 - [x] default prompts reference only custom ralphex agents (quality, implementation, documentation, simplification, testing)
-- [x] users can edit prompts to add built-in Claude agents if desired (qa-expert, go-smells-expert, etc.)
+- [x] users can edit prompts to add built-in Gemini agents if desired (qa-expert, go-smells-expert, etc.)
 - [x] update `review_second.txt` if applicable
 - [x] run `go test ./pkg/processor` - must pass before task 6
 
@@ -123,11 +123,11 @@ Strip Go-specific references (like "table-driven tests", "moq", "testify") and k
 
 ### Task 7: [Final] Update documentation
 - [x] update README.md with custom agents section
-- [x] update CLAUDE.md:
+- [x] update GEMINI.md:
   - [x] change "Custom agents: `~/.config/ralphex/agents/*.txt` (replaces built-in 8 agents)" to describe new `{{agent:name}}` syntax
   - [x] document that default agents are installed on first run
   - [x] explain users can override defaults or add custom agents
-  - [x] note built-in Claude agents can still be referenced directly in prompts
+  - [x] note built-in Gemini agents can still be referenced directly in prompts
 - [x] move this plan to `docs/plans/completed/`
 
 ## Technical Details
@@ -160,7 +160,7 @@ var agentRefPattern = regexp.MustCompile(`\{\{agent:([a-zA-Z0-9_-]+)\}\}`)
 
 ## Post-Completion
 
-**E2E verification with toy project (see CLAUDE.md for instructions):**
+**E2E verification with toy project (see GEMINI.md for instructions):**
 - Test with fresh config dir (agents get installed)
 - Verify review phase uses expanded agent prompts
 - Verify agents run in parallel as Task tool calls

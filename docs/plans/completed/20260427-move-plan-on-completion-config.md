@@ -12,7 +12,7 @@ Scope:
 - Config-only change (INI file in `~/.config/ralphex/` or `.ralphex/`)
 - No CLI flag
 - No env var
-- Documentation updates (README.md, llms.txt, CLAUDE.md) are part of this change
+- Documentation updates (README.md, llms.txt, GEMINI.md) are part of this change
 
 Part 1 of 2. A follow-up PR will add configurable task header patterns. Upstream discussion: https://github.com/umputun/ralphex/issues/306
 
@@ -25,7 +25,7 @@ Part 1 of 2. A follow-up PR will add configurable task header patterns. Upstream
 - `pkg/config/config.go:291-292` — values-to-config mapping
 - `pkg/config/defaults/config:83-86` — embedded template entry for `finalize_enabled` (commented out)
 - `cmd/ralphex/main.go:532-544` — the unconditional `MovePlanToCompleted` call; `req.Config` is already on the struct (line 111), so no plumbing is needed
-- Project CLAUDE.md: 80%+ coverage, table-driven tests with testify, one `_test.go` per source file
+- Project GEMINI.md: 80%+ coverage, table-driven tests with testify, one `_test.go` per source file
 
 ## Development Approach
 
@@ -40,7 +40,7 @@ Part 1 of 2. A follow-up PR will add configurable task header patterns. Upstream
 ## Testing Strategy
 
 - **unit tests**: required for every task. Table-driven with testify.
-- **e2e tests**: not applicable — no UI change. Toy-project end-to-end validation (per CLAUDE.md) happens once at the end as a manual smoke test, not as a code-generating task.
+- **e2e tests**: not applicable — no UI change. Toy-project end-to-end validation (per GEMINI.md) happens once at the end as a manual smoke test, not as a code-generating task.
 
 ## Progress Tracking
 
@@ -57,7 +57,7 @@ Key design decisions:
 - **Default `true`** preserves current behavior. Users opt out.
 - **`*Set` flag** follows existing convention, lets local config cleanly override global config even when the explicit value happens to be the zero value (`false`).
 - **No CLI flag** — this is a per-project setting, not per-run. Adding a flag expands the surface area without a demonstrated use case.
-- **Embedded template line is commented out** per the "uncommenting marks customization" pattern documented in CLAUDE.md.
+- **Embedded template line is commented out** per the "uncommenting marks customization" pattern documented in GEMINI.md.
 
 ## Technical Details
 
@@ -141,7 +141,7 @@ Embedded template (insert near `finalize_enabled` block around line 86 in `pkg/c
 
 ## What Goes Where
 
-- **Implementation Steps** (`[ ]`): all code changes, config template update, documentation (CLAUDE.md, llms.txt, README.md), tests, manual toy-project verification
+- **Implementation Steps** (`[ ]`): all code changes, config template update, documentation (GEMINI.md, llms.txt, README.md), tests, manual toy-project verification
 - **Post-Completion** (no checkboxes): PR open, CHANGELOG (release-only), part 2 plan
 
 ## Implementation Steps
@@ -199,22 +199,22 @@ Embedded template (insert near `finalize_enabled` block around line 86 in `pkg/c
 - [x] `make test` passes (unit tests with coverage)
 - [x] `make lint` passes (no new golangci-lint issues)
 - [x] `make fmt` — code is formatted
-- [x] coverage on touched files ≥ 80% per CLAUDE.md
+- [x] coverage on touched files ≥ 80% per GEMINI.md
 - [x] `GOOS=windows GOARCH=amd64 go build ./...` succeeds (no Unix-specific paths introduced)
-- [x] toy-project smoke test per CLAUDE.md: run `./scripts/internal/prep-toy-test.sh`, then add a plain INI entry `move_plan_on_completion = false` (not just uncommenting the template) to `/tmp/ralphex-test/.ralphex/config`, execute a plan, and verify the plan file stays in `docs/plans/` rather than `docs/plans/completed/`
+- [x] toy-project smoke test per GEMINI.md: run `./scripts/internal/prep-toy-test.sh`, then add a plain INI entry `move_plan_on_completion = false` (not just uncommenting the template) to `/tmp/ralphex-test/.ralphex/config`, execute a plan, and verify the plan file stays in `docs/plans/` rather than `docs/plans/completed/`
 - [x] toy-project smoke test with default config (no override): verify plan still moves to `completed/` (back-compat)
 
 ### Task 6: Final — update documentation and move plan
 
 **Files:**
-- Modify: `CLAUDE.md`
+- Modify: `GEMINI.md`
 - Modify: `llms.txt`
 - Modify: `README.md`
 
-- [x] add a line to the `Configuration` section of project `CLAUDE.md`: `move_plan_on_completion` config option controls whether completed plans move to `docs/plans/completed/` on success, default `true`. Disable for workflows that manage plan lifecycle externally (spec-driven tooling with separate archive steps)
+- [x] add a line to the `Configuration` section of project `GEMINI.md`: `move_plan_on_completion` config option controls whether completed plans move to `docs/plans/completed/` on success, default `true`. Disable for workflows that manage plan lifecycle externally (spec-driven tooling with separate archive steps)
 - [x] add the same option to `llms.txt` in the existing configuration-options list (alphabetical-ish with neighbouring options)
 - [x] add a new "Plan Move Behavior (optional)" subsection to `README.md` immediately after the existing "Finalize Step (optional)" section (line ~161), modeled on the same structure: one-line description, "How to enable/disable" with the INI key and default (`true`), and one sentence on when to disable (external plan-lifecycle workflows with separate archive steps)
-- [x] do NOT update CHANGELOG (per CLAUDE.md workflow rule: CHANGELOG updates are release-process only)
+- [x] do NOT update CHANGELOG (per GEMINI.md workflow rule: CHANGELOG updates are release-process only)
 - [x] move this plan to `docs/plans/completed/`
 
 ## Post-Completion
@@ -224,5 +224,5 @@ Embedded template (insert near `finalize_enabled` block around line 86 in `pkg/c
 - PR description: link to issue, summary of the option and default, note that this is part 1 of 2
 
 **Follow-up items** (not in this PR):
-- CHANGELOG entry (release process, per CLAUDE.md)
+- CHANGELOG entry (release process, per GEMINI.md)
 - Part 2: configurable task header patterns (`task_header_patterns` with `{N}` / `{title}` template slots) — separate plan, separate PR

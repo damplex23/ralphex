@@ -1,13 +1,13 @@
 # Fix Windows "Command Line Too Long" Error in Plan Creation Mode
 
 ## Overview
-Pass the Claude prompt via stdin instead of as a -p CLI argument to avoid the cmd.exe 8191-character
+Pass the Gemini prompt via stdin instead of as a -p CLI argument to avoid the cmd.exe 8191-character
 command-line limit on Windows. The make_plan.txt prompt after variable expansion can reach ~8100
 chars, which together with other args exceeds the limit.
 
 ## Context
-- Files involved: `pkg/executor/executor.go`, `pkg/executor/executor_test.go`, `CLAUDE.md`
-- Related patterns: `execClaudeRunner` is the real runner; `cmdRunner` field on `ClaudeExecutor` is the test mock injection point
+- Files involved: `pkg/executor/executor.go`, `pkg/executor/executor_test.go`, `GEMINI.md`
+- Related patterns: `execGeminiRunner` is the real runner; `cmdRunner` field on `GeminiExecutor` is the test mock injection point
 - The fix uses the existing distinction between nil cmdRunner (real execution) and non-nil cmdRunner (test mock) to preserve existing test assertions
 
 ## Development Approach
@@ -18,14 +18,14 @@ chars, which together with other args exceeds the limit.
 
 ## Implementation Steps
 
-### Task 1: Add stdin support to execClaudeRunner
+### Task 1: Add stdin support to execGeminiRunner
 
 **Files:**
 - Modify: `pkg/executor/executor.go`
 
-- [x] Add `stdin io.Reader` field to `execClaudeRunner` struct
-- [x] In `execClaudeRunner.Run()`, set `cmd.Stdin = r.stdin` when `r.stdin` is non-nil
-- [x] In `ClaudeExecutor.Run()`: when `cmdRunner` is nil (real execution path), construct `execClaudeRunner{stdin: strings.NewReader(prompt)}` and do NOT append `-p prompt` to args
+- [x] Add `stdin io.Reader` field to `execGeminiRunner` struct
+- [x] In `execGeminiRunner.Run()`, set `cmd.Stdin = r.stdin` when `r.stdin` is non-nil
+- [x] In `GeminiExecutor.Run()`: when `cmdRunner` is nil (real execution path), construct `execGeminiRunner{stdin: strings.NewReader(prompt)}` and do NOT append `-p prompt` to args
 - [x] When `cmdRunner` is non-nil (test mock path), keep appending `-p prompt` to args as before so existing tests remain valid
 - [x] Run `make test` — all tests must pass before task 2
 
@@ -34,17 +34,17 @@ chars, which together with other args exceeds the limit.
 **Files:**
 - Modify: `pkg/executor/executor_test.go`
 
-- [x] Add `TestExecClaudeRunner_StdinSet`: construct `execClaudeRunner{stdin: strings.NewReader("hello")}`, call `Run()` on a no-op command (e.g., `echo`), verify `cmd.Stdin` was set (use a spy or check behavior indirectly via a helper command that reads stdin)
-- [x] Add `TestClaudeExecutor_Run_RealRunner_NoPromptArg`: verify that when `cmdRunner` is nil, the args passed to the runner do NOT contain `-p`. Since we can't easily intercept the real runner's args, consider restructuring the test to inject a custom `CommandRunner` that checks args but simulates the real runner path — OR verify via the `execClaudeRunner` constructor logic directly
-- [x] Verify `TestClaudeExecutor_Run_Success` and other mock-based tests still pass (mock path still receives `-p prompt`)
+- [x] Add `TestExecGeminiRunner_StdinSet`: construct `execGeminiRunner{stdin: strings.NewReader("hello")}`, call `Run()` on a no-op command (e.g., `echo`), verify `cmd.Stdin` was set (use a spy or check behavior indirectly via a helper command that reads stdin)
+- [x] Add `TestGeminiExecutor_Run_RealRunner_NoPromptArg`: verify that when `cmdRunner` is nil, the args passed to the runner do NOT contain `-p`. Since we can't easily intercept the real runner's args, consider restructuring the test to inject a custom `CommandRunner` that checks args but simulates the real runner path — OR verify via the `execGeminiRunner` constructor logic directly
+- [x] Verify `TestGeminiExecutor_Run_Success` and other mock-based tests still pass (mock path still receives `-p prompt`)
 - [x] Run `make test` — all tests must pass before task 3
 
-### Task 3: Update CLAUDE.md platform notes
+### Task 3: Update GEMINI.md platform notes
 
 **Files:**
-- Modify: `CLAUDE.md`
+- Modify: `GEMINI.md`
 
-- [x] Under "Platform Support / Windows" section, add a note: prompts are passed via stdin to claude CLI to avoid cmd.exe 8191-char command-line limit
+- [x] Under "Platform Support / Windows" section, add a note: prompts are passed via stdin to gemini CLI to avoid cmd.exe 8191-char command-line limit
 - [x] Run `make test`, `make lint`, and `GOOS=windows GOARCH=amd64 go build ./...` — all must pass
 
 ### Task 4: Verify acceptance criteria

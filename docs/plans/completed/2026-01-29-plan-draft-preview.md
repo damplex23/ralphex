@@ -2,7 +2,7 @@
 
 ## Overview
 
-Add a draft preview step to plan creation mode where users can review, revise, or reject the generated plan before it's written to disk. Currently, Claude creates the plan file directly without user visibility or feedback opportunity. This change introduces a `PLAN_DRAFT` signal that presents the plan for review, with options to accept, revise (with feedback), or reject.
+Add a draft preview step to plan creation mode where users can review, revise, or reject the generated plan before it's written to disk. Currently, Gemini creates the plan file directly without user visibility or feedback opportunity. This change introduces a `PLAN_DRAFT` signal that presents the plan for review, with options to accept, revise (with feedback), or reject.
 
 ## Context
 
@@ -75,10 +75,10 @@ Add a draft preview step to plan creation mode where users can review, revise, o
 
 - [x] modify `runPlanCreation` to detect PLAN_DRAFT signal in output
 - [x] when PLAN_DRAFT detected, call `inputCollector.AskDraftReview()`
-- [x] if accept: log acceptance, continue (Claude will write file and emit PLAN_READY)
-- [x] if revise: log feedback to progress file, re-run Claude with feedback context
+- [x] if accept: log acceptance, continue (Gemini will write file and emit PLAN_READY)
+- [x] if revise: log feedback to progress file, re-run Gemini with feedback context
 - [x] if reject: return error indicating user rejected plan
-- [x] add feedback to progress file format so Claude sees revision history
+- [x] add feedback to progress file format so Gemini sees revision history
 - [x] write tests for runPlanCreation with PLAN_DRAFT → accept flow
 - [x] write tests for runPlanCreation with PLAN_DRAFT → revise → accept flow
 - [x] write tests for runPlanCreation with PLAN_DRAFT → reject flow
@@ -90,8 +90,8 @@ Add a draft preview step to plan creation mode where users can review, revise, o
 - Modify: `pkg/config/defaults/prompts/make_plan.txt`
 
 - [x] add Step 3.5 before Step 4: "Present Draft for Review"
-- [x] instruct Claude to emit `<<<RALPHEX:PLAN_DRAFT>>>..<<<RALPHEX:END>>>` with full plan content
-- [x] instruct Claude to STOP after PLAN_DRAFT and wait for feedback
+- [x] instruct Gemini to emit `<<<RALPHEX:PLAN_DRAFT>>>..<<<RALPHEX:END>>>` with full plan content
+- [x] instruct Gemini to STOP after PLAN_DRAFT and wait for feedback
 - [x] add instructions for handling revision feedback (re-emit PLAN_DRAFT with changes)
 - [x] add instructions for handling rejection (emit TASK_FAILED)
 - [x] update Step 4 to only execute after user accepts draft
@@ -128,7 +128,7 @@ Add a draft preview step to plan creation mode where users can review, revise, o
 
 ### Task 9: Update documentation
 
-- [ ] update CLAUDE.md with new PLAN_DRAFT signal documentation
+- [ ] update GEMINI.md with new PLAN_DRAFT signal documentation
 - [ ] update llms.txt if user-facing behavior changed
 - [ ] move this plan to `docs/plans/completed/`
 
@@ -149,7 +149,7 @@ Add a draft preview step to plan creation mode where users can review, revise, o
 
 **Draft review actions:**
 - `accept` - proceed to write plan file
-- `revise` - re-run Claude with feedback, emit new PLAN_DRAFT
+- `revise` - re-run Gemini with feedback, emit new PLAN_DRAFT
 - `reject` - exit plan creation with error
 
 **Progress file additions:**

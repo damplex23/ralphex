@@ -6,7 +6,7 @@ services:
       - "8080:8080"
     volumes:
       # credentials mounted read-only to /mnt, copied at container startup
-      - ${HOME}/.claude:/mnt/claude:ro
+      - ${HOME}/.gemini:/mnt/gemini:ro
       - ${HOME}/.codex:/mnt/codex:ro
       - ${HOME}/.config/ralphex:/home/app/.config/ralphex:ro
       - ${HOME}/.gitconfig:/home/app/.gitconfig:ro
@@ -15,7 +15,7 @@ services:
       - APP_UID=${UID:-1000}
       - SKIP_HOME_CHOWN=1
       - INIT_QUIET=1
-      - CLAUDE_CONFIG_DIR=/home/app/.claude
+      - GEMINI_CONFIG_DIR=/home/app/.gemini
     working_dir: /workspace
     tty: true
     stdin_open: true

@@ -78,7 +78,7 @@
 
 ### Task 3: Update documentation
 
-- [x] update CLAUDE.md: change "Agents: replace entirely (if local agents/ has files, use ONLY local agents)" to describe per-file fallback behavior matching prompts
+- [x] update GEMINI.md: change "Agents: replace entirely (if local agents/ has files, use ONLY local agents)" to describe per-file fallback behavior matching prompts
 - [x] update README.md if agent customization is documented there
 - [x] update `llms.txt` if agent customization is mentioned (likely no-op)
 - [x] move this plan to `docs/plans/completed/`

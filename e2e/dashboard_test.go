@@ -41,7 +41,7 @@ func TestPhaseNavigation(t *testing.T) {
 
 	t.Run("all tabs visible", func(t *testing.T) {
 		// check all phase tabs are present
-		tabs := []string{"All", "Implementation", "Claude Review", "Codex Review"}
+		tabs := []string{"All", "Implementation", "Gemini Review", "Codex Review"}
 		for _, tab := range tabs {
 			locator := page.Locator(".phase-tab", playwright.PageLocatorOptions{
 				HasText: tab,

@@ -1,6 +1,6 @@
 # Mercurial Support
 
-ralphex can work with Mercurial repositories through a two-part approach: a configurable VCS backend command and custom prompt files. The backend translates ralphex's internal git operations to hg equivalents, while custom prompts replace git commands in Claude's bash instructions with hg equivalents.
+ralphex can work with Mercurial repositories through a two-part approach: a configurable VCS backend command and custom prompt files. The backend translates ralphex's internal git operations to hg equivalents, while custom prompts replace git commands in Gemini's bash instructions with hg equivalents.
 
 ## How it works
 
@@ -12,7 +12,7 @@ There are two layers to consider:
 
 1. **Backend commands** (handled by `hg2git.sh`): operations ralphex performs internally through its Go code, such as checking repo status, creating branches, committing changes, and computing diffs.
 
-2. **Prompt commands** (handled by custom prompts): git commands that appear in ralphex's prompt templates and are executed by Claude as bash commands. These are not intercepted by the translation script and must be replaced manually in custom prompt files.
+2. **Prompt commands** (handled by custom prompts): git commands that appear in ralphex's prompt templates and are executed by Gemini as bash commands. These are not intercepted by the translation script and must be replaced manually in custom prompt files.
 
 ## Setup
 
@@ -64,7 +64,7 @@ syntax: glob
 
 ## Custom prompts
 
-The default prompts contain git commands that Claude executes as bash commands during reviews. These are not intercepted by `hg2git.sh` and must be replaced in custom prompt files.
+The default prompts contain git commands that Gemini executes as bash commands during reviews. These are not intercepted by `hg2git.sh` and must be replaced in custom prompt files.
 
 ### Replacements for review_first.txt and review_second.txt
 
@@ -95,7 +95,7 @@ The `hg2git.sh` script uses phase-based commit logic:
 - When on a **public** commit (master-equivalent): `hg commit` creates a new draft
 - When on a **draft** commit (unsent): `hg amend` folds changes into the existing commit
 
-This produces a single-commit-per-diff workflow. When customising prompts, instruct Claude to use `hg amend` for fixes during review (since the working commit will be in draft phase by that point).
+This produces a single-commit-per-diff workflow. When customising prompts, instruct Gemini to use `hg amend` for fixes during review (since the working commit will be in draft phase by that point).
 
 ## .hgignore setup
 
@@ -124,13 +124,13 @@ The `hg2git.sh` script uses associative arrays (`declare -A`) for diff stats par
 
 The `--worktree` flag is not supported with hg backends. The `hg2git.sh` script returns an error for any worktree commands. Use standard Mercurial workflows for parallel work instead.
 
-### Claude Code's own git awareness
+### Gemini CLI's own git awareness
 
-Claude Code has built-in git awareness and may run its own git commands independently of ralphex. These commands bypass the translation script entirely. If your repo has no `.git` directory, Claude Code's internal git operations will fail silently or produce errors. This typically does not affect ralphex's operation since Claude's own git usage is separate from ralphex's backend operations.
+Gemini CLI has built-in git awareness and may run its own git commands independently of ralphex. These commands bypass the translation script entirely. If your repo has no `.git` directory, Gemini CLI's internal git operations will fail silently or produce errors. This typically does not affect ralphex's operation since Gemini's own git usage is separate from ralphex's backend operations.
 
 ### Unbounded command surface
 
-The `hg2git.sh` script only handles the specific git subcommands that ralphex's Go backend uses. If Claude decides to run additional git commands in its bash output (beyond what's in the prompts), those will not be translated. Custom prompts should guide Claude to use hg commands directly.
+The `hg2git.sh` script only handles the specific git subcommands that ralphex's Go backend uses. If Gemini decides to run additional git commands in its bash output (beyond what's in the prompts), those will not be translated. Custom prompts should guide Gemini to use hg commands directly.
 
 ### .gitignore is hardcoded
 

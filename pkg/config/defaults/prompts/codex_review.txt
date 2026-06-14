@@ -1,6 +1,6 @@
 # codex review prompt
 # this prompt is sent to the codex external review tool (or compatible wrapper)
-# codex reviews code changes and reports findings for claude to evaluate
+# codex reviews code changes and reports findings for gemini to evaluate
 #
 # available variables:
 #   {{DIFF_INSTRUCTION}} - git diff command appropriate for current iteration

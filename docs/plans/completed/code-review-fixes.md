@@ -110,7 +110,7 @@ Circular dependency: processor imports executor (runner.go:14), so executor cann
 
 `runFull`, `runReviewOnly`, `runCodexOnly` share identical codex+review+finalize blocks.
 
-- [x] extract `runCodexAndPostReview(ctx) error` method covering: set PhaseCodex → print section → runCodexLoop → set PhaseReview → runClaudeReviewLoop → runFinalize
+- [x] extract `runCodexAndPostReview(ctx) error` method covering: set PhaseCodex → print section → runCodexLoop → set PhaseReview → runGeminiReviewLoop → runFinalize
 - [x] refactor `runFull` to call task phase → first review → pre-codex review loop → `runCodexAndPostReview`
 - [x] refactor `runReviewOnly` to call first review → pre-codex review loop → `runCodexAndPostReview`
 - [x] refactor `runCodexOnly` to call `runCodexAndPostReview`
@@ -127,7 +127,7 @@ Circular dependency: processor imports executor (runner.go:14), so executor cann
 
 ### Task 11: [Final] Update documentation
 
-- [x] update CLAUDE.md if any patterns changed (signal package, shared constants)
+- [x] update GEMINI.md if any patterns changed (signal package, shared constants)
 - [x] move this plan to `docs/plans/completed/`
 
 ## Technical Notes
@@ -136,7 +136,7 @@ Circular dependency: processor imports executor (runner.go:14), so executor cann
 
 **Progress parsing deduplication:** The shared function should return a parsed result struct (event type, phase, text, timestamp, signal, section) that callers convert to Event objects. This keeps the shared function free of SSE/session concerns.
 
-**Review pipeline:** The extracted method should handle the "codex → post-codex claude review → finalize" trio since that's the exact block duplicated 3 times. The pre-codex review and first review vary between modes so they stay in the individual methods.
+**Review pipeline:** The extracted method should handle the "codex → post-codex gemini review → finalize" trio since that's the exact block duplicated 3 times. The pre-codex review and first review vary between modes so they stay in the individual methods.
 
 ## Post-Completion
 

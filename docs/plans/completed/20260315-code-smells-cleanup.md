@@ -12,7 +12,7 @@
   - `pkg/config/values.go` (704 lines) — INI config parsing
   - `pkg/processor/runner.go` (1113 lines) — orchestration loop
   - `pkg/processor/signals.go` (117 lines) — signal detection helpers
-  - `pkg/executor/executor.go` (~430 lines) — claude CLI execution
+  - `pkg/executor/executor.go` (~430 lines) — gemini CLI execution
   - `pkg/input/input.go` — terminal input collector
   - `pkg/web/session.go`, `session_manager.go` (587 lines), `dashboard.go`, `server.go` — web dashboard
   - `pkg/git/external.go` — VCS CLI backend
@@ -96,7 +96,7 @@
 - Modify: `pkg/config/values_test.go` (if test additions needed)
 
 - [x] add method `func (vl *valuesLoader) parseCommaSeparated(section *ini.Section, key string) []string` that reads a key, splits by comma, trims whitespace, filters empty strings
-- [x] replace 5 comma-split blocks in `parseValuesFromBytes` with one-liner calls: `claude_error_patterns`, `codex_error_patterns`, `claude_limit_patterns`, `codex_limit_patterns`, `watch_dirs`
+- [x] replace 5 comma-split blocks in `parseValuesFromBytes` with one-liner calls: `gemini_error_patterns`, `codex_error_patterns`, `gemini_limit_patterns`, `codex_limit_patterns`, `watch_dirs`
 - [x] replace comma-split blocks in `parseNotifyValues` and `parseNotifyDestValues` — note: 3 blocks (`notify_channels`, `notify_webhook_urls`, `notify_email_to`) also set `*Set` flags, so the `*Set = true` assignment must remain outside the helper call
 - [x] write tests for `parseCommaSeparated` — empty key, single value, multiple values, whitespace trimming, empty strings filtered
 - [x] run `go test ./pkg/config/...` — must pass before next task
@@ -134,9 +134,9 @@
 - Modify: `pkg/processor/runner.go`
 - Modify: `pkg/processor/runner_test.go`
 
-- [x] add `Executors` struct with fields: `Claude Executor`, `Codex Executor`, `Custom *executor.CustomExecutor`
-- [x] change `NewWithExecutors(cfg Config, log Logger, claude, codex Executor, custom *executor.CustomExecutor, holder *status.PhaseHolder)` to `NewWithExecutors(cfg Config, log Logger, execs Executors, holder *status.PhaseHolder)`
-- [x] update function body to use `execs.Claude`, `execs.Codex`, `execs.Custom`
+- [x] add `Executors` struct with fields: `Gemini Executor`, `Codex Executor`, `Custom *executor.CustomExecutor`
+- [x] change `NewWithExecutors(cfg Config, log Logger, gemini, codex Executor, custom *executor.CustomExecutor, holder *status.PhaseHolder)` to `NewWithExecutors(cfg Config, log Logger, execs Executors, holder *status.PhaseHolder)`
+- [x] update function body to use `execs.Gemini`, `execs.Codex`, `execs.Custom`
 - [x] update all test call sites (~90 in runner_test.go) to use `Executors{...}` struct literal — use batch find-replace
 - [x] run `go test ./pkg/processor/...` — must pass before next task
 
@@ -202,12 +202,12 @@ Hygiene refactor: enforce consistent access patterns. `SetState`/`GetState` and 
 - [x] verify no behavioral changes — all refactors are structure-only
 - [x] run full unit test suite: `go test ./...`
 - [x] run linter: `golangci-lint run --max-issues-per-linter=0 --max-same-issues=0`
-- [x] run formatters: `~/.claude/format.sh`
+- [x] run formatters: `~/.gemini/format.sh`
 - [x] verify test coverage meets 80%+ for changed packages
 
 ### Task 14: [Final] Update documentation
 
-- [x] update CLAUDE.md if new patterns discovered during cleanup
+- [x] update GEMINI.md if new patterns discovered during cleanup
 - [x] move this plan to `docs/plans/completed/`
 
 ## Post-Completion

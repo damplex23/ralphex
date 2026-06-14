@@ -124,7 +124,7 @@ func (p *ExternalReviewPhase) runLoop(ctx context.Context, tool string) (Externa
 	loopCtx, loopCancel := p.breaks.context(ctx)
 	defer loopCancel()
 
-	var claudeResponse string
+	var geminiResponse string
 	firstCompleted := false
 	stalemate := newStalemateState(p.cfg, p.log)
 
@@ -135,7 +135,7 @@ loop:
 			tool:           tool,
 			iteration:      i,
 			firstCompleted: firstCompleted,
-			claudeResponse: claudeResponse,
+			geminiResponse: geminiResponse,
 		})
 		if err != nil {
 			if errors.Is(err, errExternalReviewBreak) {
@@ -146,7 +146,7 @@ loop:
 
 		if result.firstCompleted {
 			firstCompleted = true
-			claudeResponse = result.claudeResponse
+			geminiResponse = result.geminiResponse
 		}
 		if result.hadFindings {
 			outcome.HadFindings = true
@@ -192,13 +192,13 @@ type externalReviewIterationOpts struct {
 	tool           string
 	iteration      int
 	firstCompleted bool
-	claudeResponse string
+	geminiResponse string
 }
 
 type externalReviewIterationResult struct {
 	action         externalReviewIterationAction
 	before         gitSnapshot
-	claudeResponse string
+	geminiResponse string
 	firstCompleted bool
 	hadFindings    bool
 }
@@ -210,7 +210,7 @@ func (p *ExternalReviewPhase) runIteration(ctx context.Context, opts externalRev
 
 	p.log.PrintSection(p.section(opts.tool, opts.iteration))
 
-	reviewExecResult := p.runReviewTool(ctx, opts.tool, p.reviewPrompt(opts.tool, !opts.firstCompleted, opts.claudeResponse))
+	reviewExecResult := p.runReviewTool(ctx, opts.tool, p.reviewPrompt(opts.tool, !opts.firstCompleted, opts.geminiResponse))
 	reviewResult := reviewExecResult.Result
 	if reviewResult.Error != nil {
 		if err := p.handleExecutorError(ctx, opts.parent, opts.tool, reviewResult.Error); err != nil {
@@ -235,19 +235,19 @@ func (p *ExternalReviewPhase) runIteration(ctx context.Context, opts externalRev
 	}
 
 	before := p.snapshotBeforeEval()
-	claudeExecResult, err := p.runClaudeEvaluation(ctx, opts.parent, opts.tool, reviewResult.Output)
+	geminiExecResult, err := p.runGeminiEvaluation(ctx, opts.parent, opts.tool, reviewResult.Output)
 	if err != nil {
 		return externalReviewIterationResult{}, err
 	}
 
-	if claudeExecResult.TimedOut {
-		p.log.Print("claude eval session timed out, retrying %s iteration...", opts.tool)
+	if geminiExecResult.TimedOut {
+		p.log.Print("gemini eval session timed out, retrying %s iteration...", opts.tool)
 		return externalReviewIterationResult{action: externalReviewRetry}, nil
 	}
 
-	claudeResult := claudeExecResult.Result
-	result := externalReviewIterationResult{before: before, claudeResponse: claudeResult.Output, firstCompleted: true}
-	if IsCodexDone(claudeResult.Signal) {
+	geminiResult := geminiExecResult.Result
+	result := externalReviewIterationResult{before: before, geminiResponse: geminiResult.Output, firstCompleted: true}
+	if IsCodexDone(geminiResult.Signal) {
 		p.log.Print("%s review complete - no more findings", opts.tool)
 		result.action = externalReviewStop
 		return result, nil
@@ -290,12 +290,12 @@ func (p *ExternalReviewPhase) snapshotBeforeEval() gitSnapshot {
 	return p.git.snapshot()
 }
 
-func (p *ExternalReviewPhase) runClaudeEvaluation(loopCtx, parent context.Context, tool, output string) (ExecutionResult, error) {
+func (p *ExternalReviewPhase) runGeminiEvaluation(loopCtx, parent context.Context, tool, output string) (ExecutionResult, error) {
 	if p.phaseHolder != nil {
-		p.phaseHolder.Set(status.PhaseClaudeEval)
+		p.phaseHolder.Set(status.PhaseGeminiEval)
 	}
-	p.log.PrintSection(status.NewClaudeEvalSection())
-	result := p.policy.Run(loopCtx, p.review.Run, p.evalPrompt(tool, output), "claude")
+	p.log.PrintSection(status.NewGeminiEvalSection())
+	result := p.policy.Run(loopCtx, p.review.Run, p.evalPrompt(tool, output), "gemini")
 	if p.phaseHolder != nil {
 		p.phaseHolder.Set(status.PhaseCodex)
 	}
@@ -303,7 +303,7 @@ func (p *ExternalReviewPhase) runClaudeEvaluation(loopCtx, parent context.Contex
 	if result.Result.Error == nil {
 		return result, nil
 	}
-	if err := p.handleExecutorError(loopCtx, parent, "claude", result.Result.Error); err != nil {
+	if err := p.handleExecutorError(loopCtx, parent, "gemini", result.Result.Error); err != nil {
 		return ExecutionResult{}, err
 	}
 	return result, nil
@@ -335,11 +335,11 @@ func (p *ExternalReviewPhase) runReviewTool(ctx context.Context, tool, prompt st
 	return p.policy.Run(ctx, p.external.Run, prompt, tool)
 }
 
-func (p *ExternalReviewPhase) reviewPrompt(tool string, isFirst bool, claudeResponse string) string {
+func (p *ExternalReviewPhase) reviewPrompt(tool string, isFirst bool, geminiResponse string) string {
 	if tool == "custom" {
-		return p.prompts.CustomReviewPrompt(isFirst, claudeResponse)
+		return p.prompts.CustomReviewPrompt(isFirst, geminiResponse)
 	}
-	return p.prompts.CodexReviewPrompt(isFirst, claudeResponse)
+	return p.prompts.CodexReviewPrompt(isFirst, geminiResponse)
 }
 
 func (p *ExternalReviewPhase) evalPrompt(tool, output string) string {

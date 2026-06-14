@@ -28,7 +28,7 @@
 
 ## Code-Quality Rules (HARD — verify against every task before marking complete)
 
-These rules supplement project AGENTS.md/CLAUDE.md and are NOT optional. They are the gate for marking any task complete. If a rule is violated, the task is not done — refactor, re-test, then mark complete.
+These rules supplement project AGENTS.md/GEMINI.md and are NOT optional. They are the gate for marking any task complete. If a rule is violated, the task is not done — refactor, re-test, then mark complete.
 
 **Signatures (hard limits):**
 - No function or method has 4+ parameters. `ctx context.Context` does not count toward the budget. If you need 4+, use an option struct (e.g., `type fooOpts struct { ... }`).
@@ -42,7 +42,7 @@ These rules supplement project AGENTS.md/CLAUDE.md and are NOT optional. They ar
 
 **Visibility (private by default, hard):**
 - Lowercase identifiers by default. Only export when an out-of-package caller exists.
-- Exception (per AGENTS.md/CLAUDE.md): methods called by other structs in the same package CAN be exported for inter-component API clarity. This is the only exception. It does not extend to types, functions, constants, or variables.
+- Exception (per AGENTS.md/GEMINI.md): methods called by other structs in the same package CAN be exported for inter-component API clarity. This is the only exception. It does not extend to types, functions, constants, or variables.
 - Before exporting any new identifier, grep for cross-package callers. If none, lowercase it.
 
 **Comments (default: none, hard):**
@@ -51,7 +51,7 @@ These rules supplement project AGENTS.md/CLAUDE.md and are NOT optional. They ar
 - Never describe WHAT the code does when the code itself is self-evident. Never write multi-paragraph comments on routine helpers.
 
 **Per-task gate (before marking ANY checkbox complete):**
-1. Formatter runs clean (`~/.claude/format.sh` or `gofmt -s -w` + `goimports -w`).
+1. Formatter runs clean (`~/.gemini/format.sh` or `gofmt -s -w` + `goimports -w`).
 2. `golangci-lint run --max-issues-per-linter=0 --max-same-issues=0` reports zero issues.
 3. `go test ./... -race` passes.
 4. Scan the new code for the four rule classes above. Specifically:
@@ -67,7 +67,7 @@ If a previous task shipped a violation (spotted later by user, reviewer, or your
 - Add focused tests for new seams: phase injection, post-construction setters, prompt builder output parity, execution policy timeout/retry behavior, and phase orchestration order.
 - Every new `*.go` source file must have a corresponding `_test.go` file unless the file only contains trivial wiring covered by a named existing test file; document any exception in the task's Files block.
 - Prefer `go test ./pkg/processor` after each processor task, then `make test`, `make fmt`, and `make lint` for final verification.
-- Do not run toy e2e tests without explicit user approval because they can consume claude/codex credits.
+- Do not run toy e2e tests without explicit user approval because they can consume gemini/codex credits.
 
 ## Progress Tracking
 - mark completed items with `[x]` immediately when done.
@@ -132,9 +132,9 @@ Methods (full signatures):
 - `(p *promptBuilder) TaskPrompt() string`
 - `(p *promptBuilder) FirstReviewPrompt() string`
 - `(p *promptBuilder) SecondReviewPrompt(prefix string) string`
-- `(p *promptBuilder) CodexReviewPrompt(isFirst bool, claudeResponse string) string`
+- `(p *promptBuilder) CodexReviewPrompt(isFirst bool, geminiResponse string) string`
 - `(p *promptBuilder) CodexEvaluationPrompt(codexOutput string) string`
-- `(p *promptBuilder) CustomReviewPrompt(isFirst bool, claudeResponse string) string`
+- `(p *promptBuilder) CustomReviewPrompt(isFirst bool, geminiResponse string) string`
 - `(p *promptBuilder) CustomEvaluationPrompt(customOutput string) string`
 - `(p *promptBuilder) PlanPrompt() string`
 - `(p *promptBuilder) FinalizePrompt() string`
@@ -246,7 +246,7 @@ Exports (justification per item: who outside the package calls this?):
 - [x] move finalize behavior into `finalizePhase`
 - [x] wire `Runner` review-only/full/codex-only paths through injected review and finalize interfaces
 - [x] extend `runnerPhases` and its test-only injection helper with review and finalize fields
-- [x] preserve codex-executor timeout semantics: first review timeout is an error only in first-class codex mode; default claude mode keeps soft-warning behavior
+- [x] preserve codex-executor timeout semantics: first review timeout is an error only in first-class codex mode; default gemini mode keeps soft-warning behavior
 - [x] move internal review and finalize tests from `runner_test.go` into focused test files
 - [x] add Runner orchestration tests for full/review/codex-only phase order using fake phase interfaces
 - [x] run tests: `go test ./pkg/processor`
@@ -292,7 +292,7 @@ Exports (justification per item: who outside the package calls this?):
 - no new exported types or functions.
 - exported methods on unexported types support same-package inter-component calls and package-external tests.
 
-- [x] move external review tool selection, codex/custom loop, claude evaluation, stalemate detection, external break handling, and summary formatting into `externalReviewPhase`
+- [x] move external review tool selection, codex/custom loop, gemini evaluation, stalemate detection, external break handling, and summary formatting into `externalReviewPhase`
 - [x] replace the callback-bag `externalReviewConfig` with explicit codex/custom methods or a tiny unexported tool interface; do not build a generic mini-framework for two tools
 - [x] make `externalReviewPhase.Run` return `externalReviewOutcome` instead of a bare boolean
 - [x] extend `runnerPhases` and its test-only injection helper with the external review field
@@ -362,7 +362,7 @@ Methods (full signatures):
 
 Standalone helpers planned (justification why NOT a method):
 - existing constructor entry points `New` and `NewWithExecutors` remain standalone because they are package entry points.
-- codex/claude executor builder helpers may remain `Config` methods if they are called from construction functions and keep construction readable.
+- codex/gemini executor builder helpers may remain `Config` methods if they are called from construction functions and keep construction readable.
 
 Exports (justification per item: who outside the package calls this?):
 - no new exported types or functions.
@@ -380,7 +380,7 @@ Exports (justification per item: who outside the package calls this?):
 **Files:**
 - Modify: `pkg/processor/runner.go`
 - Modify: `pkg/processor/*_test.go`
-- Modify: `README.md` or `CLAUDE.md` only if the refactor changes documented architecture or project guidance
+- Modify: `README.md` or `GEMINI.md` only if the refactor changes documented architecture or project guidance
 
 - [x] verify `Runner` no longer owns phase loop internals and only coordinates mode sequencing
 - [x] verify phase engines are injected through unexported interfaces and default constructors wire concrete implementations
@@ -402,7 +402,7 @@ Exports (justification per item: who outside the package calls this?):
 - Modify: `pkg/processor/export_test.go`
 - Modify: `pkg/processor/*_test.go`
 - Modify: `pkg/processor/signals.go` only if signal helpers must be aliased for compatibility
-- Modify: `CLAUDE.md` if the documented processor architecture changes
+- Modify: `GEMINI.md` if the documented processor architecture changes
 
 **Design Contract:**
 
@@ -441,7 +441,7 @@ Exports (justification per item: who outside the package calls this?):
 **Files:**
 - Modify: `docs/plans/20260525-runner-phase-engines.md`
 - Modify: `README.md` only if the refactor changes user-visible behavior
-- Modify: `CLAUDE.md` only if the refactor establishes a new durable processor architecture pattern that future agents need to follow
+- Modify: `GEMINI.md` only if the refactor establishes a new durable processor architecture pattern that future agents need to follow
 
 - [x] update README.md or project docs if the refactor changes user-visible behavior; otherwise leave docs unchanged
 - [x] update project agent guidance if a new durable processor architecture pattern was created
@@ -450,5 +450,5 @@ Exports (justification per item: who outside the package calls this?):
 ## Post-Completion
 *Items requiring manual intervention or external systems. No checkboxes.*
 
-- Ask before running the toy end-to-end test because it can consume claude/codex credits.
+- Ask before running the toy end-to-end test because it can consume gemini/codex credits.
 - If the toy e2e is approved, verify task execution, external review streaming, and finalize still render progress as expected.

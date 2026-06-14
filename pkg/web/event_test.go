@@ -139,11 +139,11 @@ func TestNewTaskEndEvent(t *testing.T) {
 }
 
 func TestNewIterationStartEvent(t *testing.T) {
-	e := NewIterationStartEvent(status.PhaseReview, 5, "claude review 5: critical/major")
+	e := NewIterationStartEvent(status.PhaseReview, 5, "gemini review 5: critical/major")
 
 	assert.Equal(t, EventTypeIterationStart, e.Type)
 	assert.Equal(t, status.PhaseReview, e.Phase)
-	assert.Equal(t, "claude review 5: critical/major", e.Text)
+	assert.Equal(t, "gemini review 5: critical/major", e.Text)
 	assert.Equal(t, 5, e.IterationNum)
 	assert.Zero(t, e.TaskNum)
 }

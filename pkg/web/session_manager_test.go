@@ -933,7 +933,7 @@ func testColors() *progress.Colors {
 		Task:       "0,255,0",
 		Review:     "0,255,255",
 		Codex:      "255,0,255",
-		ClaudeEval: "100,200,255",
+		GeminiEval: "100,200,255",
 		Warn:       "255,255,0",
 		Error:      "255,0,0",
 		Signal:     "255,100,100",

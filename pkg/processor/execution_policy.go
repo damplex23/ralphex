@@ -91,7 +91,7 @@ func (p *retryPolicy) runWithSessionTimeout(ctx context.Context, run func(contex
 	prompt string, toolName string) phase.ExecutionResult {
 	sessionTimeout := p.sessionTimeout()
 	codexMode := p.cfg.isCodexExecutor()
-	useTimeout := sessionTimeout > 0 && (codexMode || toolName == "claude")
+	useTimeout := sessionTimeout > 0 && (codexMode || toolName == "gemini")
 
 	if !useTimeout {
 		result := run(ctx, prompt)

@@ -23,7 +23,7 @@ func TestColorLoader_Load_EmbeddedOnly(t *testing.T) {
 	assert.Equal(t, "46,139,87", colors.Task, "task color should be sea green (#2e8b57)")
 	assert.Equal(t, "26,158,158", colors.Review, "review color should be teal (#1a9e9e)")
 	assert.Equal(t, "155,89,182", colors.Codex, "codex color should be purple (#9b59b6)")
-	assert.Equal(t, "91,141,217", colors.ClaudeEval, "claude_eval color should be blue (#5b8dd9)")
+	assert.Equal(t, "91,141,217", colors.GeminiEval, "gemini_eval color should be blue (#5b8dd9)")
 	assert.Equal(t, "212,147,13", colors.Warn, "warn color should be amber (#d4930d)")
 	assert.Equal(t, "204,0,0", colors.Error, "error color should be red (#cc0000)")
 	assert.Equal(t, "210,82,82", colors.Signal, "signal color should be red (#d25252)")
@@ -127,7 +127,7 @@ func TestColorLoader_Load_AllColorsFromConfig(t *testing.T) {
 color_task = #010203
 color_review = #040506
 color_codex = #070809
-color_claude_eval = #0a0b0c
+color_gemini_eval = #0a0b0c
 color_warn = #0d0e0f
 color_error = #101112
 color_signal = #131415
@@ -143,7 +143,7 @@ color_info = #191a1b
 	assert.Equal(t, "1,2,3", colors.Task)
 	assert.Equal(t, "4,5,6", colors.Review)
 	assert.Equal(t, "7,8,9", colors.Codex)
-	assert.Equal(t, "10,11,12", colors.ClaudeEval)
+	assert.Equal(t, "10,11,12", colors.GeminiEval)
 	assert.Equal(t, "13,14,15", colors.Warn)
 	assert.Equal(t, "16,17,18", colors.Error)
 	assert.Equal(t, "19,20,21", colors.Signal)
@@ -159,7 +159,7 @@ func TestColorLoader_parseColorsFromBytes(t *testing.T) {
 color_task = #00ff00
 color_review = #00ffff
 color_codex = #ff00ff
-color_claude_eval = #64c8ff
+color_gemini_eval = #64c8ff
 color_warn = #ffff00
 color_error = #ff0000
 color_signal = #ff6464
@@ -172,7 +172,7 @@ color_info = #b4b4b4
 		assert.Equal(t, "0,255,0", colors.Task)
 		assert.Equal(t, "0,255,255", colors.Review)
 		assert.Equal(t, "255,0,255", colors.Codex)
-		assert.Equal(t, "100,200,255", colors.ClaudeEval)
+		assert.Equal(t, "100,200,255", colors.GeminiEval)
 		assert.Equal(t, "255,255,0", colors.Warn)
 		assert.Equal(t, "255,0,0", colors.Error)
 		assert.Equal(t, "255,100,100", colors.Signal)
@@ -304,7 +304,7 @@ func TestColorConfig_mergeFrom(t *testing.T) {
 			Task:       "1,2,3",
 			Review:     "4,5,6",
 			Codex:      "7,8,9",
-			ClaudeEval: "10,11,12",
+			GeminiEval: "10,11,12",
 			Warn:       "13,14,15",
 			Error:      "16,17,18",
 			Signal:     "19,20,21",
@@ -316,7 +316,7 @@ func TestColorConfig_mergeFrom(t *testing.T) {
 		assert.Equal(t, "1,2,3", dst.Task)
 		assert.Equal(t, "4,5,6", dst.Review)
 		assert.Equal(t, "7,8,9", dst.Codex)
-		assert.Equal(t, "10,11,12", dst.ClaudeEval)
+		assert.Equal(t, "10,11,12", dst.GeminiEval)
 		assert.Equal(t, "13,14,15", dst.Warn)
 		assert.Equal(t, "16,17,18", dst.Error)
 		assert.Equal(t, "19,20,21", dst.Signal)

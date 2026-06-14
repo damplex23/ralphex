@@ -119,7 +119,7 @@ Note: the `os.ReadDir` + `EqualFold` approach works identically on both case-sen
 - [x] verify the full case-mismatch scenario: worktree + existing branch + different case plan file → commit succeeds
 - [x] run full unit test suite: `go test ./...`
 - [x] run linter: `golangci-lint run --max-issues-per-linter=0 --max-same-issues=0`
-- [x] run formatters: `~/.claude/format.sh`
+- [x] run formatters: `~/.gemini/format.sh`
 - [x] verify test coverage for changed files meets 80%+
 
 ### Task 5: [Final] Finalize

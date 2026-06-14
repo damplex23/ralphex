@@ -43,8 +43,8 @@ func (b *promptBuilder) SecondReviewPrompt(prefix string) string {
 	return prefix + b.prependCodexReviewGuidance(b.replacePromptVariables(b.cfg.AppConfig.ReviewSecondPrompt))
 }
 
-func (b *promptBuilder) CodexReviewPrompt(isFirst bool, claudeResponse string) string {
-	return b.replaceVariablesWithIteration(b.cfg.AppConfig.CodexReviewPrompt, isFirst, claudeResponse)
+func (b *promptBuilder) CodexReviewPrompt(isFirst bool, geminiResponse string) string {
+	return b.replaceVariablesWithIteration(b.cfg.AppConfig.CodexReviewPrompt, isFirst, geminiResponse)
 }
 
 func (b *promptBuilder) CodexEvaluationPrompt(codexOutput string) string {
@@ -52,8 +52,8 @@ func (b *promptBuilder) CodexEvaluationPrompt(codexOutput string) string {
 	return strings.ReplaceAll(prompt, "{{CODEX_OUTPUT}}", codexOutput)
 }
 
-func (b *promptBuilder) CustomReviewPrompt(isFirst bool, claudeResponse string) string {
-	return b.replaceVariablesWithIteration(b.cfg.AppConfig.CustomReviewPrompt, isFirst, claudeResponse)
+func (b *promptBuilder) CustomReviewPrompt(isFirst bool, geminiResponse string) string {
+	return b.replaceVariablesWithIteration(b.cfg.AppConfig.CustomReviewPrompt, isFirst, geminiResponse)
 }
 
 func (b *promptBuilder) CustomEvaluationPrompt(customOutput string) string {

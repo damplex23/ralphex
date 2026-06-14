@@ -2,7 +2,7 @@
 ARG BASE_TAG=latest
 FROM ghcr.io/umputun/ralphex:${BASE_TAG}
 
-LABEL org.opencontainers.image.description="Autonomous plan execution with Claude Code - Go development"
+LABEL org.opencontainers.image.description="Autonomous plan execution with Gemini CLI - Go development"
 
 # install latest go from official distribution
 ARG GO_VERSION=1.26.1

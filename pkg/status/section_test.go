@@ -16,11 +16,11 @@ func TestReviewSections_TypeAndLabelContract(t *testing.T) {
 		noCodex       bool
 	}{
 		{
-			name:          "claude first pass review",
-			section:       NewClaudeReviewSection(0, ": all findings"),
+			name:          "gemini first pass review",
+			section:       NewGeminiReviewSection(0, ": all findings"),
 			wantType:      SectionInternalReview,
 			wantIteration: 0,
-			wantLabel:     "claude review 0: all findings",
+			wantLabel:     "gemini review 0: all findings",
 		},
 		{
 			name:          "internal codex review",

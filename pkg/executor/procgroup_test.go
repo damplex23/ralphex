@@ -16,7 +16,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestExecClaudeRunner_KillsProcessGroup(t *testing.T) {
+func TestExecGeminiRunner_KillsProcessGroup(t *testing.T) {
 	// this test verifies that when context is canceled, the entire process group
 	// is killed (including child processes), not just the direct child.
 	// this prevents orphaned processes when ralphex exits.
@@ -24,7 +24,7 @@ func TestExecClaudeRunner_KillsProcessGroup(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	runner := &execClaudeRunner{}
+	runner := &execGeminiRunner{}
 
 	// bash spawns a background sleep, prints its PID, then waits forever.
 	// the "wait" keeps parent alive until we cancel.
@@ -53,7 +53,7 @@ func TestExecClaudeRunner_KillsProcessGroup(t *testing.T) {
 		"child process (PID %d) should be killed when parent's process group is killed", childPID)
 }
 
-func TestExecClaudeRunner_KillsOrphansOnNormalExit(t *testing.T) {
+func TestExecGeminiRunner_KillsOrphansOnNormalExit(t *testing.T) {
 	// verifies that when the parent process exits normally (not via cancellation),
 	// orphaned descendants are still killed by the post-Wait killProcessGroup call.
 	// setsid: true + background sleep keeps the child in the same process group
@@ -61,7 +61,7 @@ func TestExecClaudeRunner_KillsOrphansOnNormalExit(t *testing.T) {
 
 	ctx := t.Context()
 
-	runner := &execClaudeRunner{}
+	runner := &execGeminiRunner{}
 
 	// bash spawns a background sleep, prints its PID, then exits immediately.
 	// the sleep outlives the parent bash and becomes an orphan in the same process group.
@@ -96,7 +96,7 @@ func TestProcessGroupCleanup_Idempotent(t *testing.T) {
 
 	ctx := t.Context()
 
-	runner := &execClaudeRunner{}
+	runner := &execGeminiRunner{}
 
 	stdout, wait, err := runner.Run(ctx, "echo", "hello")
 	require.NoError(t, err)

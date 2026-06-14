@@ -29,7 +29,7 @@ Expand Playwright e2e tests to cover gaps identified in the current test suite. 
   - Warning events (`[WARN] ...` lines)
   - Signal events (COMPLETED, FAILED, REVIEW_DONE)
   - Task boundary markers (`--- Task iteration N ---`)
-  - Iteration markers (`--- Claude review iteration N ---`, `--- Codex iteration N ---`)
+  - Iteration markers (`--- Gemini review iteration N ---`, `--- Codex iteration N ---`)
 - [x] Update `.gitignore` exception if needed
 - [x] Verify fixture loads correctly by running existing tests
 
@@ -69,7 +69,7 @@ Expand Playwright e2e tests to cover gaps identified in the current test suite. 
 ### Task 6: Add iteration boundary event tests
 
 - [x] Add `TestIterationBoundaryRendering` to `sse_test.go`
-  - Verify Claude review iteration headers render correctly
+  - Verify Gemini review iteration headers render correctly
   - Verify Codex iteration headers render correctly
   - Verify iteration number is displayed
 - [x] Run tests - must pass before next task
@@ -116,7 +116,7 @@ Expand Playwright e2e tests to cover gaps identified in the current test suite. 
 
 ### Task 11: Update documentation
 
-- [x] Update `CLAUDE.md` test coverage description if needed
+- [x] Update `GEMINI.md` test coverage description if needed
 - [x] Add comments to new test functions explaining coverage
 
 ## Technical Details
@@ -136,7 +136,7 @@ Started: 2026-01-22 10:00:00
 [ERROR] Something went wrong
 [WARN] This is a warning
 
---- Claude review iteration 1 ---
+--- Gemini review iteration 1 ---
 [26-01-22 10:01:00] Review output
 === SIGNAL: COMPLETED ===
 ```

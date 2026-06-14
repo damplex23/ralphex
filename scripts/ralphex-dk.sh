@@ -71,13 +71,13 @@ DEFAULT_IMAGE = "ghcr.io/umputun/ralphex-go:latest"
 DEFAULT_PORT = "8080"
 SCRIPT_URL = "https://raw.githubusercontent.com/umputun/ralphex/master/scripts/ralphex-dk.sh"
 SENSITIVE_PATTERNS = ["KEY", "SECRET", "TOKEN", "PASSWORD", "PASSWD", "CREDENTIAL", "AUTH"]
-VALID_CLAUDE_PROVIDERS = ["default", "bedrock"]
+VALID_GEMINI_PROVIDERS = ["default", "bedrock"]
 DEFAULT_DOCKER_SOCKET = "/var/run/docker.sock"
 
 # environment variables to pass through when using bedrock provider
 BEDROCK_ENV_VARS = [
     # core bedrock config (auto-set to 1 when bedrock provider is selected)
-    "CLAUDE_CODE_USE_BEDROCK",
+    "GEMINI_CODE_USE_BEDROCK",
     "AWS_REGION",
     # explicit credentials (exported from profile or set directly by user)
     # NOTE: AWS_PROFILE is NOT in this list - it requires ~/.aws/config which
@@ -97,7 +97,7 @@ BEDROCK_ENV_VARS = [
     # optional
     "DISABLE_PROMPT_CACHING",
     "ANTHROPIC_BEDROCK_BASE_URL",
-    "CLAUDE_CODE_SKIP_BEDROCK_AUTH",
+    "GEMINI_CODE_SKIP_BEDROCK_AUTH",
 ]
 
 
@@ -133,9 +133,9 @@ def build_parser() -> argparse.ArgumentParser:
                         help="run unit tests and exit (requires full repo)")
     parser.add_argument("-h", "--help", action="store_true", dest="help",
                         help="show this help and ralphex help, then exit")
-    parser.add_argument("--claude-provider", dest="claude_provider", metavar="PROVIDER",
-                        choices=VALID_CLAUDE_PROVIDERS,
-                        help="claude provider: 'default' or 'bedrock' (env: RALPHEX_CLAUDE_PROVIDER)")
+    parser.add_argument("--gemini-provider", dest="gemini_provider", metavar="PROVIDER",
+                        choices=VALID_GEMINI_PROVIDERS,
+                        help="gemini provider: 'default' or 'bedrock' (env: RALPHEX_GEMINI_PROVIDER)")
     parser.add_argument("--docker", action="store_true", dest="docker",
                         help="mount host Docker socket into container (env: RALPHEX_DOCKER_SOCKET)")
     parser.add_argument("--network", dest="network", metavar="MODE",
@@ -282,34 +282,34 @@ def get_global_gitignore() -> Optional[Path]:
     return None
 
 
-def keychain_service_name(claude_home: Path) -> str:
-    """derive macOS Keychain service name from claude config directory.
+def keychain_service_name(gemini_home: Path) -> str:
+    """derive macOS Keychain service name from gemini config directory.
 
-    default ~/.claude uses "Claude Code-credentials" (no suffix).
-    any other path uses "Claude Code-credentials-{sha256(absolute_path)[:8]}".
+    default ~/.gemini uses "Gemini CLI-credentials" (no suffix).
+    any other path uses "Gemini CLI-credentials-{sha256(absolute_path)[:8]}".
     """
-    resolved = claude_home.expanduser().resolve()
-    default = Path.home() / ".claude"
+    resolved = gemini_home.expanduser().resolve()
+    default = Path.home() / ".gemini"
     if resolved == default or resolved == default.resolve():
-        return "Claude Code-credentials"
+        return "Gemini CLI-credentials"
     digest = hashlib.sha256(str(resolved).encode()).hexdigest()[:8]
-    return f"Claude Code-credentials-{digest}"
+    return f"Gemini CLI-credentials-{digest}"
 
 
-def extract_macos_credentials(claude_home: Path) -> Optional[Path]:
-    """on macOS, extract claude credentials from keychain if not already on disk."""
+def extract_macos_credentials(gemini_home: Path) -> Optional[Path]:
+    """on macOS, extract gemini credentials from keychain if not already on disk."""
     if platform.system() != "Darwin":
         return None
-    if (claude_home / ".credentials.json").exists():
+    if (gemini_home / ".credentials.json").exists():
         return None
 
-    service = keychain_service_name(claude_home)
+    service = keychain_service_name(gemini_home)
 
     # try to read credentials (works if keychain already unlocked)
     creds_json = _security_find_credentials(service)
     if not creds_json:
         # keychain locked - unlock and retry
-        print("unlocking macOS keychain to extract Claude credentials (enter login password)...", file=sys.stderr)
+        print("unlocking macOS keychain to extract Gemini credentials (enter login password)...", file=sys.stderr)
         subprocess.run(["security", "unlock-keychain"], capture_output=True, check=False)
         creds_json = _security_find_credentials(service)
 
@@ -334,7 +334,7 @@ def extract_macos_credentials(claude_home: Path) -> Optional[Path]:
 
 
 def _security_find_credentials(service_name: str) -> Optional[str]:
-    """try to read Claude Code credentials from macOS keychain."""
+    """try to read Gemini CLI credentials from macOS keychain."""
     try:
         result = subprocess.run(
             ["security", "find-generic-password", "-s", service_name, "-w"],
@@ -347,14 +347,14 @@ def _security_find_credentials(service_name: str) -> Optional[str]:
     return None
 
 
-def build_volumes(creds_temp: Optional[Path], claude_home: Optional[Path] = None) -> list[str]:
+def build_volumes(creds_temp: Optional[Path], gemini_home: Optional[Path] = None) -> list[str]:
     """build docker volume mount arguments, returns flat list like ['-v', 'src:dst', ...]."""
     home = Path.home()
     # use logical PWD when available to preserve symlinks (matches previous bash wrapper behavior)
     pwd_env = os.environ.get("PWD")
     cwd = Path(pwd_env) if pwd_env else Path(os.getcwd())
-    if claude_home is None:
-        claude_home = home / ".claude"
+    if gemini_home is None:
+        gemini_home = home / ".gemini"
     vols: list[str] = []
     selinux = selinux_enabled()
 
@@ -373,8 +373,8 @@ def build_volumes(creds_temp: Optional[Path], claude_home: Optional[Path] = None
             if target.is_dir() and target.is_relative_to(home):
                 add(target, str(target), ro=True)
 
-    # 1. claude_home (resolved) -> /mnt/claude:ro
-    add(resolve_path(claude_home), "/mnt/claude", ro=True)
+    # 1. gemini_home (resolved) -> /mnt/gemini:ro
+    add(resolve_path(gemini_home), "/mnt/gemini", ro=True)
 
     # 2. cwd -> /workspace
     add(cwd, "/workspace")
@@ -386,10 +386,10 @@ def build_volumes(creds_temp: Optional[Path], claude_home: Optional[Path] = None
 
     # 4. macOS credentials temp file
     if creds_temp:
-        add(creds_temp, "/mnt/claude-credentials.json", ro=True)
+        add(creds_temp, "/mnt/gemini-credentials.json", ro=True)
 
-    # 5. symlink targets under claude_home
-    add_symlink_targets(claude_home)
+    # 5. symlink targets under gemini_home
+    add_symlink_targets(gemini_home)
 
     # 6. ~/.codex -> /mnt/codex:ro + symlink targets
     codex_dir = home / ".codex"
@@ -510,19 +510,19 @@ def merge_volume_flags(args_volume: list[str]) -> list[str]:
     return result
 
 
-def get_claude_provider(cli_provider: Optional[str]) -> str:
-    """get claude provider from CLI flag or env var. returns 'default' or 'bedrock'.
+def get_gemini_provider(cli_provider: Optional[str]) -> str:
+    """get gemini provider from CLI flag or env var. returns 'default' or 'bedrock'.
 
-    priority: CLI flag > RALPHEX_CLAUDE_PROVIDER env var > 'default'
+    priority: CLI flag > RALPHEX_GEMINI_PROVIDER env var > 'default'
     raises ValueError if provider value is invalid.
     """
     if cli_provider is not None:
         return cli_provider  # already validated by argparse choices
-    env_provider = os.environ.get("RALPHEX_CLAUDE_PROVIDER", "").strip().lower()
+    env_provider = os.environ.get("RALPHEX_GEMINI_PROVIDER", "").strip().lower()
     if not env_provider:
         return "default"
-    if env_provider not in VALID_CLAUDE_PROVIDERS:
-        raise ValueError(f"invalid RALPHEX_CLAUDE_PROVIDER: {env_provider!r} (valid: {', '.join(VALID_CLAUDE_PROVIDERS)})")
+    if env_provider not in VALID_GEMINI_PROVIDERS:
+        raise ValueError(f"invalid RALPHEX_GEMINI_PROVIDER: {env_provider!r} (valid: {', '.join(VALID_GEMINI_PROVIDERS)})")
     return env_provider
 
 
@@ -605,7 +605,7 @@ def parse_env_flags(extra_env: Optional[list[str]]) -> ParsedEnvFlags:
 def build_bedrock_env_args(existing_env: Optional[list[str]] = None) -> list[str]:
     """build docker -e flags for bedrock env vars that are actually set.
 
-    always sets CLAUDE_CODE_USE_BEDROCK=1 (since this function is only called when
+    always sets GEMINI_CODE_USE_BEDROCK=1 (since this function is only called when
     bedrock provider is explicitly selected). other vars are passed through only
     if they have values in the host environment.
     skips vars that are already explicitly set in existing_env (from -E flags).
@@ -615,10 +615,10 @@ def build_bedrock_env_args(existing_env: Optional[list[str]] = None) -> list[str
 
     result: list[str] = []
 
-    # always set CLAUDE_CODE_USE_BEDROCK=1 when bedrock provider is selected
+    # always set GEMINI_CODE_USE_BEDROCK=1 when bedrock provider is selected
     # (this function is only called when user explicitly chose bedrock)
-    if "CLAUDE_CODE_USE_BEDROCK" not in already_set:
-        result.extend(["-e", "CLAUDE_CODE_USE_BEDROCK=1"])
+    if "GEMINI_CODE_USE_BEDROCK" not in already_set:
+        result.extend(["-e", "GEMINI_CODE_USE_BEDROCK=1"])
 
     # check if user is providing explicit credential VALUES via -E VAR=value flags
     # if so, we should NOT inherit any session token from host env to avoid mixing
@@ -631,8 +631,8 @@ def build_bedrock_env_args(existing_env: Optional[list[str]] = None) -> list[str
         # skip vars that are already set via -E flags
         if var in already_set:
             continue
-        # skip CLAUDE_CODE_USE_BEDROCK - already handled above with explicit =1
-        if var == "CLAUDE_CODE_USE_BEDROCK":
+        # skip GEMINI_CODE_USE_BEDROCK - already handled above with explicit =1
+        if var == "GEMINI_CODE_USE_BEDROCK":
             continue
         # skip session token when user provides explicit credential values to avoid mixing
         if skip_session_token and var == "AWS_SESSION_TOKEN":
@@ -762,7 +762,7 @@ def validate_bedrock_config(extra_env: Optional[list[str]] = None) -> list[str]:
     - AWS_REGION should be set
     - either AWS_PROFILE or AWS_ACCESS_KEY_ID should be set for credentials
 
-    note: CLAUDE_CODE_USE_BEDROCK is auto-set to 1 when bedrock provider is selected.
+    note: GEMINI_CODE_USE_BEDROCK is auto-set to 1 when bedrock provider is selected.
     considers both os.environ and values from extra_env (CLI -E flags).
     """
     warnings: list[str] = []
@@ -901,7 +901,7 @@ def build_base_env_vars() -> list[str]:
         "-e", f"TZ={tz}",
         "-e", "SKIP_HOME_CHOWN=1",
         "-e", "INIT_QUIET=1",
-        "-e", "CLAUDE_CONFIG_DIR=/home/app/.claude",
+        "-e", "GEMINI_CONFIG_DIR=/home/app/.gemini",
     ]
 
 
@@ -1028,33 +1028,33 @@ def main() -> int:
         script_path = Path(os.path.realpath(sys.argv[0]))
         return handle_update_script(script_path)
 
-    # resolve claude config directory
-    claude_config_dir_env = os.environ.get("CLAUDE_CONFIG_DIR", "")
-    if claude_config_dir_env:
-        claude_home = Path(claude_config_dir_env).expanduser().resolve()
+    # resolve gemini config directory
+    gemini_config_dir_env = os.environ.get("GEMINI_CONFIG_DIR", "")
+    if gemini_config_dir_env:
+        gemini_home = Path(gemini_config_dir_env).expanduser().resolve()
     else:
-        claude_home = Path.home() / ".claude"
+        gemini_home = Path.home() / ".gemini"
 
-    # get claude provider early (needed for --help and directory checks)
+    # get gemini provider early (needed for --help and directory checks)
     try:
-        provider = get_claude_provider(parsed.claude_provider)
+        provider = get_gemini_provider(parsed.gemini_provider)
     except ValueError as e:
         print(f"error: {e}", file=sys.stderr)
         return 1
 
     # handle --help: show wrapper help unconditionally, then try container help if config exists
-    # skip claude_home check when using bedrock provider (no anthropic credentials needed)
+    # skip gemini_home check when using bedrock provider (no gemini credentials needed)
     if parsed.help:
         parser.print_help()
         print("\n" + "-" * 70)
-        if provider != "bedrock" and not claude_home.is_dir():
-            print("ralphex options: (cannot show - claude config not found)")
-            print("  run 'claude' first to authenticate, then re-run --help")
+        if provider != "bedrock" and not gemini_home.is_dir():
+            print("ralphex options: (cannot show - gemini config not found)")
+            print("  run 'gemini' first to authenticate, then re-run --help")
             return 0
         print("ralphex options (from container):\n")
-        creds_temp = None if provider == "bedrock" else extract_macos_credentials(claude_home)
+        creds_temp = None if provider == "bedrock" else extract_macos_credentials(gemini_home)
         try:
-            volumes = build_volumes(creds_temp, claude_home)
+            volumes = build_volumes(creds_temp, gemini_home)
             cmd = ["docker", "run", "--rm"]
             cmd.extend(build_base_env_vars())
             cmd.extend(volumes)
@@ -1072,27 +1072,27 @@ def main() -> int:
                     pass
 
     # check required directories (after --help handling)
-    # skip claude_home check when using bedrock provider (no anthropic credentials needed)
-    if provider != "bedrock" and not claude_home.is_dir():
-        print(f"error: {claude_home} directory not found (run 'claude' first to authenticate)", file=sys.stderr)
+    # skip gemini_home check when using bedrock provider (no gemini credentials needed)
+    if provider != "bedrock" and not gemini_home.is_dir():
+        print(f"error: {gemini_home} directory not found (run 'gemini' first to authenticate)", file=sys.stderr)
         return 1
 
     # extract macOS credentials (needed for volume mounts)
     # skip when using bedrock provider (uses AWS credentials instead)
-    creds_temp = None if provider == "bedrock" else extract_macos_credentials(claude_home)
+    creds_temp = None if provider == "bedrock" else extract_macos_credentials(gemini_home)
 
     # fail fast on macOS if there are no credentials at all: no on-disk file AND
     # keychain extraction returned None. starting the container would surface a
-    # confusing "Not logged in" inside claude later.
+    # confusing "Not logged in" inside gemini later.
     if (
         provider != "bedrock"
         and platform.system() == "Darwin"
         and creds_temp is None
-        and not (claude_home / ".credentials.json").exists()
+        and not (gemini_home / ".credentials.json").exists()
     ):
         print(
-            f"error: no Claude credentials found (neither {claude_home}/.credentials.json "
-            "nor macOS keychain). run 'claude' on the host to authenticate first.",
+            f"error: no Gemini credentials found (neither {gemini_home}/.credentials.json "
+            "nor macOS keychain). run 'gemini' on the host to authenticate first.",
             file=sys.stderr,
         )
         return 1
@@ -1152,7 +1152,7 @@ def main() -> int:
     dry_run_completed = False
     try:
         # build volumes (base + extra from env var + CLI)
-        volumes = build_volumes(creds_temp, claude_home)
+        volumes = build_volumes(creds_temp, gemini_home)
         volumes.extend(extra_volumes)
 
         # docker socket mount (when --docker flag or RALPHEX_DOCKER_SOCKET env var is set)
@@ -1175,11 +1175,11 @@ def main() -> int:
                 print("warning: --docker mounts host Docker socket — containers have host-level Docker access",
                       file=sys.stderr)
 
-        if claude_config_dir_env:
-            print(f"using claude config dir: {claude_home}", file=sys.stderr)
+        if gemini_config_dir_env:
+            print(f"using gemini config dir: {gemini_home}", file=sys.stderr)
         print(f"using image: {image}", file=sys.stderr)
         if provider == "bedrock":
-            print("claude provider: bedrock (keychain skipped)", file=sys.stderr)
+            print("gemini provider: bedrock (keychain skipped)", file=sys.stderr)
             # extract env from flags for diagnostics
             env_from_flags = extract_env_from_flags(extra_env)
             # show credential source

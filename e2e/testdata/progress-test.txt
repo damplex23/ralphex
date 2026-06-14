@@ -17,7 +17,7 @@ Started: 2026-01-22 10:30:00
 [26-01-22 10:30:03] WARN: test coverage below 80%
 [26-01-22 10:30:03] Task 1 complete
 
---- Claude Review (pass 1 of 2) ---
+--- Gemini Review (pass 1 of 2) ---
 [26-01-22 10:31:00] Starting first review
 [26-01-22 10:31:01] Reviewing code changes
 [26-01-22 10:31:02] First review complete
@@ -27,7 +27,7 @@ Started: 2026-01-22 10:30:00
 [26-01-22 10:32:01] Analyzing code quality
 [26-01-22 10:32:02] Codex review complete <<<RALPHEX:CODEX_REVIEW_DONE>>>
 
---- Claude Review (pass 2 of 2) ---
+--- Gemini Review (pass 2 of 2) ---
 [26-01-22 10:33:00] Starting final review
 [26-01-22 10:33:01] Verifying all feedback addressed
 [26-01-22 10:33:02] Final review complete <<<RALPHEX:REVIEW_DONE>>>

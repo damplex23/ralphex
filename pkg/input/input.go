@@ -323,7 +323,7 @@ func (c *TerminalCollector) AskDraftReview(ctx context.Context, question, planCo
 				continue // re-show menu
 			}
 
-			// wrap diff with instructions so Claude knows how to interpret the annotations
+			// wrap diff with instructions so Gemini knows how to interpret the annotations
 			feedback := "user reviewed the plan in an editor and made changes. " +
 				"the diff below shows what the user modified (lines starting with - are original, + are user's version).\n" +
 				"examine each diff hunk to understand the user's feedback:\n" +

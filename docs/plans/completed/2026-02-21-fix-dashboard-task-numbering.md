@@ -12,7 +12,7 @@ Web dashboard shows wrong task numbers when plan is edited mid-run or tasks retr
 
 **also affected:** task retries — when a task fails and retries, `i` increments but the plan task doesn't change, causing the same off-by-one in dashboard highlighting.
 
-**assumption:** tasks are completed in order (runner uses single prompt that reads plan each time, Claude picks next uncompleted task sequentially).
+**assumption:** tasks are completed in order (runner uses single prompt that reads plan each time, Gemini picks next uncompleted task sequentially).
 
 **files involved:**
 - `pkg/web/plan.go` - plan parsing types + regex, needs to move to `pkg/plan/`
@@ -109,7 +109,7 @@ Web dashboard shows wrong task numbers when plan is edited mid-run or tasks retr
 
 ### Task 6: Update documentation and complete
 
-- [x] update CLAUDE.md if new patterns changed
+- [x] update GEMINI.md if new patterns changed
 - [x] move this plan to `docs/plans/completed/`
 
 ## Technical Details

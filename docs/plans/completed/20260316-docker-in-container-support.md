@@ -11,12 +11,12 @@
 - `Dockerfile` — base image, needs `docker-cli` package added
 - `scripts/ralphex-dk.sh` — Python wrapper, needs `--docker` flag, socket mount logic, GID detection, Linux warning
 - `scripts/ralphex-dk/ralphex_dk_test.py` — tests, needs new test class for Docker socket feature
-- Existing patterns: `--claude-provider` flag with env var fallback, `build_volumes()` for mounts, `build_docker_command()` for `--group-add`
+- Existing patterns: `--gemini-provider` flag with env var fallback, `build_volumes()` for mounts, `build_docker_command()` for `--group-add`
 - **Note**: `RALPHEX_DOCKER=1` is already used in the Dockerfile as a container-detection marker — must use a different env var name
 
 ## Solution Overview
 - Install `docker-cli` in base Dockerfile — always available, zero cost if unused
-- Add `--docker` wrapper flag with `RALPHEX_DOCKER_SOCKET=1` env var fallback (follows `--claude-provider` pattern)
+- Add `--docker` wrapper flag with `RALPHEX_DOCKER_SOCKET=1` env var fallback (follows `--gemini-provider` pattern)
 - Socket mount added conditionally in `main()`, appended to volumes list
 - GID auto-detected by `stat`-ing the socket on the host, passed via `DOCKER_GID` env var in `build_docker_command()`
 - Linux warning emitted to stderr when `--docker` is used and platform is Linux
@@ -135,7 +135,7 @@
 
 - [x] update wrapper script docstring (usage examples with `--docker`)
 - [x] update `scripts/ralphex-dk/README.md` with `--docker` flag
-- [x] update `CLAUDE.md` Docker section with docker socket support info
+- [x] update `GEMINI.md` Docker section with docker socket support info
 - [x] update `llms.txt` Docker wrapper env vars section
 - [x] move this plan to `docs/plans/completed/`
 

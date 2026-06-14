@@ -30,7 +30,7 @@
 
 ## Code-Quality Rules (HARD — verify against every task before marking complete)
 
-These rules supplement project CLAUDE.md and are NOT optional. They are the gate for marking any task complete. If a rule is violated, the task is not done — refactor, re-test, then mark complete.
+These rules supplement project GEMINI.md and are NOT optional. They are the gate for marking any task complete. If a rule is violated, the task is not done — refactor, re-test, then mark complete.
 
 **Signatures (hard limits):**
 - No function or method has 4+ parameters. `ctx context.Context` does not count toward the budget. If you need 4+, use an option struct (e.g., `type fooOpts struct { ... }`).
@@ -44,7 +44,7 @@ These rules supplement project CLAUDE.md and are NOT optional. They are the gate
 
 **Visibility (private by default, hard):**
 - Lowercase identifiers by default. Only export when an out-of-package caller exists.
-- Exception (per CLAUDE.md): methods called by other structs in the same package CAN be exported for inter-component API clarity. This is the only exception. It does not extend to types, functions, constants, or variables.
+- Exception (per GEMINI.md): methods called by other structs in the same package CAN be exported for inter-component API clarity. This is the only exception. It does not extend to types, functions, constants, or variables.
 - Before exporting any new identifier, grep for cross-package callers. If none, lowercase it.
 
 **Comments (default: none, hard):**
@@ -53,7 +53,7 @@ These rules supplement project CLAUDE.md and are NOT optional. They are the gate
 - Never describe WHAT the code does when the code itself is self-evident. Never write multi-paragraph comments on routine helpers.
 
 **Per-task gate (before marking ANY checkbox complete):**
-1. Formatter runs clean (`~/.claude/format.sh` or `gofmt -s -w` + `goimports -w`).
+1. Formatter runs clean (`~/.gemini/format.sh` or `gofmt -s -w` + `goimports -w`).
 2. `golangci-lint run --max-issues-per-linter=0 --max-same-issues=0` reports zero issues.
 3. `go test ./... -race` passes.
 4. Scan the new code for the four rule classes above. Specifically:
@@ -106,9 +106,9 @@ If a previous task shipped a violation (spotted later by user, reviewer, or your
 - Modify: `pkg/config/values.go`
 - Modify: `pkg/config/config_test.go` (only if a struct-shape change requires test field-path updates)
 
-- [x] ⚠️ premise correction: `Values` and `Config` are **not** a clean four-way mirror — `Values` carries merge-sentinel `*Set` fields (e.g. `CodexModelSet`, `ExecutorSet`, `PassClaudeMdSet`, `MovePlanOnCompletionSet`, the `Notify*Set` group) that `Config` does not; `Config` carries `json:"..."` tags that `Values` does not. The grouping must **preserve this asymmetry**, not unify it. Only group fields that genuinely exist on both with the same meaning; do not add `*Set` fields to `Config` or drop them from `Values`
-- [x] identify cohesive option clusters and define embedded sub-structs (candidates: claude, codex, execution/timeouts, error/limit patterns, worktree/plan/paths; notify already grouped) shared by `Values` and `Config` only where field sets match, following the existing `NotifyParams`/`Colors` precedent
-  - ⚠️ second-review correction: even the four pattern fields must remain flat exported fields on `Values` and `Config`. Although no in-repo out-of-package composite literal used them, external Go callers can legally write `config.Config{ClaudeErrorPatterns: ...}` and `config.Values{ClaudeErrorPatterns: ...}`. Embedding would break that source-compatible public API shape.
+- [x] ⚠️ premise correction: `Values` and `Config` are **not** a clean four-way mirror — `Values` carries merge-sentinel `*Set` fields (e.g. `CodexModelSet`, `ExecutorSet`, `PassGeminiMdSet`, `MovePlanOnCompletionSet`, the `Notify*Set` group) that `Config` does not; `Config` carries `json:"..."` tags that `Values` does not. The grouping must **preserve this asymmetry**, not unify it. Only group fields that genuinely exist on both with the same meaning; do not add `*Set` fields to `Config` or drop them from `Values`
+- [x] identify cohesive option clusters and define embedded sub-structs (candidates: gemini, codex, execution/timeouts, error/limit patterns, worktree/plan/paths; notify already grouped) shared by `Values` and `Config` only where field sets match, following the existing `NotifyParams`/`Colors` precedent
+  - ⚠️ second-review correction: even the four pattern fields must remain flat exported fields on `Values` and `Config`. Although no in-repo out-of-package composite literal used them, external Go callers can legally write `config.Config{GeminiErrorPatterns: ...}` and `config.Values{GeminiErrorPatterns: ...}`. Embedding would break that source-compatible public API shape.
 - [x] preserve every INI key name, every `*Set` sentinel field, and **every `json:` tag** exactly; keep pattern fields flat to avoid a public API change
 - [x] update `parseValuesFromBytes` to populate the grouped fields (no key renames) — promoted assignments unchanged
 - [x] update `loadConfigFromDirs` where safe; pattern fields remain per-field assignments to preserve the flat public struct shape
@@ -192,7 +192,7 @@ If a previous task shipped a violation (spotted later by user, reviewer, or your
 - Modify: corresponding `_test.go` files where identifiers are referenced
 
 - [x] confirm via grep `ParseModelEffort` has no out-of-package caller, then unexport it to `parseModelEffort` (keep `ResolveCodexModelEffort` exported); update in-package and test references
-- [x] rename `executionPolicy` → `retryPolicy` (the concrete type, its constructor/opts, and in-package references only). **Do NOT rename the `Run`/`HandlePatternMatchError`/`Sleep` methods** — they satisfy the consumer-side `phase.Policy` interface; renaming them would break that contract. Update the two CLAUDE.md references and the `runner_test.go` comments. (Lowest-value item in the plan — if the rename churn is not worth it, skipping it is acceptable; flag for Eugene's call)
+- [x] rename `executionPolicy` → `retryPolicy` (the concrete type, its constructor/opts, and in-package references only). **Do NOT rename the `Run`/`HandlePatternMatchError`/`Sleep` methods** — they satisfy the consumer-side `phase.Policy` interface; renaming them would break that contract. Update the two GEMINI.md references and the `runner_test.go` comments. (Lowest-value item in the plan — if the rename churn is not worth it, skipping it is acceptable; flag for Eugene's call)
 - [x] reuse `Checkbox.IsActionable` / `Task.HasUncompletedActionableWork` inside `FileHasUncompletedCheckbox` instead of re-implementing the actionable rule
 - [x] reword the misleading "excluding completed/" comments in `pkg/plan/plan.go` to describe the non-recursive glob mechanism
 - [x] run existing processor and plan tests — must stay green (behavior unchanged)
@@ -210,7 +210,7 @@ If a previous task shipped a violation (spotted later by user, reviewer, or your
 - [x] verify coverage did not regress below project standard
 
 ### Task 8: [Final] Update documentation
-- [x] update `CLAUDE.md` only if a refactor changed a pattern documented there (e.g. config sub-struct grouping, `executionPolicy`→`retryPolicy` rename references in the Key Patterns section) — no new edit needed; the `retryPolicy` references were already updated and the config grouping is internal
+- [x] update `GEMINI.md` only if a refactor changed a pattern documented there (e.g. config sub-struct grouping, `executionPolicy`→`retryPolicy` rename references in the Key Patterns section) — no new edit needed; the `retryPolicy` references were already updated and the config grouping is internal
 - [x] confirm `llms.txt` needs no change (no user-facing behavior changed)
 - [x] move this plan to `docs/plans/completed/`
 

@@ -54,7 +54,7 @@ func TestRunner_replacePromptVariables_ReviewFirstPrompt(t *testing.T) {
 		assert.Contains(t, prompt, "<<<RALPHEX:REVIEW_DONE>>>")
 		assert.Contains(t, prompt, "<<<RALPHEX:TASK_FAILED>>>")
 		// verify expanded agent content from the 5 agents
-		assert.Contains(t, prompt, "Use the Task tool to launch a general-purpose agent")
+		assert.Contains(t, prompt, "Use the invoke_agent tool to launch a generalist agent")
 		assert.Contains(t, prompt, "security issues")          // from quality agent
 		assert.Contains(t, prompt, "achieves the stated goal") // from implementation agent
 		assert.Contains(t, prompt, "test coverage")            // from testing agent
@@ -93,7 +93,7 @@ func TestRunner_replacePromptVariables_ReviewSecondPrompt(t *testing.T) {
 		assert.Contains(t, prompt, "<<<RALPHEX:REVIEW_DONE>>>")
 		assert.Contains(t, prompt, "<<<RALPHEX:TASK_FAILED>>>")
 		// verify expanded agent content from quality and implementation agents
-		assert.Contains(t, prompt, "Use the Task tool to launch a general-purpose agent")
+		assert.Contains(t, prompt, "Use the invoke_agent tool to launch a generalist agent")
 		assert.Contains(t, prompt, "security issues")          // from quality agent
 		assert.Contains(t, prompt, "achieves the stated goal") // from implementation agent
 		// should NOT have testing agent (only 2 agents for second pass)
@@ -469,7 +469,7 @@ func TestRunner_expandAgentReferences_SingleAgent(t *testing.T) {
 	prompt := "Check code:\n{{agent:security-scanner}}\nDone."
 	result := newPromptBuilderForTest(r).expandAgentReferences(prompt)
 
-	assert.Contains(t, result, "Use the Task tool to launch a general-purpose agent with this prompt:")
+	assert.Contains(t, result, "Use the invoke_agent tool to launch a generalist agent with this prompt:")
 	assert.Contains(t, result, "scan for security vulnerabilities")
 	assert.Contains(t, result, "Report findings only - no positive observations.")
 	assert.NotContains(t, result, "{{agent:security-scanner}}")
@@ -505,7 +505,7 @@ func TestRunner_expandAgentReferences_MissingAgent(t *testing.T) {
 
 	// missing agent should remain unexpanded
 	assert.Contains(t, result, "{{agent:missing-agent}}")
-	assert.NotContains(t, result, "Use the Task tool")
+	assert.NotContains(t, result, "Use the invoke_agent tool")
 
 	// verify warning was logged
 	calls := log.PrintCalls()
@@ -583,7 +583,7 @@ func TestRunner_expandAgentReferences_DuplicateReferences(t *testing.T) {
 	// both references should be expanded
 	assert.NotContains(t, result, "{{agent:scanner}}")
 	// count occurrences of expansion
-	assert.Equal(t, 2, strings.Count(result, "Use the Task tool to launch a general-purpose agent"))
+	assert.Equal(t, 2, strings.Count(result, "Use the invoke_agent tool to launch a generalist agent"))
 	assert.Equal(t, 2, strings.Count(result, "scan for issues"))
 }
 
@@ -600,7 +600,7 @@ func TestRunner_expandAgentReferences_SpecialCharactersInPrompt(t *testing.T) {
 
 	// prompt with special characters preserves newlines and tabs
 	assert.NotContains(t, result, "{{agent:regex-agent}}")
-	assert.Contains(t, result, "Use the Task tool to launch a general-purpose agent")
+	assert.Contains(t, result, "Use the invoke_agent tool to launch a generalist agent")
 	assert.Contains(t, result, "$variables")
 	// verify actual newlines/tabs are preserved (not escaped as \n \t)
 	assert.Contains(t, result, "\n")
@@ -676,10 +676,9 @@ func TestRunner_expandAgentReferences_WithModelAndAgentType(t *testing.T) {
 		r := &Runner{cfg: Config{AppConfig: appCfg}, log: newMockLogger()}
 
 		result := newPromptBuilderForTest(r).expandAgentReferences("Launch {{agent:docs}}")
-		assert.Contains(t, result, "model=haiku")
 		assert.Contains(t, result, "code-reviewer")
 		assert.Contains(t, result, "Check docs.")
-		assert.NotContains(t, result, "general-purpose")
+		assert.NotContains(t, result, "generalist")
 	})
 
 	t.Run("model only uses default agent type", func(t *testing.T) {
@@ -691,8 +690,7 @@ func TestRunner_expandAgentReferences_WithModelAndAgentType(t *testing.T) {
 		r := &Runner{cfg: Config{AppConfig: appCfg}, log: newMockLogger()}
 
 		result := newPromptBuilderForTest(r).expandAgentReferences("Run {{agent:lint}}")
-		assert.Contains(t, result, "model=sonnet")
-		assert.Contains(t, result, "general-purpose")
+		assert.Contains(t, result, "generalist")
 		assert.Contains(t, result, "Lint code.")
 	})
 
@@ -705,7 +703,6 @@ func TestRunner_expandAgentReferences_WithModelAndAgentType(t *testing.T) {
 		r := &Runner{cfg: Config{AppConfig: appCfg}, log: newMockLogger()}
 
 		result := newPromptBuilderForTest(r).expandAgentReferences("Run {{agent:review}}")
-		assert.NotContains(t, result, "model=")
 		assert.Contains(t, result, "code-reviewer")
 		assert.Contains(t, result, "Review code.")
 	})
@@ -719,8 +716,7 @@ func TestRunner_expandAgentReferences_WithModelAndAgentType(t *testing.T) {
 		r := &Runner{cfg: Config{AppConfig: appCfg}, log: newMockLogger()}
 
 		result := newPromptBuilderForTest(r).expandAgentReferences("Run {{agent:basic}}")
-		assert.NotContains(t, result, "model=")
-		assert.Contains(t, result, "general-purpose")
+		assert.Contains(t, result, "generalist")
 		assert.Contains(t, result, "Basic check.")
 	})
 }
@@ -922,7 +918,7 @@ func TestRunner_buildCustomReviewPrompt(t *testing.T) {
 		assert.NotContains(t, prompt, "main...HEAD")
 	})
 
-	t.Run("appends claude response context when present", func(t *testing.T) {
+	t.Run("appends gemini response context when present", func(t *testing.T) {
 		appCfg := testAppConfig(t)
 		r := &Runner{cfg: Config{
 			DefaultBranch: "main",
@@ -933,7 +929,7 @@ func TestRunner_buildCustomReviewPrompt(t *testing.T) {
 
 		assert.Contains(t, prompt, "PREVIOUS REVIEW CONTEXT")
 		assert.Contains(t, prompt, "I fixed the null pointer issue")
-		assert.Contains(t, prompt, "Re-evaluate considering Claude's arguments")
+		assert.Contains(t, prompt, "Re-evaluate considering Gemini's arguments")
 		assert.NotContains(t, prompt, "{{PREVIOUS_REVIEW_CONTEXT}}")
 	})
 
@@ -1033,19 +1029,19 @@ func TestRunner_buildPreviousContext(t *testing.T) {
 		result := newPromptBuilderForTest(r).buildPreviousContext("I fixed the null pointer issue")
 		assert.Contains(t, result, "PREVIOUS REVIEW CONTEXT")
 		assert.Contains(t, result, "I fixed the null pointer issue")
-		assert.Contains(t, result, "Re-evaluate considering Claude's arguments")
+		assert.Contains(t, result, "Re-evaluate considering Gemini's arguments")
 	})
 }
 
 func TestRunner_replaceVariablesWithIteration_PreviousReviewContext(t *testing.T) {
-	t.Run("empty when no claude response", func(t *testing.T) {
+	t.Run("empty when no gemini response", func(t *testing.T) {
 		r := &Runner{cfg: Config{DefaultBranch: "main"}}
 		result := newPromptBuilderForTest(r).replaceVariablesWithIteration("Review:\n{{PREVIOUS_REVIEW_CONTEXT}}", true, "")
 		assert.Equal(t, "Review:\n", result)
 		assert.NotContains(t, result, "PREVIOUS REVIEW CONTEXT")
 	})
 
-	t.Run("populated when claude response present", func(t *testing.T) {
+	t.Run("populated when gemini response present", func(t *testing.T) {
 		r := &Runner{cfg: Config{DefaultBranch: "main"}}
 		result := newPromptBuilderForTest(r).replaceVariablesWithIteration("Review:\n{{PREVIOUS_REVIEW_CONTEXT}}", false, "fixed the bug")
 		assert.Contains(t, result, "PREVIOUS REVIEW CONTEXT")
@@ -1065,7 +1061,7 @@ func TestRunner_replaceVariablesWithIteration_PreviousReviewContext(t *testing.T
 		assert.NotContains(t, result, "{{")
 	})
 
-	t.Run("agent refs in claude response not expanded", func(t *testing.T) {
+	t.Run("agent refs in gemini response not expanded", func(t *testing.T) {
 		r := &Runner{cfg: Config{DefaultBranch: "main", AppConfig: &config.Config{
 			CustomAgents: []config.CustomAgent{{Name: "quality", Prompt: "check quality"}},
 		}}}
@@ -1073,7 +1069,7 @@ func TestRunner_replaceVariablesWithIteration_PreviousReviewContext(t *testing.T
 		result := newPromptBuilderForTest(r).replaceVariablesWithIteration(prompt, false, "use {{agent:quality}} for analysis")
 
 		// agent ref in prompt template should be expanded (none here), but agent ref
-		// in claude response must stay as literal text - prevents prompt injection
+		// in gemini response must stay as literal text - prevents prompt injection
 		assert.Contains(t, result, "{{agent:quality}}")
 		assert.NotContains(t, result, "subagent_type")
 	})
@@ -1102,7 +1098,7 @@ func TestRunner_buildCodexPrompt(t *testing.T) {
 		assert.NotContains(t, prompt, "{{PREVIOUS_REVIEW_CONTEXT}}")
 	})
 
-	t.Run("subsequent iteration with claude response", func(t *testing.T) {
+	t.Run("subsequent iteration with gemini response", func(t *testing.T) {
 		appCfg := testAppConfig(t)
 		r := &Runner{cfg: Config{
 			PlanFile:      "docs/plans/test.md",
@@ -1117,10 +1113,10 @@ func TestRunner_buildCodexPrompt(t *testing.T) {
 		assert.NotContains(t, prompt, "main...HEAD")
 		assert.Contains(t, prompt, "PREVIOUS REVIEW CONTEXT")
 		assert.Contains(t, prompt, "I fixed the null pointer issue")
-		assert.Contains(t, prompt, "Re-evaluate considering Claude's arguments")
+		assert.Contains(t, prompt, "Re-evaluate considering Gemini's arguments")
 	})
 
-	t.Run("first iteration without claude response has no context block", func(t *testing.T) {
+	t.Run("first iteration without gemini response has no context block", func(t *testing.T) {
 		appCfg := testAppConfig(t)
 		r := &Runner{cfg: Config{
 			DefaultBranch: "main",
@@ -1147,7 +1143,7 @@ func TestRunner_buildCodexPrompt(t *testing.T) {
 		assert.NotContains(t, prompt, "{{GOAL}}")
 	})
 
-	t.Run("agent refs in claude response are not expanded", func(t *testing.T) {
+	t.Run("agent refs in gemini response are not expanded", func(t *testing.T) {
 		appCfg := testAppConfig(t)
 		r := &Runner{cfg: Config{
 			PlanFile:      "docs/plans/test.md",
@@ -1155,11 +1151,11 @@ func TestRunner_buildCodexPrompt(t *testing.T) {
 			AppConfig:     appCfg,
 		}, log: newMockLogger()}
 
-		// simulate claude response containing agent template variable (potential prompt injection)
+		// simulate gemini response containing agent template variable (potential prompt injection)
 		response := "I used {{agent:quality}} to check and {{agent:testing}} found issues"
 		prompt := newPromptBuilderForTest(r).CodexReviewPrompt(false, response)
 
-		// agent refs must remain as literal text, not expanded into Task tool instructions
+		// agent refs must remain as literal text, not expanded into invoke_agent tool instructions
 		assert.Contains(t, prompt, "{{agent:quality}}")
 		assert.Contains(t, prompt, "{{agent:testing}}")
 		assert.NotContains(t, prompt, "subagent_type")
@@ -1262,16 +1258,16 @@ func TestRunner_replaceBaseVariables_CommitTrailer(t *testing.T) {
 	})
 }
 
-func TestRunner_formatAgentExpansion_ClaudeShape(t *testing.T) {
+func TestRunner_formatAgentExpansion_GeminiShape(t *testing.T) {
 	appCfg := &config.Config{
 		CustomAgents: []config.CustomAgent{{Name: "scanner", Prompt: "scan code"}},
 	}
-	// no agentSyntax set: defaults to claude shape (ExecutorClaude is "")
+	// no agentSyntax set: defaults to gemini shape (ExecutorGemini is "")
 	r := &Runner{cfg: Config{AppConfig: appCfg}, log: newMockLogger()}
 
 	result := newPromptBuilderForTest(r).expandAgentReferences("Run {{agent:scanner}} now.")
 
-	assert.Contains(t, result, "Use the Task tool to launch a general-purpose agent with this prompt:")
+	assert.Contains(t, result, "Use the invoke_agent tool to launch a generalist agent with this prompt:")
 	assert.Contains(t, result, "scan code")
 	assert.Contains(t, result, "git diff master...HEAD", "agent body must carry the review-context lead-in")
 	assert.Contains(t, result, "Report findings only - no positive observations.")
@@ -1315,7 +1311,7 @@ func TestRunner_formatAgentExpansion_CodexShape(t *testing.T) {
 	// fork_context guidance lives in the section-level codexReviewGuidance block
 	// (injected by prependCodexReviewGuidance), not in the per-agent expansion.
 	assert.NotContains(t, result, "do not set fork_context")
-	assert.NotContains(t, result, "Use the Task tool")
+	assert.NotContains(t, result, "Use the invoke_agent tool")
 	assert.NotContains(t, result, "{{agent:scanner}}")
 }
 
@@ -1333,14 +1329,14 @@ func TestRunner_prependCodexReviewGuidance(t *testing.T) {
 		assert.True(t, strings.HasSuffix(result, body), "original prompt preserved at the end")
 	})
 
-	t.Run("claude executor returns prompt unchanged", func(t *testing.T) {
-		r := &Runner{cfg: Config{AppConfig: &config.Config{Executor: "claude"}}, log: newMockLogger()}
+	t.Run("gemini executor returns prompt unchanged", func(t *testing.T) {
+		r := &Runner{cfg: Config{AppConfig: &config.Config{Executor: "gemini"}}, log: newMockLogger()}
 		result := newPromptBuilderForTest(r).prependCodexReviewGuidance(body)
 
 		assert.Equal(t, body, result, "non-codex executor must not see codex-specific directives")
 	})
 
-	t.Run("empty executor (default claude) returns prompt unchanged", func(t *testing.T) {
+	t.Run("empty executor (default gemini) returns prompt unchanged", func(t *testing.T) {
 		r := &Runner{cfg: Config{AppConfig: &config.Config{}}, log: newMockLogger()}
 		result := newPromptBuilderForTest(r).prependCodexReviewGuidance(body)
 
@@ -1362,14 +1358,14 @@ func TestRunner_prependCodexTaskGuidance(t *testing.T) {
 		assert.True(t, strings.HasSuffix(result, body), "original prompt preserved at the end")
 	})
 
-	t.Run("claude executor returns prompt unchanged", func(t *testing.T) {
-		r := &Runner{cfg: Config{AppConfig: &config.Config{Executor: "claude"}}, log: newMockLogger()}
+	t.Run("gemini executor returns prompt unchanged", func(t *testing.T) {
+		r := &Runner{cfg: Config{AppConfig: &config.Config{Executor: "gemini"}}, log: newMockLogger()}
 		result := newPromptBuilderForTest(r).prependCodexTaskGuidance(body)
 
 		assert.Equal(t, body, result, "non-codex executor must not see codex-specific directives")
 	})
 
-	t.Run("empty executor (default claude) returns prompt unchanged", func(t *testing.T) {
+	t.Run("empty executor (default gemini) returns prompt unchanged", func(t *testing.T) {
 		r := &Runner{cfg: Config{AppConfig: &config.Config{}}, log: newMockLogger()}
 		result := newPromptBuilderForTest(r).prependCodexTaskGuidance(body)
 
@@ -1394,11 +1390,11 @@ func TestRunner_formatAgentExpansion_AllFiveDefaultAgents(t *testing.T) {
 	}
 
 	for _, name := range names {
-		t.Run("claude_"+name, func(t *testing.T) {
+		t.Run("gemini_"+name, func(t *testing.T) {
 			r := &Runner{cfg: Config{AppConfig: appCfg}, log: newMockLogger()}
 			result := newPromptBuilderForTest(r).expandAgentReferences("{{agent:" + name + "}}")
 
-			assert.Contains(t, result, "Use the Task tool to launch a general-purpose agent with this prompt:")
+			assert.Contains(t, result, "Use the invoke_agent tool to launch a generalist agent with this prompt:")
 			assert.NotContains(t, result, "spawn_agent")
 			assert.NotContains(t, result, "{{agent:"+name+"}}")
 			// inlined agent body present verbatim
@@ -1415,7 +1411,7 @@ func TestRunner_formatAgentExpansion_AllFiveDefaultAgents(t *testing.T) {
 			result := newPromptBuilderForTest(r).expandAgentReferences("{{agent:" + name + "}}")
 
 			assert.Contains(t, result, "spawn_agent(agent='reviewer', task='")
-			assert.NotContains(t, result, "Use the Task tool")
+			assert.NotContains(t, result, "Use the invoke_agent tool")
 			assert.NotContains(t, result, "{{agent:"+name+"}}")
 			// inlined agent body present with codex single-quoted escaping applied
 			// (escapeCodexSingleQuoted: backslash first, then single-quote, then CR, then LF)
@@ -1501,13 +1497,13 @@ func TestRunner_expandAgentReferences_NoCodexWarnWhenFrontmatterEmpty(t *testing
 func TestRunner_formatAgentExpansion_PicksShapeFromExecutor(t *testing.T) {
 	// formatAgentExpansion reads cfg.AppConfig.Executor directly (no cached agentSyntax
 	// field). verifies the per-executor expansion shape choice.
-	t.Run("default executor produces claude shape", func(t *testing.T) {
+	t.Run("default executor produces gemini shape", func(t *testing.T) {
 		appCfg := testAppConfig(t)
-		appCfg.Executor = config.ExecutorClaude
+		appCfg.Executor = config.ExecutorGemini
 		appCfg.CustomAgents = []config.CustomAgent{{Name: "scanner", Prompt: "scan"}}
 		r := &Runner{cfg: Config{AppConfig: appCfg}, log: newMockLogger()}
 		result := newPromptBuilderForTest(r).expandAgentReferences("{{agent:scanner}}")
-		assert.Contains(t, result, "Use the Task tool")
+		assert.Contains(t, result, "Use the invoke_agent tool")
 		assert.NotContains(t, result, "spawn_agent")
 	})
 
@@ -1518,10 +1514,10 @@ func TestRunner_formatAgentExpansion_PicksShapeFromExecutor(t *testing.T) {
 		r := &Runner{cfg: Config{AppConfig: appCfg}, log: newMockLogger()}
 		result := newPromptBuilderForTest(r).expandAgentReferences("{{agent:scanner}}")
 		assert.Contains(t, result, "spawn_agent")
-		assert.NotContains(t, result, "Use the Task tool")
+		assert.NotContains(t, result, "Use the invoke_agent tool")
 	})
 
-	t.Run("nil AppConfig defaults to claude shape (no expansion since no agents)", func(t *testing.T) {
+	t.Run("nil AppConfig defaults to gemini shape (no expansion since no agents)", func(t *testing.T) {
 		r := &Runner{cfg: Config{}, log: newMockLogger()}
 		// without AppConfig, expandAgentReferences returns the prompt unchanged
 		result := newPromptBuilderForTest(r).expandAgentReferences("{{agent:scanner}}")

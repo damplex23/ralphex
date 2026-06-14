@@ -133,10 +133,10 @@ func (p testPlanCreationPhase) Run(ctx context.Context) error {
 
 func TestRunner_Run_UnknownMode(t *testing.T) {
 	log := newRunnerMockLogger("")
-	claude := newMockExecutor(nil)
+	gemini := newMockExecutor(nil)
 	codex := newMockExecutor(nil)
 
-	r := NewWithExecutors(Config{Mode: "invalid"}, log, Executors{Task: claude, External: codex}, &status.PhaseHolder{})
+	r := NewWithExecutors(Config{Mode: "invalid"}, log, Executors{Task: gemini, External: codex}, &status.PhaseHolder{})
 	err := r.Run(t.Context())
 
 	require.Error(t, err)
@@ -145,10 +145,10 @@ func TestRunner_Run_UnknownMode(t *testing.T) {
 
 func TestRunner_RunFull_NoPlanFile(t *testing.T) {
 	log := newRunnerMockLogger("")
-	claude := newMockExecutor(nil)
+	gemini := newMockExecutor(nil)
 	codex := newMockExecutor(nil)
 
-	r := NewWithExecutors(Config{Mode: ModeFull}, log, Executors{Task: claude, External: codex}, &status.PhaseHolder{})
+	r := NewWithExecutors(Config{Mode: ModeFull}, log, Executors{Task: gemini, External: codex}, &status.PhaseHolder{})
 	err := r.Run(t.Context())
 
 	require.Error(t, err)
@@ -177,7 +177,7 @@ func TestRunner_RunFull_Success(t *testing.T) {
 	require.NoError(t, os.WriteFile(planFile, []byte("# Plan\n### Task 1: first\n- [x] done"), 0o600))
 
 	log := newRunnerMockLogger("progress.txt")
-	claude := newMockExecutor([]executor.Result{
+	gemini := newMockExecutor([]executor.Result{
 		{Output: "task done", Signal: status.Completed},    // task phase completes
 		{Output: "review done", Signal: status.ReviewDone}, // first review
 		{Output: "review done", Signal: status.ReviewDone}, // pre-codex review loop
@@ -194,7 +194,7 @@ func TestRunner_RunFull_Success(t *testing.T) {
 		Mode: ModeFull, PlanFile: planFile, MaxIterations: 50,
 		IterationDelayMs: 1, CodexEnabled: true, AppConfig: testAppConfig(t),
 	}
-	r := NewWithExecutors(cfg, log, Executors{Task: claude, External: codex}, &status.PhaseHolder{})
+	r := NewWithExecutors(cfg, log, Executors{Task: gemini, External: codex}, &status.PhaseHolder{})
 	err := r.Run(t.Context())
 
 	require.NoError(t, err)
@@ -207,7 +207,7 @@ func TestRunner_RunFull_NoCodexFindings(t *testing.T) {
 	require.NoError(t, os.WriteFile(planFile, []byte("# Plan\n### Task 1: first\n- [x] done"), 0o600))
 
 	log := newRunnerMockLogger("progress.txt")
-	claude := newMockExecutor([]executor.Result{
+	gemini := newMockExecutor([]executor.Result{
 		{Output: "task done", Signal: status.Completed},
 		{Output: "review done", Signal: status.ReviewDone}, // first review
 		{Output: "review done", Signal: status.ReviewDone}, // pre-codex review loop
@@ -218,7 +218,7 @@ func TestRunner_RunFull_NoCodexFindings(t *testing.T) {
 	})
 
 	cfg := Config{Mode: ModeFull, PlanFile: planFile, MaxIterations: 50, CodexEnabled: true, AppConfig: testAppConfig(t)}
-	r := NewWithExecutors(cfg, log, Executors{Task: claude, External: codex}, &status.PhaseHolder{})
+	r := NewWithExecutors(cfg, log, Executors{Task: gemini, External: codex}, &status.PhaseHolder{})
 	err := r.Run(t.Context())
 
 	require.NoError(t, err)
@@ -262,7 +262,7 @@ func TestRunner_RunFull_CodexExecutor_SkipsExternalReview(t *testing.T) {
 
 func TestRunner_RunReviewOnly_Success(t *testing.T) {
 	log := newRunnerMockLogger("progress.txt")
-	claude := newMockExecutor([]executor.Result{
+	gemini := newMockExecutor([]executor.Result{
 		{Output: "review done", Signal: status.ReviewDone}, // first review
 		{Output: "review done", Signal: status.ReviewDone}, // pre-codex review loop
 		{Output: "fixed issues"},                           // codex eval iter 1 — findings fixed
@@ -275,7 +275,7 @@ func TestRunner_RunReviewOnly_Success(t *testing.T) {
 	})
 
 	cfg := Config{Mode: ModeReview, MaxIterations: 50, IterationDelayMs: 1, CodexEnabled: true, AppConfig: testAppConfig(t)}
-	r := NewWithExecutors(cfg, log, Executors{Task: claude, External: codex}, &status.PhaseHolder{})
+	r := NewWithExecutors(cfg, log, Executors{Task: gemini, External: codex}, &status.PhaseHolder{})
 	err := r.Run(t.Context())
 
 	require.NoError(t, err)
@@ -284,7 +284,7 @@ func TestRunner_RunReviewOnly_Success(t *testing.T) {
 
 func TestRunner_RunCodexOnly_Success(t *testing.T) {
 	log := newRunnerMockLogger("progress.txt")
-	claude := newMockExecutor([]executor.Result{
+	gemini := newMockExecutor([]executor.Result{
 		{Output: "fixed issues"},                           // codex eval iter 1 — findings fixed
 		{Output: "done", Signal: status.CodexDone},         // codex eval iter 2 — no more findings
 		{Output: "review done", Signal: status.ReviewDone}, // post-codex review loop
@@ -295,7 +295,7 @@ func TestRunner_RunCodexOnly_Success(t *testing.T) {
 	})
 
 	cfg := Config{Mode: ModeCodexOnly, MaxIterations: 50, IterationDelayMs: 1, CodexEnabled: true, AppConfig: testAppConfig(t)}
-	r := NewWithExecutors(cfg, log, Executors{Task: claude, External: codex}, &status.PhaseHolder{})
+	r := NewWithExecutors(cfg, log, Executors{Task: gemini, External: codex}, &status.PhaseHolder{})
 	err := r.Run(t.Context())
 
 	require.NoError(t, err)
@@ -305,13 +305,13 @@ func TestRunner_RunCodexOnly_Success(t *testing.T) {
 func TestRunner_RunCodexOnly_NoFindings(t *testing.T) {
 	log := newRunnerMockLogger("progress.txt")
 	// codex returns empty → no findings → post-codex review skipped
-	claude := newMockExecutor(nil)
+	gemini := newMockExecutor(nil)
 	codex := newMockExecutor([]executor.Result{
 		{Output: ""}, // no findings
 	})
 
 	cfg := Config{Mode: ModeCodexOnly, MaxIterations: 50, CodexEnabled: true, AppConfig: testAppConfig(t)}
-	r := NewWithExecutors(cfg, log, Executors{Task: claude, External: codex}, &status.PhaseHolder{})
+	r := NewWithExecutors(cfg, log, Executors{Task: gemini, External: codex}, &status.PhaseHolder{})
 	err := r.Run(t.Context())
 
 	require.NoError(t, err)
@@ -319,8 +319,8 @@ func TestRunner_RunCodexOnly_NoFindings(t *testing.T) {
 
 func TestRunner_MaxExternalIterations_ExplicitLimit(t *testing.T) {
 	log := newRunnerMockLogger("progress.txt")
-	// codex loop: 2 iterations (each = codex + claude eval), then post-codex review
-	claude := newMockExecutor([]executor.Result{
+	// codex loop: 2 iterations (each = codex + gemini eval), then post-codex review
+	gemini := newMockExecutor([]executor.Result{
 		{Output: "still issues"},                           // codex eval iter 1 (no CodexDone)
 		{Output: "still issues"},                           // codex eval iter 2 (no CodexDone)
 		{Output: "review done", Signal: status.ReviewDone}, // post-codex review loop
@@ -334,7 +334,7 @@ func TestRunner_MaxExternalIterations_ExplicitLimit(t *testing.T) {
 		Mode: ModeCodexOnly, MaxIterations: 50, IterationDelayMs: 1,
 		MaxExternalIterations: 2, CodexEnabled: true, AppConfig: testAppConfig(t),
 	}
-	r := NewWithExecutors(cfg, log, Executors{Task: claude, External: codex}, &status.PhaseHolder{})
+	r := NewWithExecutors(cfg, log, Executors{Task: gemini, External: codex}, &status.PhaseHolder{})
 	err := r.Run(t.Context())
 
 	require.NoError(t, err)
@@ -344,7 +344,7 @@ func TestRunner_MaxExternalIterations_ExplicitLimit(t *testing.T) {
 func TestRunner_MaxExternalIterations_DerivedFormula(t *testing.T) {
 	log := newRunnerMockLogger("progress.txt")
 	// with MaxIterations=15 and MaxExternalIterations=0 (auto): derived = max(3, 15/5) = 3
-	claude := newMockExecutor([]executor.Result{
+	gemini := newMockExecutor([]executor.Result{
 		{Output: "still issues"},                           // codex eval iter 1
 		{Output: "still issues"},                           // codex eval iter 2
 		{Output: "still issues"},                           // codex eval iter 3
@@ -360,7 +360,7 @@ func TestRunner_MaxExternalIterations_DerivedFormula(t *testing.T) {
 		Mode: ModeCodexOnly, MaxIterations: 15, IterationDelayMs: 1,
 		MaxExternalIterations: 0, CodexEnabled: true, AppConfig: testAppConfig(t),
 	}
-	r := NewWithExecutors(cfg, log, Executors{Task: claude, External: codex}, &status.PhaseHolder{})
+	r := NewWithExecutors(cfg, log, Executors{Task: gemini, External: codex}, &status.PhaseHolder{})
 	err := r.Run(t.Context())
 
 	require.NoError(t, err)
@@ -370,11 +370,11 @@ func TestRunner_MaxExternalIterations_DerivedFormula(t *testing.T) {
 func TestRunner_CodexDisabled_SkipsCodexPhase(t *testing.T) {
 	log := newRunnerMockLogger("progress.txt")
 	// codex disabled → no findings → post-codex review skipped
-	claude := newMockExecutor(nil)
+	gemini := newMockExecutor(nil)
 	codex := newMockExecutor(nil)
 
 	cfg := Config{Mode: ModeCodexOnly, MaxIterations: 50, CodexEnabled: false, AppConfig: testAppConfig(t)}
-	r := NewWithExecutors(cfg, log, Executors{Task: claude, External: codex}, &status.PhaseHolder{})
+	r := NewWithExecutors(cfg, log, Executors{Task: gemini, External: codex}, &status.PhaseHolder{})
 	err := r.Run(t.Context())
 
 	require.NoError(t, err)
@@ -388,26 +388,26 @@ func TestRunner_RunTasksOnly_Success(t *testing.T) {
 	require.NoError(t, os.WriteFile(planFile, []byte("# Plan\n### Task 1: first\n- [x] done"), 0o600))
 
 	log := newRunnerMockLogger("progress.txt")
-	claude := newMockExecutor([]executor.Result{
+	gemini := newMockExecutor([]executor.Result{
 		{Output: "task done", Signal: status.Completed}, // task phase completes
 	})
 	codex := newMockExecutor(nil)
 
 	cfg := Config{Mode: ModeTasksOnly, PlanFile: planFile, MaxIterations: 50, AppConfig: testAppConfig(t)}
-	r := NewWithExecutors(cfg, log, Executors{Task: claude, External: codex}, &status.PhaseHolder{})
+	r := NewWithExecutors(cfg, log, Executors{Task: gemini, External: codex}, &status.PhaseHolder{})
 	err := r.Run(t.Context())
 
 	require.NoError(t, err)
 	assert.Empty(t, codex.RunCalls(), "codex should not be called in tasks-only mode")
-	assert.Len(t, claude.RunCalls(), 1)
+	assert.Len(t, gemini.RunCalls(), 1)
 }
 
 func TestRunner_RunTasksOnly_NoPlanFile(t *testing.T) {
 	log := newRunnerMockLogger("")
-	claude := newMockExecutor(nil)
+	gemini := newMockExecutor(nil)
 	codex := newMockExecutor(nil)
 
-	r := NewWithExecutors(Config{Mode: ModeTasksOnly}, log, Executors{Task: claude, External: codex}, &status.PhaseHolder{})
+	r := NewWithExecutors(Config{Mode: ModeTasksOnly}, log, Executors{Task: gemini, External: codex}, &status.PhaseHolder{})
 	err := r.Run(t.Context())
 
 	require.Error(t, err)
@@ -420,14 +420,14 @@ func TestRunner_RunTasksOnly_TaskPhaseError(t *testing.T) {
 	require.NoError(t, os.WriteFile(planFile, []byte("# Plan\n### Task 1: first\n- [ ] todo"), 0o600))
 
 	log := newRunnerMockLogger("progress.txt")
-	claude := newMockExecutor([]executor.Result{
+	gemini := newMockExecutor([]executor.Result{
 		{Output: "error", Signal: status.Failed}, // first try
 		{Output: "error", Signal: status.Failed}, // retry
 	})
 	codex := newMockExecutor(nil)
 
 	cfg := Config{Mode: ModeTasksOnly, PlanFile: planFile, MaxIterations: 10, AppConfig: testAppConfig(t)}
-	r := NewWithExecutors(cfg, log, Executors{Task: claude, External: codex}, &status.PhaseHolder{})
+	r := NewWithExecutors(cfg, log, Executors{Task: gemini, External: codex}, &status.PhaseHolder{})
 	err := r.Run(t.Context())
 
 	require.Error(t, err)
@@ -440,7 +440,7 @@ func TestRunner_RunTasksOnly_NoReviews(t *testing.T) {
 	require.NoError(t, os.WriteFile(planFile, []byte("# Plan\n### Task 1: first\n- [x] done\n### Task 2: second\n- [x] done"), 0o600))
 
 	log := newRunnerMockLogger("progress.txt")
-	claude := newMockExecutor([]executor.Result{
+	gemini := newMockExecutor([]executor.Result{
 		{Output: "task done", Signal: status.Completed},
 	})
 	codex := newMockExecutor(nil)
@@ -452,18 +452,18 @@ func TestRunner_RunTasksOnly_NoReviews(t *testing.T) {
 		CodexEnabled:  true, // enabled but should not run in tasks-only mode
 		AppConfig:     testAppConfig(t),
 	}
-	r := NewWithExecutors(cfg, log, Executors{Task: claude, External: codex}, &status.PhaseHolder{})
+	r := NewWithExecutors(cfg, log, Executors{Task: gemini, External: codex}, &status.PhaseHolder{})
 	err := r.Run(t.Context())
 
 	require.NoError(t, err)
 	// verify no review or codex phases ran - only task phase
-	assert.Len(t, claude.RunCalls(), 1, "only task phase should run")
+	assert.Len(t, gemini.RunCalls(), 1, "only task phase should run")
 	assert.Empty(t, codex.RunCalls(), "codex should not run in tasks-only mode")
 }
 
 func TestRunner_CodexPhase_Error(t *testing.T) {
 	log := newRunnerMockLogger("progress.txt")
-	claude := newMockExecutor([]executor.Result{
+	gemini := newMockExecutor([]executor.Result{
 		{Output: "review done", Signal: status.ReviewDone}, // first review
 		{Output: "review done", Signal: status.ReviewDone}, // pre-codex review loop
 	})
@@ -472,7 +472,7 @@ func TestRunner_CodexPhase_Error(t *testing.T) {
 	})
 
 	cfg := Config{Mode: ModeReview, MaxIterations: 50, CodexEnabled: true, AppConfig: testAppConfig(t)}
-	r := NewWithExecutors(cfg, log, Executors{Task: claude, External: codex}, &status.PhaseHolder{})
+	r := NewWithExecutors(cfg, log, Executors{Task: gemini, External: codex}, &status.PhaseHolder{})
 	err := r.Run(t.Context())
 
 	require.Error(t, err)
@@ -480,23 +480,23 @@ func TestRunner_CodexPhase_Error(t *testing.T) {
 	assert.Len(t, codex.RunCalls(), 1, "codex should be called once")
 }
 
-func TestRunner_ClaudeExecution_Error(t *testing.T) {
+func TestRunner_GeminiExecution_Error(t *testing.T) {
 	tmpDir := t.TempDir()
 	planFile := filepath.Join(tmpDir, "plan.md")
 	require.NoError(t, os.WriteFile(planFile, []byte("# Plan\n### Task 1: first\n- [ ] todo"), 0o600))
 
 	log := newRunnerMockLogger("progress.txt")
-	claude := newMockExecutor([]executor.Result{
-		{Error: errors.New("claude error")},
+	gemini := newMockExecutor([]executor.Result{
+		{Error: errors.New("gemini error")},
 	})
 	codex := newMockExecutor(nil)
 
 	cfg := Config{Mode: ModeFull, PlanFile: planFile, MaxIterations: 10, AppConfig: testAppConfig(t)}
-	r := NewWithExecutors(cfg, log, Executors{Task: claude, External: codex}, &status.PhaseHolder{})
+	r := NewWithExecutors(cfg, log, Executors{Task: gemini, External: codex}, &status.PhaseHolder{})
 	err := r.Run(t.Context())
 
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "claude execution")
+	assert.Contains(t, err.Error(), "gemini execution")
 }
 
 func TestRunner_RunFull_NoTaskSections(t *testing.T) {
@@ -505,16 +505,16 @@ func TestRunner_RunFull_NoTaskSections(t *testing.T) {
 	require.NoError(t, os.WriteFile(planFile, []byte("# Overview\n## Goals\n- describe architecture"), 0o600))
 
 	log := newRunnerMockLogger("progress.txt")
-	claude := newMockExecutor(nil)
+	gemini := newMockExecutor(nil)
 	codex := newMockExecutor(nil)
 
 	cfg := Config{Mode: ModeFull, PlanFile: planFile, MaxIterations: 10, AppConfig: testAppConfig(t)}
-	r := NewWithExecutors(cfg, log, Executors{Task: claude, External: codex}, &status.PhaseHolder{})
+	r := NewWithExecutors(cfg, log, Executors{Task: gemini, External: codex}, &status.PhaseHolder{})
 	err := r.Run(t.Context())
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "no executable task sections")
-	assert.Empty(t, claude.RunCalls(), "claude must not be invoked when plan has no task sections")
+	assert.Empty(t, gemini.RunCalls(), "gemini must not be invoked when plan has no task sections")
 	assert.Empty(t, codex.RunCalls(), "codex must not be invoked when plan has no task sections")
 }
 
@@ -524,16 +524,16 @@ func TestRunner_RunTasksOnly_NoTaskSections(t *testing.T) {
 	require.NoError(t, os.WriteFile(planFile, []byte("# Overview\n## Goals\n- describe architecture"), 0o600))
 
 	log := newRunnerMockLogger("progress.txt")
-	claude := newMockExecutor(nil)
+	gemini := newMockExecutor(nil)
 	codex := newMockExecutor(nil)
 
 	cfg := Config{Mode: ModeTasksOnly, PlanFile: planFile, MaxIterations: 10, AppConfig: testAppConfig(t)}
-	r := NewWithExecutors(cfg, log, Executors{Task: claude, External: codex}, &status.PhaseHolder{})
+	r := NewWithExecutors(cfg, log, Executors{Task: gemini, External: codex}, &status.PhaseHolder{})
 	err := r.Run(t.Context())
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "no executable task sections")
-	assert.Empty(t, claude.RunCalls(), "claude must not be invoked when plan has no task sections")
+	assert.Empty(t, gemini.RunCalls(), "gemini must not be invoked when plan has no task sections")
 }
 
 func TestRunner_BuildCodexPrompt_CompletedDir(t *testing.T) {
@@ -548,11 +548,11 @@ func TestRunner_BuildCodexPrompt_CompletedDir(t *testing.T) {
 	require.NoError(t, os.WriteFile(completedPath, []byte("# Plan"), 0o600))
 
 	log := newRunnerMockLogger("")
-	claude := newMockExecutor(nil)
+	gemini := newMockExecutor(nil)
 	codex := newMockExecutor(nil)
 
 	cfg := Config{PlanFile: originalPath, AppConfig: testAppConfig(t)}
-	r := NewWithExecutors(cfg, log, Executors{Task: claude, External: codex}, &status.PhaseHolder{})
+	r := NewWithExecutors(cfg, log, Executors{Task: gemini, External: codex}, &status.PhaseHolder{})
 
 	locator := newPlanLocator(r.cfg)
 	prompts := newPromptBuilder(promptBuilderOpts{cfg: r.cfg, log: r.log, locator: locator})
@@ -562,26 +562,26 @@ func TestRunner_BuildCodexPrompt_CompletedDir(t *testing.T) {
 	assert.NotContains(t, prompt, originalPath)
 }
 
-func TestRunner_ErrorPatternMatch_ClaudeInTaskPhase(t *testing.T) {
+func TestRunner_ErrorPatternMatch_GeminiInTaskPhase(t *testing.T) {
 	tmpDir := t.TempDir()
 	planFile := filepath.Join(tmpDir, "plan.md")
 	require.NoError(t, os.WriteFile(planFile, []byte("# Plan\n### Task 1: first\n- [ ] todo"), 0o600))
 
 	log := newRunnerMockLogger("progress.txt")
-	claude := newMockExecutor([]executor.Result{
-		{Output: "You've hit your limit", Error: &executor.PatternMatchError{Pattern: "You've hit your limit", HelpCmd: "claude /usage"}},
+	gemini := newMockExecutor([]executor.Result{
+		{Output: "You've hit your limit", Error: &executor.PatternMatchError{Pattern: "You've hit your limit", HelpCmd: "gemini /usage"}},
 	})
 	codex := newMockExecutor(nil)
 
 	cfg := Config{Mode: ModeFull, PlanFile: planFile, MaxIterations: 10, AppConfig: testAppConfig(t)}
-	r := NewWithExecutors(cfg, log, Executors{Task: claude, External: codex}, &status.PhaseHolder{})
+	r := NewWithExecutors(cfg, log, Executors{Task: gemini, External: codex}, &status.PhaseHolder{})
 	err := r.Run(t.Context())
 
 	require.Error(t, err)
 	var patternErr *executor.PatternMatchError
 	require.ErrorAs(t, err, &patternErr)
 	assert.Equal(t, "You've hit your limit", patternErr.Pattern)
-	assert.Equal(t, "claude /usage", patternErr.HelpCmd)
+	assert.Equal(t, "gemini /usage", patternErr.HelpCmd)
 
 	// verify logging
 	var foundErrorLog, foundHelpLog bool
@@ -597,7 +597,7 @@ func TestRunner_ErrorPatternMatch_ClaudeInTaskPhase(t *testing.T) {
 	assert.True(t, foundHelpLog, "should log help command")
 }
 
-func TestRunner_LimitPatternMatch_ClaudeInTaskPhase_NoWait(t *testing.T) {
+func TestRunner_LimitPatternMatch_GeminiInTaskPhase_NoWait(t *testing.T) {
 	// verifies that LimitPatternError is handled gracefully by retryPolicy
 	// when waitOnLimit == 0, same as PatternMatchError (logs error + help, returns error)
 	tmpDir := t.TempDir()
@@ -605,20 +605,20 @@ func TestRunner_LimitPatternMatch_ClaudeInTaskPhase_NoWait(t *testing.T) {
 	require.NoError(t, os.WriteFile(planFile, []byte("# Plan\n### Task 1: first\n- [ ] todo"), 0o600))
 
 	log := newRunnerMockLogger("progress.txt")
-	claude := newMockExecutor([]executor.Result{
-		{Output: "You've hit your limit", Error: &executor.LimitPatternError{Pattern: "You've hit your limit", HelpCmd: "claude /usage"}},
+	gemini := newMockExecutor([]executor.Result{
+		{Output: "You've hit your limit", Error: &executor.LimitPatternError{Pattern: "You've hit your limit", HelpCmd: "gemini /usage"}},
 	})
 	codex := newMockExecutor(nil)
 
 	cfg := Config{Mode: ModeFull, PlanFile: planFile, MaxIterations: 10, AppConfig: testAppConfig(t)}
-	r := NewWithExecutors(cfg, log, Executors{Task: claude, External: codex}, &status.PhaseHolder{})
+	r := NewWithExecutors(cfg, log, Executors{Task: gemini, External: codex}, &status.PhaseHolder{})
 	err := r.Run(t.Context())
 
 	require.Error(t, err)
 	var limitErr *executor.LimitPatternError
 	require.ErrorAs(t, err, &limitErr)
 	assert.Equal(t, "You've hit your limit", limitErr.Pattern)
-	assert.Equal(t, "claude /usage", limitErr.HelpCmd)
+	assert.Equal(t, "gemini /usage", limitErr.HelpCmd)
 
 	// verify retryPolicy logging
 	var foundErrorLog, foundHelpLog bool
@@ -676,8 +676,8 @@ func TestRunner_CodexAndPostReview_ShortCircuitWhenCodexExecutorDisablesExternal
 	assert.True(t, foundDisabledMsg, "should log 'external review disabled' message")
 }
 
-func TestRunner_CodexAndPostReview_ShortCircuitWhenClaudeModeDisablesExternal(t *testing.T) {
-	// the short-circuit at runExternalAndPostReview must fire for claude mode too when
+func TestRunner_CodexAndPostReview_ShortCircuitWhenGeminiModeDisablesExternal(t *testing.T) {
+	// the short-circuit at runExternalAndPostReview must fire for gemini mode too when
 	// external review is disabled — otherwise dashboards briefly show PhaseCodex and an
 	// external review section header followed by contradictory log lines.
 	tmpDir := t.TempDir()
@@ -685,7 +685,7 @@ func TestRunner_CodexAndPostReview_ShortCircuitWhenClaudeModeDisablesExternal(t 
 	require.NoError(t, os.WriteFile(planFile, []byte("# Plan\n### Task 1: first\n- [x] done"), 0o600))
 
 	log := newRunnerMockLogger("progress.txt")
-	claude := newMockExecutor([]executor.Result{
+	gemini := newMockExecutor([]executor.Result{
 		{Output: "task done", Signal: status.Completed},    // task phase
 		{Output: "review done", Signal: status.ReviewDone}, // first review
 		{Output: "review done", Signal: status.ReviewDone}, // pre-codex review loop
@@ -700,14 +700,14 @@ func TestRunner_CodexAndPostReview_ShortCircuitWhenClaudeModeDisablesExternal(t 
 		CodexEnabled:  false, // makes the external review phase return tool "none"
 		AppConfig:     testAppConfig(t),
 	}
-	r := NewWithExecutors(cfg, log, Executors{Task: claude, External: codex}, holder)
+	r := NewWithExecutors(cfg, log, Executors{Task: gemini, External: codex}, holder)
 	err := r.Run(t.Context())
 
 	require.NoError(t, err)
 
 	for _, call := range log.PrintSectionCalls() {
 		assert.NotContains(t, call.Section.Label, "codex external review",
-			"claude mode with external review disabled must not print the codex section header")
+			"gemini mode with external review disabled must not print the codex section header")
 	}
 
 	var foundDisabledMsg bool
@@ -722,7 +722,7 @@ func TestRunner_CodexAndPostReview_ShortCircuitWhenClaudeModeDisablesExternal(t 
 
 func TestRunner_Finalize_RunsInReviewOnlyMode(t *testing.T) {
 	log := newRunnerMockLogger("progress.txt")
-	claude := newMockExecutor([]executor.Result{
+	gemini := newMockExecutor([]executor.Result{
 		{Output: "review done", Signal: status.ReviewDone}, // first review
 		{Output: "review done", Signal: status.ReviewDone}, // pre-codex review loop
 		// codex disabled → no findings → post-codex review skipped
@@ -737,17 +737,17 @@ func TestRunner_Finalize_RunsInReviewOnlyMode(t *testing.T) {
 		FinalizeEnabled: true,
 		AppConfig:       testAppConfig(t),
 	}
-	r := NewWithExecutors(cfg, log, Executors{Task: claude, External: codex}, &status.PhaseHolder{})
+	r := NewWithExecutors(cfg, log, Executors{Task: gemini, External: codex}, &status.PhaseHolder{})
 	err := r.Run(t.Context())
 
 	require.NoError(t, err)
-	// verify finalize ran (3 claude calls: first review + pre-codex loop + finalize)
-	assert.Len(t, claude.RunCalls(), 3)
+	// verify finalize ran (3 gemini calls: first review + pre-codex loop + finalize)
+	assert.Len(t, gemini.RunCalls(), 3)
 }
 
 func TestRunner_Finalize_RunsInCodexOnlyMode(t *testing.T) {
 	log := newRunnerMockLogger("progress.txt")
-	claude := newMockExecutor([]executor.Result{
+	gemini := newMockExecutor([]executor.Result{
 		// codex disabled → no findings → post-codex review skipped
 		{Output: "finalize done"}, // finalize step
 	})
@@ -760,12 +760,12 @@ func TestRunner_Finalize_RunsInCodexOnlyMode(t *testing.T) {
 		FinalizeEnabled: true,
 		AppConfig:       testAppConfig(t),
 	}
-	r := NewWithExecutors(cfg, log, Executors{Task: claude, External: codex}, &status.PhaseHolder{})
+	r := NewWithExecutors(cfg, log, Executors{Task: gemini, External: codex}, &status.PhaseHolder{})
 	err := r.Run(t.Context())
 
 	require.NoError(t, err)
-	// verify finalize ran (1 claude call: finalize only)
-	assert.Len(t, claude.RunCalls(), 1)
+	// verify finalize ran (1 gemini call: finalize only)
+	assert.Len(t, gemini.RunCalls(), 1)
 }
 
 func TestRunner_Finalize_CodexExecutor_RunsAllPhasesThroughSharedInstance(t *testing.T) {
@@ -811,16 +811,16 @@ func TestRunner_CodexAndPostReview_PipelineOrder(t *testing.T) {
 		name          string
 		mode          Mode
 		planFile      bool
-		claudeResults []executor.Result
+		geminiResults []executor.Result
 		codexResults  []executor.Result
-		expClaude     int // expected claude call count
+		expGemini     int // expected gemini call count
 		expCodex      int // expected codex call count
 		expPhases     []status.Phase
 	}{
 		{
 			name: "codex-only runs codex then review then finalize",
 			mode: ModeCodexOnly,
-			claudeResults: []executor.Result{
+			geminiResults: []executor.Result{
 				{Output: "fixed issues"},                           // codex eval iter 1 — findings fixed
 				{Output: "done", Signal: status.CodexDone},         // codex eval iter 2 — no more findings
 				{Output: "review done", Signal: status.ReviewDone}, // post-codex review loop
@@ -830,19 +830,19 @@ func TestRunner_CodexAndPostReview_PipelineOrder(t *testing.T) {
 				{Output: "found issue"},     // codex iteration 1
 				{Output: "no issues found"}, // codex iteration 2
 			},
-			expClaude: 4,
+			expGemini: 4,
 			expCodex:  2,
 			expPhases: []status.Phase{
 				status.PhaseCodex,                         // initial codex phase
-				status.PhaseClaudeEval, status.PhaseCodex, // iter 1 eval+restore
-				status.PhaseClaudeEval, status.PhaseCodex, // iter 2 eval+restore
+				status.PhaseGeminiEval, status.PhaseCodex, // iter 1 eval+restore
+				status.PhaseGeminiEval, status.PhaseCodex, // iter 2 eval+restore
 				status.PhaseReview, status.PhaseFinalize,
 			},
 		},
 		{
 			name: "review-only runs first review then codex then review then finalize",
 			mode: ModeReview,
-			claudeResults: []executor.Result{
+			geminiResults: []executor.Result{
 				{Output: "review done", Signal: status.ReviewDone}, // first review
 				{Output: "review done", Signal: status.ReviewDone}, // pre-codex review loop
 				{Output: "fixed issues"},                           // codex eval iter 1 — findings fixed
@@ -854,15 +854,15 @@ func TestRunner_CodexAndPostReview_PipelineOrder(t *testing.T) {
 				{Output: "found issue"},     // codex iteration 1
 				{Output: "no issues found"}, // codex iteration 2
 			},
-			expClaude: 6,
+			expGemini: 6,
 			expCodex:  2,
 			// review phase set once at start (covers first review + pre-codex loop),
 			// then codex loop (2 iterations), then review, then finalize
 			expPhases: []status.Phase{
 				status.PhaseReview,                        // first review + pre-codex loop
 				status.PhaseCodex,                         // initial codex phase
-				status.PhaseClaudeEval, status.PhaseCodex, // iter 1 eval+restore
-				status.PhaseClaudeEval, status.PhaseCodex, // iter 2 eval+restore
+				status.PhaseGeminiEval, status.PhaseCodex, // iter 1 eval+restore
+				status.PhaseGeminiEval, status.PhaseCodex, // iter 2 eval+restore
 				status.PhaseReview, status.PhaseFinalize,
 			},
 		},
@@ -877,7 +877,7 @@ func TestRunner_CodexAndPostReview_PipelineOrder(t *testing.T) {
 			})
 
 			log := newRunnerMockLogger("progress.txt")
-			claude := newMockExecutor(tc.claudeResults)
+			gemini := newMockExecutor(tc.geminiResults)
 			codex := newMockExecutor(tc.codexResults)
 
 			var planFile string
@@ -896,11 +896,11 @@ func TestRunner_CodexAndPostReview_PipelineOrder(t *testing.T) {
 				FinalizeEnabled:  true,
 				AppConfig:        testAppConfig(t),
 			}
-			r := NewWithExecutors(cfg, log, Executors{Task: claude, External: codex}, holder)
+			r := NewWithExecutors(cfg, log, Executors{Task: gemini, External: codex}, holder)
 			err := r.Run(t.Context())
 
 			require.NoError(t, err)
-			assert.Len(t, claude.RunCalls(), tc.expClaude)
+			assert.Len(t, gemini.RunCalls(), tc.expGemini)
 			assert.Len(t, codex.RunCalls(), tc.expCodex)
 			assert.Equal(t, tc.expPhases, phases, "phase transitions should match expected order")
 		})
@@ -978,7 +978,7 @@ func TestRunner_CodexAndPostReview_CommitPendingPrefix(t *testing.T) {
 		log := newRunnerMockLogger("progress.txt")
 
 		var capturedPrompts []string
-		claude := &mocks.ExecutorMock{
+		gemini := &mocks.ExecutorMock{
 			RunFunc: func(_ context.Context, prompt string) executor.Result {
 				capturedPrompts = append(capturedPrompts, prompt)
 				switch len(capturedPrompts) {
@@ -1002,7 +1002,7 @@ func TestRunner_CodexAndPostReview_CommitPendingPrefix(t *testing.T) {
 			Mode: ModeCodexOnly, MaxIterations: 50, IterationDelayMs: 1,
 			CodexEnabled: true, AppConfig: testAppConfig(t),
 		}
-		r := NewWithExecutors(cfg, log, Executors{Task: claude, External: codex}, &status.PhaseHolder{})
+		r := NewWithExecutors(cfg, log, Executors{Task: gemini, External: codex}, &status.PhaseHolder{})
 		err := r.Run(t.Context())
 
 		require.NoError(t, err)
@@ -1014,16 +1014,16 @@ func TestRunner_CodexAndPostReview_CommitPendingPrefix(t *testing.T) {
 	t.Run("no prefix when external review disabled", func(t *testing.T) {
 		log := newRunnerMockLogger("progress.txt")
 
-		// codex disabled → no findings → post-codex review skipped → claude not called
-		claude := newMockExecutor(nil)
+		// codex disabled → no findings → post-codex review skipped → gemini not called
+		gemini := newMockExecutor(nil)
 		codex := newMockExecutor(nil)
 
 		cfg := Config{Mode: ModeCodexOnly, MaxIterations: 50, CodexEnabled: false, AppConfig: testAppConfig(t)}
-		r := NewWithExecutors(cfg, log, Executors{Task: claude, External: codex}, &status.PhaseHolder{})
+		r := NewWithExecutors(cfg, log, Executors{Task: gemini, External: codex}, &status.PhaseHolder{})
 		err := r.Run(t.Context())
 
 		require.NoError(t, err)
-		assert.Empty(t, claude.RunCalls(), "claude should not be called when codex disabled")
+		assert.Empty(t, gemini.RunCalls(), "gemini should not be called when codex disabled")
 	})
 }
 
@@ -1110,7 +1110,7 @@ func TestRunner_SleepWithContext_CancelDuringDelay(t *testing.T) {
 
 	// executor returns no signal (no completion), so runner will loop and hit sleepWithContext
 	var cancel context.CancelFunc
-	claude := &mocks.ExecutorMock{RunFunc: func(_ context.Context, _ string) executor.Result {
+	gemini := &mocks.ExecutorMock{RunFunc: func(_ context.Context, _ string) executor.Result {
 		cancel()
 		return executor.Result{Output: "working on it"}
 	}}
@@ -1124,7 +1124,7 @@ func TestRunner_SleepWithContext_CancelDuringDelay(t *testing.T) {
 		IterationDelayMs: longDelay,
 		AppConfig:        testAppConfig(t),
 	}
-	r := NewWithExecutors(cfg, log, Executors{Task: claude, External: codex}, &status.PhaseHolder{})
+	r := NewWithExecutors(cfg, log, Executors{Task: gemini, External: codex}, &status.PhaseHolder{})
 
 	ctx, cancelFunc := context.WithCancel(t.Context())
 	cancel = cancelFunc
@@ -1146,14 +1146,14 @@ func TestRunner_FullMode_ErrUserAborted_SkipsReview(t *testing.T) {
 
 	log := newRunnerMockLogger("progress.txt")
 
-	claude := newMockExecutor(nil) // should not be called for review
+	gemini := newMockExecutor(nil) // should not be called for review
 	codex := newMockExecutor(nil)  // should not be called
 
 	cfg := Config{
 		Mode: ModeFull, MaxIterations: 50, CodexEnabled: true,
 		PlanFile: planFile, AppConfig: testAppConfig(t),
 	}
-	r := NewWithExecutors(cfg, log, Executors{Task: claude, External: codex}, &status.PhaseHolder{})
+	r := NewWithExecutors(cfg, log, Executors{Task: gemini, External: codex}, &status.PhaseHolder{})
 	taskPhase := testTaskPhase{runFunc: func(_ context.Context) error {
 		return ErrUserAborted
 	}}
@@ -1164,7 +1164,7 @@ func TestRunner_FullMode_ErrUserAborted_SkipsReview(t *testing.T) {
 	require.ErrorIs(t, err, ErrUserAborted, "ErrUserAborted should propagate to caller")
 
 	// verify no executor was called (task phase was overridden, review phase skipped)
-	assert.Empty(t, claude.RunCalls(), "claude should not run when task phase aborts")
+	assert.Empty(t, gemini.RunCalls(), "gemini should not run when task phase aborts")
 	assert.Empty(t, codex.RunCalls(), "codex should not run when task phase aborts")
 
 	// verify abort log message
@@ -1185,14 +1185,14 @@ func TestRunner_TasksOnly_ErrUserAborted_CleanExit(t *testing.T) {
 
 	log := newRunnerMockLogger("progress.txt")
 
-	claude := newMockExecutor(nil)
+	gemini := newMockExecutor(nil)
 	codex := newMockExecutor(nil)
 
 	cfg := Config{
 		Mode: ModeTasksOnly, MaxIterations: 50,
 		PlanFile: planFile, AppConfig: testAppConfig(t),
 	}
-	r := NewWithExecutors(cfg, log, Executors{Task: claude, External: codex}, &status.PhaseHolder{})
+	r := NewWithExecutors(cfg, log, Executors{Task: gemini, External: codex}, &status.PhaseHolder{})
 	taskPhase := testTaskPhase{runFunc: func(_ context.Context) error {
 		return ErrUserAborted
 	}}
@@ -1203,14 +1203,14 @@ func TestRunner_TasksOnly_ErrUserAborted_CleanExit(t *testing.T) {
 	require.ErrorIs(t, err, ErrUserAborted, "ErrUserAborted should propagate to caller in tasks-only mode")
 }
 
-func TestRunner_ReviewClaude_UsedForReviewPhases(t *testing.T) {
+func TestRunner_ReviewGemini_UsedForReviewPhases(t *testing.T) {
 	log := newRunnerMockLogger("progress.txt")
 
 	// task executor should NOT be called in review-only mode
-	taskClaude := newMockExecutor(nil)
+	taskGemini := newMockExecutor(nil)
 
 	// review executor handles all review phases
-	reviewClaude := newMockExecutor([]executor.Result{
+	reviewGemini := newMockExecutor([]executor.Result{
 		{Output: "review done", Signal: status.ReviewDone}, // first review
 		{Output: "review done", Signal: status.ReviewDone}, // pre-codex review loop
 		{Output: "fixed issues"},                           // codex eval iter 1 — findings fixed
@@ -1224,20 +1224,20 @@ func TestRunner_ReviewClaude_UsedForReviewPhases(t *testing.T) {
 
 	cfg := Config{Mode: ModeReview, MaxIterations: 50, IterationDelayMs: 1, CodexEnabled: true, AppConfig: testAppConfig(t)}
 	r := NewWithExecutors(cfg, log, Executors{
-		Task: taskClaude, Review: reviewClaude, External: codex,
+		Task: taskGemini, Review: reviewGemini, External: codex,
 	}, &status.PhaseHolder{})
 	err := r.Run(t.Context())
 
 	require.NoError(t, err)
-	assert.Empty(t, taskClaude.RunCalls(), "task executor should not be called in review-only mode")
-	assert.Len(t, reviewClaude.RunCalls(), 5, "review executor should handle all review phases including codex eval")
+	assert.Empty(t, taskGemini.RunCalls(), "task executor should not be called in review-only mode")
+	assert.Len(t, reviewGemini.RunCalls(), 5, "review executor should handle all review phases including codex eval")
 }
 
-func TestRunner_ReviewClaude_NilFallsBackToTaskExecutor(t *testing.T) {
+func TestRunner_ReviewGemini_NilFallsBackToTaskExecutor(t *testing.T) {
 	log := newRunnerMockLogger("progress.txt")
 
 	// when Review is nil, all review calls should go to Task executor
-	claude := newMockExecutor([]executor.Result{
+	gemini := newMockExecutor([]executor.Result{
 		{Output: "review done", Signal: status.ReviewDone}, // first review
 		{Output: "review done", Signal: status.ReviewDone}, // pre-codex review loop
 		{Output: "fixed issues"},                           // codex eval iter 1 — findings fixed
@@ -1251,23 +1251,23 @@ func TestRunner_ReviewClaude_NilFallsBackToTaskExecutor(t *testing.T) {
 
 	cfg := Config{Mode: ModeReview, MaxIterations: 50, IterationDelayMs: 1, CodexEnabled: true, AppConfig: testAppConfig(t)}
 	r := NewWithExecutors(cfg, log, Executors{
-		Task: claude, Review: nil, External: codex,
+		Task: gemini, Review: nil, External: codex,
 	}, &status.PhaseHolder{})
 	err := r.Run(t.Context())
 
 	require.NoError(t, err)
-	assert.Len(t, claude.RunCalls(), 5, "task executor should handle all review phases when ReviewClaude is nil")
+	assert.Len(t, gemini.RunCalls(), 5, "task executor should handle all review phases when ReviewGemini is nil")
 }
 
 func TestRunner_ReviewPromptIsSharedAcrossExecutors(t *testing.T) {
-	// both claude and codex executors read the same ReviewFirstPrompt / ReviewSecondPrompt.
+	// both gemini and codex executors read the same ReviewFirstPrompt / ReviewSecondPrompt.
 	// per-executor invocation syntax is handled by formatAgentExpansion at expansion time,
 	// not by maintaining duplicate prompt files.
 	tests := []struct {
 		name     string
 		executor string
 	}{
-		{name: "claude executor", executor: config.ExecutorClaude},
+		{name: "gemini executor", executor: config.ExecutorGemini},
 		{name: "codex executor", executor: config.ExecutorCodex},
 	}
 
@@ -1282,15 +1282,15 @@ func TestRunner_ReviewPromptIsSharedAcrossExecutors(t *testing.T) {
 			task := newMockExecutor([]executor.Result{
 				{Output: "review done", Signal: status.ReviewDone}, // first review
 				{Output: "review done", Signal: status.ReviewDone}, // pre-external review loop
-				{Output: "done", Signal: status.CodexDone},         // claude eval (only hit in claude mode)
+				{Output: "done", Signal: status.CodexDone},         // gemini eval (only hit in gemini mode)
 			})
 			external := newMockExecutor([]executor.Result{
-				{Output: ""}, // empty output → external loop exits without claude eval (claude mode only)
+				{Output: ""}, // empty output → external loop exits without gemini eval (gemini mode only)
 			})
 
 			cfg := Config{
 				Mode: ModeReview, MaxIterations: 50, IterationDelayMs: 1,
-				CodexEnabled: tc.executor == config.ExecutorClaude, AppConfig: appCfg,
+				CodexEnabled: tc.executor == config.ExecutorGemini, AppConfig: appCfg,
 			}
 			r := NewWithExecutors(cfg, log,
 				Executors{Task: task, External: external},

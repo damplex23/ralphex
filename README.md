@@ -8,13 +8,13 @@
   <a href="https://goreportcard.com/report/github.com/umputun/ralphex"><img src="https://goreportcard.com/badge/github.com/umputun/ralphex?v=2" alt="Go Report Card"></a>
 </p>
 
-<h2 align="center">Autonomous plan execution with Claude Code and codex</h2>
+<h2 align="center">Autonomous plan execution with Gemini CLI and codex</h2>
 
-*ralphex is a standalone CLI tool that runs in your terminal from the root of a git repository. It orchestrates Claude Code or codex to execute implementation plans autonomously - no IDE plugins or cloud services required, just a coding agent and a single binary.*
+*ralphex is a standalone CLI tool that runs in your terminal from the root of a git repository. It orchestrates Gemini CLI or codex to execute implementation plans autonomously - no IDE plugins or cloud services required, just a coding agent and a single binary.*
 
-Claude Code is powerful but interactive - it requires you to watch, approve, and guide each step. For complex features spanning multiple tasks, this means hours of babysitting. Worse, as context fills up during long sessions, the model's quality degrades - it starts making mistakes, forgetting earlier decisions, and producing worse code.
+Gemini CLI is powerful but interactive - it requires you to watch, approve, and guide each step. For complex features spanning multiple tasks, this means hours of babysitting. Worse, as context fills up during long sessions, the model's quality degrades - it starts making mistakes, forgetting earlier decisions, and producing worse code.
 
-ralphex solves both problems. Each task executes in a fresh Claude Code session with minimal context, keeping the model sharp throughout the entire plan. Write a plan with tasks and validation commands, start ralphex, and walk away. Come back to find your feature implemented, reviewed, and committed - or check the progress log to see what it's doing.
+ralphex solves both problems. Each task executes in a fresh Gemini CLI session with minimal context, keeping the model sharp throughout the entire plan. Write a plan with tasks and validation commands, start ralphex, and walk away. Come back to find your feature implemented, reviewed, and committed - or check the progress log to see what it's doing.
 
 <details markdown>
 <summary>Task Execution Screenshot</summary>
@@ -41,7 +41,7 @@ ralphex solves both problems. Each task executes in a fresh Claude Code session 
 
 - **Zero setup** - works out of the box with sensible defaults, no configuration required
 - **Autonomous task execution** - executes plan tasks one at a time with automatic retry
-- **Interactive plan creation** - create plans through dialogue with Claude via `--plan` flag
+- **Interactive plan creation** - create plans through dialogue with Gemini via `--plan` flag
 - **Multi-phase code review** - 5 agents → codex → 2 agents review pipeline
 - **Custom review agents** - configurable agents with `{{agent:name}}` template system and user defined prompts
 - **Automatic branch creation** - creates git branch from plan filename
@@ -78,16 +78,16 @@ ralphex docs/plans/my-feature.md
 ralphex will create a branch, execute tasks, commit results, run multi-phase reviews, and move the plan to `completed/` when done.
 
 > [!WARNING]
-> **Anthropic Agent SDK billing change on June 15, 2026**
+> **Gemini Agent SDK billing change on June 15, 2026**
 >
-> Anthropic is moving `claude -p` / `claude --print`, Claude Agent SDK, and Claude Code GitHub Actions usage to a separate monthly Agent SDK credit pool for Claude subscription users. The default Claude mode in ralphex uses `claude --print` internally, so unattended ralphex runs are part of that pool. See Anthropic's [Agent SDK credit article](https://support.claude.com/en/articles/15036540-use-the-claude-agent-sdk-with-your-claude-plan) for the current billing rules.
+> Gemini is moving `gemini -p` / `gemini --print`, Gemini Agent SDK, and Gemini CLI GitHub Actions usage to a separate monthly Agent SDK credit pool for Gemini subscription users. The default Gemini mode in ralphex uses `gemini --print` internally, so unattended ralphex runs are part of that pool. See Gemini's [Agent SDK credit article](https://support.gemini.com/en/articles/15036540-use-the-gemini-agent-sdk-with-your-gemini-plan) for the current billing rules.
 >
 > Practical options:
 >
-> 1. Do nothing. Light use may fit inside the included monthly credit. This should also be transparent for users who already run Claude Code through API-key billing, Bedrock, Vertex, Foundry, or another non-subscription provider path.
-> 2. Use a skill-based flow in an interactive Claude Code session. The author's [`umputun/cc-thingz`](https://github.com/umputun/cc-thingz) plugin collection includes the `planning` family (`/planning:make` and `/planning:exec`). That keeps work inside the normal interactive Claude Code flow instead of `claude --print`.
+> 1. Do nothing. Light use may fit inside the included monthly credit. This should also be transparent for users who already run Gemini CLI through API-key billing, Bedrock, Vertex, Foundry, or another non-subscription provider path.
+> 2. Use a skill-based flow in an interactive Gemini CLI session. The author's [`umputun/cc-thingz`](https://github.com/umputun/cc-thingz) plugin collection includes the `planning` family (`/planning:make` and `/planning:exec`). That keeps work inside the normal interactive Gemini CLI flow instead of `gemini --print`.
 > 3. Switch the ralphex executor to codex. First-class [`--codex`](#codex-executor-mode) support routes plan creation, task execution, both review phases, and finalize through the codex CLI and skips the external codex review phase.
-> 4. Use a `claude -p` compatible wrapper that drives an interactive Claude Code session and emits Claude-compatible `stream-json`. Examples that match ralphex's invocation shape include [`umputun/fya`](https://github.com/umputun/fya), [`melonamin/agentrun`](https://github.com/melonamin/agentrun), [`Equality-Machine/claude-p`](https://github.com/Equality-Machine/claude-p), and [`kcosr/claude-pty-wrapper`](https://github.com/kcosr/claude-pty-wrapper). These wrappers are unofficial and may break if Anthropic changes or blocks this pattern.
+> 4. Use a `gemini -p` compatible wrapper that drives an interactive Gemini CLI session and emits Gemini-compatible `stream-json`. Examples that match ralphex's invocation shape include [`umputun/fya`](https://github.com/umputun/fya), [`melonamin/agentrun`](https://github.com/melonamin/agentrun), [`Equality-Machine/gemini-p`](https://github.com/Equality-Machine/gemini-p), and [`kcosr/gemini-pty-wrapper`](https://github.com/kcosr/gemini-pty-wrapper). These wrappers are unofficial and may break if Gemini changes or blocks this pattern.
 
 <details markdown>
 <summary>Wrapper configuration examples</summary>
@@ -103,20 +103,20 @@ Use the absolute path printed by `command -v fya` in ralphex config. On Apple Si
 
 ```ini
 # in ~/.config/ralphex/config or .ralphex/config
-claude_command = /opt/homebrew/bin/fya
-claude_args = --dangerously-skip-permissions --output-format stream-json --verbose
+gemini_command = /opt/homebrew/bin/fya
+gemini_args = --dangerously-skip-permissions --output-format stream-json --verbose
 ```
 
 On Intel Homebrew the path is normally `/usr/local/bin/fya`. If `command -v fya` prints another path, use that exact path instead.
 
-For `agentrun`, use its tmux-backed path if the goal is avoiding direct `claude --print`:
+For `agentrun`, use its tmux-backed path if the goal is avoiding direct `gemini --print`:
 
 ```ini
-claude_command = /absolute/path/to/agentrun
-claude_args = --persist-session --no-session-persistence --dangerously-skip-permissions --output-format stream-json --verbose
+gemini_command = /absolute/path/to/agentrun
+gemini_args = --persist-session --no-session-persistence --dangerously-skip-permissions --output-format stream-json --verbose
 ```
 
-These tools depend on interactive Claude Code behavior and local transcript files staying usable. Anthropic may detect or block wrapper-style automation later, so test the exact tool before relying on it.
+These tools depend on interactive Gemini CLI behavior and local transcript files staying usable. Gemini may detect or block wrapper-style automation later, so test the exact tool before relying on it.
 
 </details>
 
@@ -134,16 +134,16 @@ ralphex executes plans in four phases with automated code reviews, plus an optio
 ### Phase 1: Task Execution
 
 1. Reads plan file and finds first incomplete task (`### Task N:` with `- [ ]` checkboxes)
-2. Sends task to Claude Code for execution
+2. Sends task to Gemini CLI for execution
 3. Runs validation commands (tests, linters) after each task
 4. Marks checkboxes as done `[x]`, commits changes
 5. Repeats until all tasks complete or max iterations reached
 
-**Steering mid-run:** Press Ctrl+\ (SIGQUIT) during a task iteration to pause execution. ralphex cancels the current Claude session and prompts "press Enter to continue, Ctrl+C to abort". While paused, you can edit the plan file — on Enter, the same task re-runs with a fresh session that re-reads the plan. Press Ctrl+C to abort cleanly. Not available on Windows.
+**Steering mid-run:** Press Ctrl+\ (SIGQUIT) during a task iteration to pause execution. ralphex cancels the current Gemini session and prompts "press Enter to continue, Ctrl+C to abort". While paused, you can edit the plan file — on Enter, the same task re-runs with a fresh session that re-reads the plan. Press Ctrl+C to abort cleanly. Not available on Windows.
 
 ### Phase 2: First Code Review
 
-Launches 5 review agents **in parallel** via Claude Code Task tool:
+Launches 5 review agents **in parallel** via Gemini CLI invoke_agent tool:
 
 | Agent | Purpose |
 |-------|---------|
@@ -153,19 +153,19 @@ Launches 5 review agents **in parallel** via Claude Code Task tool:
 | `simplification` | detects over-engineering |
 | `documentation` | checks if docs need updates |
 
-Claude verifies findings, fixes confirmed issues, and commits.
+Gemini verifies findings, fixes confirmed issues, and commits.
 
 *[Default agents](https://github.com/umputun/ralphex/tree/master/pkg/config/defaults/agents) provide common, language-agnostic review steps. They can be customized and tuned for your specific needs, languages, and workflows. See [Customization](#customization) for details.*
 
 ### Phase 3: External Review (optional)
 
 1. Runs external review tool (codex by default, or custom script)
-2. Claude evaluates findings, fixes valid issues
+2. Gemini evaluates findings, fixes valid issues
 3. Iterates until no open issues
 
 The loop terminates when: all issues resolved, max iterations reached, stalemate detected (via `--review-patience`), or manual break via Ctrl+\ (SIGQUIT).
 
-**Stalemate detection:** When the external tool and Claude can't agree on findings, the loop can waste tokens iterating to the max. Set `--review-patience=N` (or `review_patience` in config) to terminate after N consecutive rounds with no commits or working tree changes.
+**Stalemate detection:** When the external tool and Gemini can't agree on findings, the loop can waste tokens iterating to the max. Set `--review-patience=N` (or `review_patience` in config) to terminate after N consecutive rounds with no commits or working tree changes.
 
 **Manual break:** Press Ctrl+\ (SIGQUIT) during the external review loop to terminate it immediately. The current executor run is cancelled via context cancellation. During the task phase, Ctrl+\ pauses instead — see [Phase 1: Task Execution](#phase-1-task-execution). Not available on Windows.
 
@@ -189,7 +189,7 @@ See [Custom External Review](#custom-external-review) for details on using custo
 
 After all review phases complete successfully, ralphex can run an optional finalize step. Disabled by default.
 
-**What it does:** runs a single Claude Code session with a customizable prompt. The default `finalize.txt` prompt rebases commits onto the default branch and optionally squashes related commits into logical groups.
+**What it does:** runs a single Gemini CLI session with a customizable prompt. The default `finalize.txt` prompt rebases commits onto the default branch and optionally squashes related commits into logical groups.
 
 **How to enable:**
 
@@ -217,7 +217,7 @@ Set `move_plan_on_completion = false` in `~/.config/ralphex/config` or `.ralphex
 
 ### Review-Only Mode
 
-Review-only mode (`--review`) runs the full review pipeline (Phase 2 → Phase 3 → Phase 4) on changes already present on the current branch. This is useful when changes were made outside ralphex — via Claude Code's built-in plan mode, manual edits, other AI agents, or any other workflow.
+Review-only mode (`--review`) runs the full review pipeline (Phase 2 → Phase 3 → Phase 4) on changes already present on the current branch. This is useful when changes were made outside ralphex — via Gemini CLI's built-in plan mode, manual edits, other AI agents, or any other workflow.
 
 **Workflow:**
 
@@ -254,9 +254,9 @@ ralphex --external-only docs/plans/feature.md
 
 ### Codex Executor Mode
 
-The `--codex` flag routes interactive plan creation (`--plan`), task execution, both review phases, and the optional finalize step through the codex CLI instead of Claude Code. The external review phase is automatically skipped because codex-reviewing-codex is a same-model self-review with weak signal; the cross-model independence between Claude and codex was the original reason that phase existed.
+The `--codex` flag routes interactive plan creation (`--plan`), task execution, both review phases, and the optional finalize step through the codex CLI instead of Gemini CLI. The external review phase is automatically skipped because codex-reviewing-codex is a same-model self-review with weak signal; the cross-model independence between Gemini and codex was the original reason that phase existed.
 
-**Why this exists:** in June 2026 Anthropic split the Claude Max subscription from the Claude Agent SDK, putting unattended ralphex runs on a separate $200 credit pool rather than the Max plan. Users with an OpenAI/codex plan can switch the entire ralphex pipeline to codex with one flag and stay on their existing OpenAI subscription instead.
+**Why this exists:** in June 2026 Gemini split the Gemini Max subscription from the Gemini Agent SDK, putting unattended ralphex runs on a separate $200 credit pool rather than the Max plan. Users with an OpenAI/codex plan can switch the entire ralphex pipeline to codex with one flag and stay on their existing OpenAI subscription instead.
 
 ```bash
 # create a plan through codex
@@ -265,28 +265,28 @@ ralphex --codex --plan "add user authentication"
 # run the full pipeline (task, first review, second review, finalize) through codex
 ralphex --codex docs/plans/feature.md
 
-# additionally let codex read project CLAUDE.md as AGENTS.md
-ralphex --codex --pass-claude-md docs/plans/feature.md
+# additionally let codex read project GEMINI.md as AGENTS.md
+ralphex --codex --pass-gemini.md docs/plans/feature.md
 ```
 
-**How it differs from `codex-as-claude.sh`:** the `--codex` flag is the native codex path. It calls the codex CLI directly and configures multi-agent reviews through additive `-c` flag overrides on the codex command line. Review prompts are shared with claude. The `{{agent:<name>}}` expansion produces `spawn_agent` calls for codex and Task-tool calls for claude at runtime. The `scripts/codex-as-claude/codex-as-claude.sh` wrapper still exists for backwards compatibility. It translates codex JSONL output into Claude stream-json events, which adds overhead and keeps Claude-flavored prompt vocabulary in front of a codex model.
+**How it differs from `codex-as-gemini.sh`:** the `--codex` flag is the native codex path. It calls the codex CLI directly and configures multi-agent reviews through additive `-c` flag overrides on the codex command line. Review prompts are shared with gemini. The `{{agent:<name>}}` expansion produces `spawn_agent` calls for codex and Task-tool calls for gemini at runtime. The `scripts/codex-as-gemini/codex-as-gemini.sh` wrapper still exists for backwards compatibility. It translates codex JSONL output into Gemini stream-json events, which adds overhead and keeps Gemini-flavored prompt vocabulary in front of a codex model.
 
-**Project CLAUDE.md passthrough (`--pass-claude-md`):** adds `-c project_doc_fallback_filenames=["CLAUDE.md"]` to the codex invocation so codex's native AGENTS.md walk picks up the project-level `./CLAUDE.md` file. This works for project-level CLAUDE.md only. For user-level `~/.claude/CLAUDE.md`, ralphex never modifies the user's `~/.codex/` directory. If `~/.claude/CLAUDE.md` exists and `~/.codex/AGENTS.md` does not, ralphex prints a one-time hint suggesting `ln -s ~/.claude/CLAUDE.md ~/.codex/AGENTS.md` and continues; the user opts in by running the command themselves.
+**Project GEMINI.md passthrough (`--pass-gemini.md`):** adds `-c project_doc_fallback_filenames=["GEMINI.md"]` to the codex invocation so codex's native AGENTS.md walk picks up the project-level `./GEMINI.md` file. This works for project-level GEMINI.md only. For user-level `~/.gemini/GEMINI.md`, ralphex never modifies the user's `~/.codex/` directory. If `~/.gemini/GEMINI.md` exists and `~/.codex/AGENTS.md` does not, ralphex prints a one-time hint suggesting `ln -s ~/.gemini/GEMINI.md ~/.codex/AGENTS.md` and continues; the user opts in by running the command themselves.
 
 **Configuration alternative:** instead of passing `--codex` every run, set it in `~/.config/ralphex/config` or `.ralphex/config`:
 
 ```ini
 executor       = codex
-pass_claude_md = true
+pass_gemini.md = true
 ```
 
 When `executor = codex` is set in config and the user has also set `external_review_tool = codex` (or `custom`), ralphex automatically overrides `external_review_tool` to `none` and prints a warning to stderr that the config-file value was overridden. Only CLI-flag conflicts are hard errors; config-only conflicts resolve with a warning.
 
-**Mutual exclusion:** the codex executor (whether enabled via `--codex` or `executor = codex` in config) cannot be combined with `--external-only` (alias `-e`), `--codex-only` (alias `-c`), or `--external-review-tool=<X>` where `<X>` is not `none`. `--pass-claude-md` requires the codex executor (CLI `--codex` or config `executor = codex`). Each combination fails with a clear error message at startup.
+**Mutual exclusion:** the codex executor (whether enabled via `--codex` or `executor = codex` in config) cannot be combined with `--external-only` (alias `-e`), `--codex-only` (alias `-c`), or `--external-review-tool=<X>` where `<X>` is not `none`. `--pass-gemini.md` requires the codex executor (CLI `--codex` or config `executor = codex`). Each combination fails with a clear error message at startup.
 
-**Requirements:** `--codex` requires the codex CLI version 0.130.0 or newer. The mode relies on `[features] multi_agent`, `[agents.<name>]` agent registration, and (with `--pass-claude-md`) `project_doc_fallback_filenames`, all supported in 0.130.0. Older codex versions silently ignore unknown `-c` overrides, so a misconfigured run will not error visibly. It will simply behave as if the overrides were absent. There is no runtime version check; verify your codex version with `codex --version` if behavior is unexpected.
+**Requirements:** `--codex` requires the codex CLI version 0.130.0 or newer. The mode relies on `[features] multi_agent`, `[agents.<name>]` agent registration, and (with `--pass-gemini.md`) `project_doc_fallback_filenames`, all supported in 0.130.0. Older codex versions silently ignore unknown `-c` overrides, so a misconfigured run will not error visibly. It will simply behave as if the overrides were absent. There is no runtime version check; verify your codex version with `codex --version` if behavior is unexpected.
 
-**Model selection under `--codex`:** under `--codex` the `--plan-model` / `--task-model` / `--review-model` flags (and their config equivalents `plan_model` / `task_model` / `review_model`) select the model and effort per phase. `--plan-model` sets plan creation and falls back to `--task-model` when unset. `--task-model` sets the task phase. `--review-model` sets the review phase and falls back to `--task-model` when unset. Codex builds a separate review executor when the resolved review model/effort differs from task, so tasks and reviews can run on different codex models. Each `model[:effort]` spec is resolved against `codex_model` / `codex_reasoning_effort` (default `gpt-5.5` / `xhigh`): an unset spec inherits those defaults, and each populated half overrides its default (`--task-model=:high` changes effort only). The `max` effort level is claude-only. A spec requesting it under `--codex` is warned about and ignored. So codex model selection is: `--plan-model` / `--task-model` / `--review-model` (CLI or config), then `codex_model` / `codex_reasoning_effort` in ralphex config, applied as `-c` overrides to the codex CLI; set either codex value to empty (e.g. `codex_model =`) in your user config to inherit that field from `~/.codex/config.toml` instead. Commenting the line out keeps the embedded default. The startup banner under `--codex` shows the resolved plan/task model/effort for the current mode, plus a separate `review model` / `review reasoning effort` line when the review phase resolves differently.
+**Model selection under `--codex`:** under `--codex` the `--plan-model` / `--task-model` / `--review-model` flags (and their config equivalents `plan_model` / `task_model` / `review_model`) select the model and effort per phase. `--plan-model` sets plan creation and falls back to `--task-model` when unset. `--task-model` sets the task phase. `--review-model` sets the review phase and falls back to `--task-model` when unset. Codex builds a separate review executor when the resolved review model/effort differs from task, so tasks and reviews can run on different codex models. Each `model[:effort]` spec is resolved against `codex_model` / `codex_reasoning_effort` (default `gpt-5.5` / `xhigh`): an unset spec inherits those defaults, and each populated half overrides its default (`--task-model=:high` changes effort only). The `max` effort level is gemini-only. A spec requesting it under `--codex` is warned about and ignored. So codex model selection is: `--plan-model` / `--task-model` / `--review-model` (CLI or config), then `codex_model` / `codex_reasoning_effort` in ralphex config, applied as `-c` overrides to the codex CLI; set either codex value to empty (e.g. `codex_model =`) in your user config to inherit that field from `~/.codex/config.toml` instead. Commenting the line out keeps the embedded default. The startup banner under `--codex` shows the resolved plan/task model/effort for the current mode, plus a separate `review model` / `review reasoning effort` line when the review phase resolves differently.
 
 ### Worktree Isolation
 
@@ -312,7 +312,7 @@ Worktrees are automatically removed on successful completion. If a run is interr
 ### Plan Creation
 
 Plans can be created in several ways:
-- **[Claude Code](#claude-code-integration-optional)** - use slash commands like `/ralphex-plan` or your own planning workflows
+- **[Gemini CLI](#gemini-code-integration-optional)** - use slash commands like `/ralphex-plan` or your own planning workflows
 - **Manually** - write markdown files directly in `docs/plans/`
 - **`--plan` flag** - integrated option that handles the entire flow
 - **Auto-detection** - running `ralphex` without arguments on master/main prompts for plan creation if no plans exist
@@ -323,7 +323,7 @@ The `--plan` flag provides a simpler integrated experience:
 ralphex --plan "add health check endpoint"
 ```
 
-Claude explores your codebase, asks clarifying questions via a terminal picker (fzf or numbered fallback), and generates a complete plan file in `docs/plans/`. When reviewing the draft, you can accept, revise with text feedback, open it in `$EDITOR` for interactive annotation, or reject it.
+Gemini explores your codebase, asks clarifying questions via a terminal picker (fzf or numbered fallback), and generates a complete plan file in `docs/plans/`. When reviewing the draft, you can accept, revise with text feedback, open it in `$EDITOR` for interactive annotation, or reject it.
 
 **Example session:**
 ```
@@ -380,9 +380,9 @@ The script defaults to the Go image (`ralphex-go`). For other languages, build a
 export RALPHEX_IMAGE=my-ralphex
 ```
 
-Then use `ralphex` as usual - it runs in a container with Claude Code and Codex pre-installed. The script shows which image it's using at startup.
+Then use `ralphex` as usual - it runs in a container with Gemini CLI and Codex pre-installed. The script shows which image it's using at startup.
 
-**Why use Docker?** ralphex runs Claude Code with `--dangerously-skip-permissions`, giving it full access to execute commands and modify files. Running in a container provides isolation - Claude can only access the mounted project directory, not your entire system. This makes autonomous execution significantly safer.
+**Why use Docker?** ralphex runs Gemini CLI with `--dangerously-skip-permissions`, giving it full access to execute commands and modify files. Running in a container provides isolation - Gemini can only access the mounted project directory, not your entire system. This makes autonomous execution significantly safer.
 
 <details markdown>
 <summary>Isolation details</summary>
@@ -392,7 +392,7 @@ Then use `ralphex` as usual - it runs in a container with Claude Code and Codex 
 - Git operations within the project (branch, commit, etc.)
 
 **Container CAN access (read-only):**
-- `~/.claude/` - credentials and settings (copied at startup, not modified)
+- `~/.gemini/` - credentials and settings (copied at startup, not modified)
 - `~/.codex/` - codex credentials if present
 - `~/.config/ralphex/` - user-level ralphex configuration
 - `~/.gitconfig` - git identity for commits
@@ -406,21 +406,21 @@ Then use `ralphex` as usual - it runs in a container with Claude Code and Codex 
 - System files, binaries, or configurations
 - Other running processes or containers
 
-**Network:** Full network access (required for Claude API calls)
+**Network:** Full network access (required for Gemini API calls)
 
 **Privileges:** Runs as non-root user with no elevated capabilities
 
 </details>
 
 **Volume mounts:**
-- **Read-only**: `~/.claude` and `~/.codex` mounted to `/mnt/`, copied at startup to preserve isolation
+- **Read-only**: `~/.gemini` and `~/.codex` mounted to `/mnt/`, copied at startup to preserve isolation
 - **Read-write**: project directory (`/workspace`) - where ralphex creates branches, edits code, and commits
 - **Extra mounts**: user-defined volumes via `-v`/`--volume` flags or `RALPHEX_EXTRA_VOLUMES` env var
 
 **Requirements:**
 - Python 3.9+ (for the wrapper script)
 - Docker installed and running
-- Claude Code credentials in `~/.claude/` (or in `$CLAUDE_CONFIG_DIR` when set)
+- Gemini CLI credentials in `~/.gemini/` (or in `$GEMINI_CONFIG_DIR` when set)
 - Codex credentials in `~/.codex/` (optional, for codex review phase)
 - Git config in `~/.gitconfig` (for commits)
 
@@ -428,13 +428,13 @@ Then use `ralphex` as usual - it runs in a container with Claude Code and Codex 
 - `RALPHEX_IMAGE` - Docker image to use (default: `ghcr.io/umputun/ralphex-go:latest`). CLI flag: `--image`
 - `RALPHEX_PORT` - Port for web dashboard when using `--serve` (default: `8080`). CLI flag: `--port`
 - `RALPHEX_CONFIG_DIR` - Custom config directory (default: `~/.config/ralphex`). Overrides global config location for prompts, agents, and settings
-- `CLAUDE_CONFIG_DIR` - Claude config directory (default: `~/.claude`). Use for alternate Claude installations (e.g., `~/.claude2`). Works both with Docker wrapper (volume mounts and keychain derivation) and non-Docker usage (passed through to Claude Code directly). Keychain service name is derived automatically from the path.
+- `GEMINI_CONFIG_DIR` - Gemini config directory (default: `~/.gemini`). Use for alternate Gemini installations (e.g., `~/.gemini2`). Works both with Docker wrapper (volume mounts and keychain derivation) and non-Docker usage (passed through to Gemini CLI directly). Keychain service name is derived automatically from the path.
 - `RALPHEX_EXTRA_VOLUMES` - Extra volume mounts, comma-separated (e.g., `/data:/mnt/data:ro,/models:/mnt/models`). Entries without `:` are silently skipped
 - `RALPHEX_EXTRA_ENV` - Extra environment variables, comma-separated (e.g., `DEBUG=1,API_KEY`). Format: `VAR=value` or `VAR` (inherit from host). Security warning emitted for sensitive names (KEY, SECRET, TOKEN, etc.) with explicit values - use name-only form for secure credential passing
 - `RALPHEX_DOCKER_SOCKET` - Enable Docker socket mount: `1`, `true`, or `yes` (Docker wrapper only). CLI flag: `--docker`
 - `RALPHEX_DOCKER_NETWORK` - Docker network mode (e.g., `host`, `my-network`). Useful for reaching docker-compose services. CLI flag: `--network`
 - `TZ` - Override container timezone (default: auto-detected from host via `/etc/localtime`). Example: `TZ=Europe/Berlin ralphex docs/plans/feature.md`
-- `RALPHEX_CLAUDE_PROVIDER` - Claude provider mode: `default` or `bedrock` (Docker wrapper only)
+- `RALPHEX_GEMINI_PROVIDER` - Gemini provider mode: `default` or `bedrock` (Docker wrapper only)
 
 **Docker socket support:**
 
@@ -451,25 +451,25 @@ ralphex --docker --dry-run   # verify socket mount in command
 
 **AWS Bedrock support:**
 
-When `--claude-provider=bedrock` or `RALPHEX_CLAUDE_PROVIDER=bedrock` is set:
+When `--gemini-provider=bedrock` or `RALPHEX_GEMINI_PROVIDER=bedrock` is set:
 - Keychain credential extraction is skipped (not needed for Bedrock auth)
 - AWS credentials are automatically exported from `AWS_PROFILE` via `aws configure export-credentials`
-- Required Bedrock env vars are passed to container: `CLAUDE_CODE_USE_BEDROCK`, `AWS_REGION`, credentials
+- Required Bedrock env vars are passed to container: `GEMINI_CODE_USE_BEDROCK`, `AWS_REGION`, credentials
 
 Required environment for Bedrock:
 - `AWS_REGION` - AWS region where Bedrock is enabled
 - `AWS_PROFILE` or `AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY` - authentication
 
-Note: `CLAUDE_CODE_USE_BEDROCK=1` is automatically set when using `--claude-provider=bedrock`.
+Note: `GEMINI_CODE_USE_BEDROCK=1` is automatically set when using `--gemini-provider=bedrock`.
 
 ```bash
 # with AWS profile (credentials exported automatically)
 export AWS_PROFILE=my-bedrock-profile
 export AWS_REGION=us-east-1
-ralphex --claude-provider=bedrock docs/plans/feature.md
+ralphex --gemini-provider=bedrock docs/plans/feature.md
 
 # or use env var for session-wide setting
-export RALPHEX_CLAUDE_PROVIDER=bedrock
+export RALPHEX_GEMINI_PROVIDER=bedrock
 ralphex docs/plans/feature.md
 ```
 
@@ -523,16 +523,16 @@ Two images are published:
 
 | Image | Description |
 |-------|-------------|
-| `ghcr.io/umputun/ralphex:latest` | Base image with Claude Code, Codex, and core tools |
+| `ghcr.io/umputun/ralphex:latest` | Base image with Gemini CLI, Codex, and core tools |
 | `ghcr.io/umputun/ralphex-go:latest` | Go development (extends base with Go toolchain) |
 
 **Base image includes:**
 
 | Tool | Version | Purpose |
 |------|---------|---------|
-| Claude Code | latest | AI coding assistant |
+| Gemini CLI | latest | AI coding assistant |
 | Codex | latest | External code review |
-| Node.js/npm | 24.x | Required for Claude Code |
+| Node.js/npm | 24.x | Required for Gemini CLI |
 | Python/pip | 3.x | Scripts and automation |
 | git | 2.x | Version control |
 | docker-cli | - | Docker client for container workflows |
@@ -540,7 +540,7 @@ Two images are published:
 | gcc, musl-dev | - | C compiler for native extensions |
 | bash | 5.x | Shell |
 | fzf | - | Fuzzy finder for plan selection |
-| ripgrep | - | Fast search (used by Claude Code) |
+| ripgrep | - | Fast search (used by Gemini CLI) |
 
 **Go image adds:**
 
@@ -622,8 +622,8 @@ ralphex --external-only
 # codex executor mode (run task, review, and finalize phases through codex; skip external review)
 ralphex --codex docs/plans/feature.md
 
-# codex executor mode with project CLAUDE.md passthrough (codex reads CLAUDE.md as AGENTS.md)
-ralphex --codex --pass-claude-md docs/plans/feature.md
+# codex executor mode with project GEMINI.md passthrough (codex reads GEMINI.md as AGENTS.md)
+ralphex --codex --pass-gemini.md docs/plans/feature.md
 
 # tasks-only mode (run only task phase, skip all reviews)
 ralphex --tasks-only docs/plans/feature.md
@@ -660,16 +660,16 @@ ralphex --plan-model=fable:high --plan="add caching"
 ralphex --task-model=opus --review-model=sonnet:low docs/plans/feature.md
 
 # use provider overrides for one run without editing config
-ralphex --claude-command=/path/to/codex-as-claude.sh --external-review-tool=custom --custom-review-script=/path/to/review.sh docs/plans/feature.md
+ralphex --gemini-command=/path/to/codex-as-gemini.sh --external-review-tool=custom --custom-review-script=/path/to/review.sh docs/plans/feature.md
 
-# set per-session timeout to kill hanging sessions (external review in Claude mode excluded)
+# set per-session timeout to kill hanging sessions (external review in Gemini mode excluded)
 ralphex --session-timeout=30m docs/plans/feature.md
 
-# kill claude/codex executor session when no output for 5 minutes
+# kill gemini/codex executor session when no output for 5 minutes
 ralphex --idle-timeout=5m docs/plans/feature.md
 
-# preserve ANTHROPIC_API_KEY in the claude child env (for API-key auth users)
-ralphex --preserve-anthropic-api-key docs/plans/feature.md
+# preserve GEMINI_API_KEY in the gemini child env (for API-key auth users)
+ralphex --preserve-gemini-api-key docs/plans/feature.md
 
 # with web dashboard
 ralphex --serve docs/plans/feature.md
@@ -689,22 +689,22 @@ ralphex --serve --port=3000 docs/plans/feature.md
 | `-e, --external-only` | Skip tasks and first review, run only external review loop | false |
 | `-c, --codex-only` | Alias for `--external-only` (deprecated) | false |
 | `--codex` | Use codex CLI as the executor for plan creation, task, review, and finalize phases. Skips the external review phase (codex-reviewing-codex is a same-model self-review with weak signal). Requires codex CLI ≥ 0.130.0 | false |
-| `--pass-claude-md` | Pass project `CLAUDE.md` to codex via `-c project_doc_fallback_filenames=["CLAUDE.md"]`. User-level `~/.claude/CLAUDE.md` is NOT auto-passed (a one-time setup hint is shown). Requires the codex executor (`--codex` or `executor = codex`) | false |
+| `--pass-gemini.md` | Pass project `GEMINI.md` to codex via `-c project_doc_fallback_filenames=["GEMINI.md"]`. User-level `~/.gemini/GEMINI.md` is NOT auto-passed (a one-time setup hint is shown). Requires the codex executor (`--codex` or `executor = codex`) | false |
 | `-t, --tasks-only` | Run only task phase, skip all reviews | false |
 | `-b, --base-ref` | Override default branch for review diffs (branch name or commit hash) | auto-detect |
 | `--skip-finalize` | Skip finalize step even if enabled in config | false |
 | `--plan-model` | Model for plan creation as `model[:effort]` (falls back to `--task-model`). Same syntax and wrapper behavior as `--task-model`. Under `--codex`, selects the codex plan-creation model/effort | empty |
-| `--task-model` | Model for task execution as `model[:effort]` (e.g., `opus`, `opus:high`, `:medium`). Effort values: `low`, `medium`, `high`, `xhigh`, `max`. Appended as `--model <m>` and/or `--effort <e>` to `claude_command`; custom wrappers may ignore or implement the flags. Under `--codex`, selects the codex task-phase model/effort instead (see *Model selection under `--codex`*) | empty |
+| `--task-model` | Model for task execution as `model[:effort]` (e.g., `opus`, `opus:high`, `:medium`). Effort values: `low`, `medium`, `high`, `xhigh`, `max`. Appended as `--model <m>` and/or `--effort <e>` to `gemini_command`; custom wrappers may ignore or implement the flags. Under `--codex`, selects the codex task-phase model/effort instead (see *Model selection under `--codex`*) | empty |
 | `--review-model` | Model for review phases as `model[:effort]` (falls back to `--task-model`). Same syntax and wrapper behavior as `--task-model`. Under `--codex`, selects the codex review-phase model/effort | empty |
-| `--claude-command` | Override the Claude-compatible command for this run | config/default |
-| `--claude-args` | Override Claude-compatible command arguments for this run. Use `--claude-args=` to clear configured/default args | config/default |
+| `--gemini-command` | Override the Gemini-compatible command for this run | config/default |
+| `--gemini-args` | Override Gemini-compatible command arguments for this run. Use `--gemini-args=` to clear configured/default args | config/default |
 | `--external-review-tool` | Override external review tool for this run (`codex`, `custom`, or `none`) | config/default |
 | `--custom-review-script` | Override custom external review script for this run | config/default |
 | `--wait` | Wait duration before retrying on rate limit (e.g., `1h`, `30m`) | disabled |
-| `--session-timeout` | Per-session timeout for task/review executor (e.g., `30m`, `1h`). Applies to Claude calls in default executor mode and every executor call under `--codex`; external codex/custom review in Claude mode is not affected | disabled |
-| `--idle-timeout` | Kill executor session when no output for specified duration (e.g., `5m`). Resets on each output line. Applies to the claude executor in default mode and to every executor call under `--codex`; external codex review in default-claude mode is NOT affected (preserves master behavior). Custom review is also not affected | disabled |
+| `--session-timeout` | Per-session timeout for task/review executor (e.g., `30m`, `1h`). Applies to Gemini calls in default executor mode and every executor call under `--codex`; external codex/custom review in Gemini mode is not affected | disabled |
+| `--idle-timeout` | Kill executor session when no output for specified duration (e.g., `5m`). Resets on each output line. Applies to the gemini executor in default mode and to every executor call under `--codex`; external codex review in default-gemini mode is NOT affected (preserves master behavior). Custom review is also not affected | disabled |
 | `--worktree` | Run in isolated git worktree (full and tasks-only modes only) | false |
-| `--preserve-anthropic-api-key` | Pass `ANTHROPIC_API_KEY` through to claude (for users authenticating Claude Code via API key rather than OAuth/keychain) | false |
+| `--preserve-gemini-api-key` | Pass `GEMINI_API_KEY` through to gemini (for users authenticating Gemini CLI via API key rather than OAuth/keychain) | false |
 | `--plan` | Create plan interactively (provide description) | - |
 | `-s, --serve` | Start web dashboard for real-time streaming | false |
 | `-p, --port` | Web dashboard port (used with `--serve`) | 8080 |
@@ -718,7 +718,7 @@ ralphex --serve --port=3000 docs/plans/feature.md
 
 ## Plan File Format
 
-Plans are markdown files with task sections. Each task has checkboxes that claude marks complete.
+Plans are markdown files with task sections. Each task has checkboxes that gemini marks complete.
 
 ```markdown
 # Plan: Add User Authentication
@@ -780,10 +780,10 @@ Review the code for quality issues...
 
 | Option | Values | Description |
 |--------|--------|-------------|
-| `model` | `haiku`, `sonnet`, `opus`, `fable` | Claude model for this agent |
-| `agent` | any string | Claude Code Task tool subagent type |
+| `model` | `haiku`, `sonnet`, `opus`, `fable` | Gemini model for this agent |
+| `agent` | any string | Gemini CLI invoke_agent tool subagent type |
 
-Both options are optional. Without frontmatter, agents use default model and `general-purpose` subagent type. Full model IDs (e.g. `claude-sonnet-4-5-20250929`) are normalized to short keywords (`sonnet`) since Claude Code only accepts `haiku`, `sonnet`, `opus`, `fable`. Invalid model values are dropped with a warning.
+Both options are optional. Without frontmatter, agents use default model and `general-purpose` subagent type. Full model IDs (e.g. `gemini-sonnet-4-5-20250929`) are normalized to short keywords (`sonnet`) since Gemini CLI only accepts `haiku`, `sonnet`, `opus`, `fable`. Invalid model values are dropped with a warning.
 
 ### Template Syntax
 
@@ -797,7 +797,7 @@ Custom prompt files support variable expansion. All variables use the `{{VARIABL
 | `{{PROGRESS_FILE}}` | Path to the progress log file | `.ralphex/progress/progress-feature.txt` |
 | `{{GOAL}}` | Human-readable goal description | `implementation of plan at docs/plans/feature.md` |
 | `{{DEFAULT_BRANCH}}` | Default branch name (overridable via `--base-ref` or `default_branch` config) | `main`, `master`, `origin/main` |
-| `{{agent:name}}` | Expands to Task tool instructions for the named agent | (see below) |
+| `{{agent:name}}` | Expands to invoke_agent tool instructions for the named agent | (see below) |
 
 **Agent references:**
 
@@ -810,7 +810,7 @@ Launch the following review agents in parallel:
 {{agent:testing}}
 ```
 
-Each `{{agent:name}}` expands to Task tool instructions that tell Claude Code to run that agent. Variables inside agent content are also expanded, so agents can use `{{DEFAULT_BRANCH}}` or other variables.
+Each `{{agent:name}}` expands to invoke_agent tool instructions that tell Gemini CLI to run that agent. Variables inside agent content are also expanded, so agents can use `{{DEFAULT_BRANCH}}` or other variables.
 
 ### Customization
 
@@ -824,16 +824,16 @@ The entire system is designed for customization - both task execution and review
 - Run `ralphex --init` to create local `.ralphex/` project config with commented-out defaults
 - Run `ralphex --reset` to interactively restore defaults, or delete all files manually
 - Run `ralphex --dump-defaults <dir>` to extract raw defaults for comparison
-- Use the `/ralphex-update` Claude Code skill to smart-merge updated defaults into customized files
-- Alternatively, reference agents already installed in your Claude Code directly in prompt files (see example below)
+- Use the `/ralphex-update` Gemini CLI skill to smart-merge updated defaults into customized files
+- Alternatively, reference agents already installed in your Gemini CLI directly in prompt files (see example below)
 
 **Prompt files** (`~/.config/ralphex/prompts/`):
 - `task.txt` - task execution prompt
 - `review_first.txt` - comprehensive review (default: 5 language-agnostic agents - quality, implementation, testing, simplification, documentation; customizable)
-- `codex.txt` - codex evaluation prompt (Claude evaluates codex output)
+- `codex.txt` - codex evaluation prompt (Gemini evaluates codex output)
 - `codex_review.txt` - codex review prompt (sent to codex external review tool)
 - `custom_review.txt` - custom external review prompt (sent to custom review script)
-- `custom_eval.txt` - custom evaluation prompt (Claude evaluates custom tool output)
+- `custom_eval.txt` - custom evaluation prompt (Gemini evaluates custom tool output)
 - `review_second.txt` - final review, critical/major issues only (default: 2 agents - quality, implementation; customizable)
 - `make_plan.txt` - interactive plan creation prompt
 - `finalize.txt` - optional finalize step prompt (disabled by default)
@@ -858,9 +858,9 @@ Note: Inline comments are not supported (`text # comment` keeps the entire line)
 - Create language-specific agents (Python linting, TypeScript types)
 - Modify prompts to change how many agents run per phase
 
-**Using Claude Code agents directly:**
+**Using Gemini CLI agents directly:**
 
-Instead of creating agent files, you can reference agents installed in your Claude Code directly in prompt files:
+Instead of creating agent files, you can reference agents installed in your Gemini CLI directly in prompt files:
 
 ```txt
 # in review_first.txt - just list agent names with their prompts
@@ -872,7 +872,7 @@ Agents to launch:
 
 ## Requirements
 
-- `claude` - Claude Code CLI
+- `gemini` - Gemini CLI CLI
 - `fzf` - for plan selection (optional)
 - `codex` - for external review (optional)
 
@@ -920,7 +920,7 @@ project/
 
 Use `--config-dir` or `RALPHEX_CONFIG_DIR` to override the global config location. This is useful for maintaining separate agent/prompt sets for different workflows.
 
-Provider-related CLI flags (`--claude-command`, `--claude-args`, `--external-review-tool`, and `--custom-review-script`) follow the same priority and override config only for the current invocation. This is useful for switching wrappers or review tools without maintaining separate config directories.
+Provider-related CLI flags (`--gemini-command`, `--gemini-args`, `--external-review-tool`, and `--custom-review-script`) follow the same priority and override config only for the current invocation. This is useful for switching wrappers or review tools without maintaining separate config directories.
 
 **Merge behavior:**
 - **Config file**: per-field override (local values override global, missing fields fall back)
@@ -931,19 +931,19 @@ Provider-related CLI flags (`--claude-command`, `--claude-args`, `--external-rev
 
 | Option | Description | Default |
 |--------|-------------|---------|
-| `claude_command` | Claude CLI command | `claude` |
-| `claude_args` | Claude CLI arguments | `--dangerously-skip-permissions --output-format stream-json --verbose` |
-| `executor` | Executor for plan creation, task, review, and finalize phases. `""` (default) uses Claude Code; `codex` routes the full pipeline through the codex CLI and skips the external review phase. CLI flag `--codex` takes precedence | empty |
-| `pass_claude_md` | When `executor = codex`, pass project `CLAUDE.md` to codex as `AGENTS.md` via `-c project_doc_fallback_filenames=["CLAUDE.md"]`. CLI flag `--pass-claude-md` takes precedence | `false` |
+| `gemini_command` | Gemini CLI command | `gemini` |
+| `gemini_args` | Gemini CLI arguments | `--dangerously-skip-permissions --output-format stream-json --verbose` |
+| `executor` | Executor for plan creation, task, review, and finalize phases. `""` (default) uses Gemini CLI; `codex` routes the full pipeline through the codex CLI and skips the external review phase. CLI flag `--codex` takes precedence | empty |
+| `pass_gemini.md` | When `executor = codex`, pass project `GEMINI.md` to codex as `AGENTS.md` via `-c project_doc_fallback_filenames=["GEMINI.md"]`. CLI flag `--pass-gemini.md` takes precedence | `false` |
 | `plan_model` | Model for plan creation as `model[:effort]` (e.g., `opus`, `opus:high`, `:medium`). Falls back to `task_model` if empty. Same syntax and wrapper behavior as `task_model`. Under `--codex`, selects the codex plan-creation model/effort instead (see *Model selection under `--codex`*) | empty |
-| `task_model` | Model for task execution as `model[:effort]` (e.g., `opus`, `opus:high`, `:medium`). Effort: `low`, `medium`, `high`, `xhigh`, `max`. Appended as `--model <m>` and/or `--effort <e>` to `claude_command`; custom wrappers may ignore or implement the flags. Under `--codex`, selects the codex task-phase model/effort instead (see *Model selection under `--codex`*) | empty |
+| `task_model` | Model for task execution as `model[:effort]` (e.g., `opus`, `opus:high`, `:medium`). Effort: `low`, `medium`, `high`, `xhigh`, `max`. Appended as `--model <m>` and/or `--effort <e>` to `gemini_command`; custom wrappers may ignore or implement the flags. Under `--codex`, selects the codex task-phase model/effort instead (see *Model selection under `--codex`*) | empty |
 | `review_model` | Model for review phases as `model[:effort]`. Falls back to `task_model` if empty. Same syntax and wrapper behavior as `task_model`. Under `--codex`, selects the codex review-phase model/effort | empty |
 | `codex_enabled` | Enable codex review phase | `true` |
 | `codex_command` | Codex CLI command | `codex` |
 | `codex_model` | Codex model ID. Set to an empty value (`codex_model =`) in user config to inherit from `~/.codex/config.toml` instead | `gpt-5.5` |
 | `codex_reasoning_effort` | Reasoning effort level. Set to an empty value (`codex_reasoning_effort =`) in user config to inherit from `~/.codex/config.toml` instead | `xhigh` |
 | `codex_timeout_ms` | Codex timeout in ms | `3600000` |
-| `codex_sandbox` | Sandbox mode. External codex review defaults to `read-only`; first-class `executor = codex` uses `danger-full-access` (task/review/finalize need to write git metadata and commit) unless explicitly overridden | `read-only` (claude mode) / `danger-full-access` (codex mode) |
+| `codex_sandbox` | Sandbox mode. External codex review defaults to `read-only`; first-class `executor = codex` uses `danger-full-access` (task/review/finalize need to write git metadata and commit) unless explicitly overridden | `read-only` (gemini mode) / `danger-full-access` (codex mode) |
 | `external_review_tool` | External review tool (`codex`, `custom`, `none`) | `codex` |
 | `custom_review_script` | Path to custom review script (when `external_review_tool = custom`) | - |
 | `max_external_iterations` | Override external review iteration limit (0 = auto, derived from `max_iterations`) | `0` |
@@ -953,7 +953,7 @@ Provider-related CLI flags (`--claude-command`, `--claude-args`, `--external-rev
 | `finalize_enabled` | Enable finalize step after reviews | `false` |
 | `move_plan_on_completion` | Move completed plan file into `docs/plans/completed/` on success (disable for external plan-lifecycle workflows) | `true` |
 | `use_worktree` | Run each plan in an isolated git worktree (full and tasks-only modes only) | `false` |
-| `preserve_anthropic_api_key` | Pass `ANTHROPIC_API_KEY` through to the claude child process (for users authenticating Claude Code via API key rather than OAuth/keychain). Default `false` strips the key so a host-set value cannot silently override OAuth credentials | `false` |
+| `preserve_gemini_api_key` | Pass `GEMINI_API_KEY` through to the gemini child process (for users authenticating Gemini CLI via API key rather than OAuth/keychain). Default `false` strips the key so a host-set value cannot silently override OAuth credentials | `false` |
 | `plans_dir` | Plans directory | `docs/plans` |
 | `default_branch` | Override auto-detected default branch for review diffs | auto-detect |
 | `vcs_command` | VCS command for the git backend (set to a translation script for hg repos) | `git` |
@@ -961,28 +961,28 @@ Provider-related CLI flags (`--claude-command`, `--claude-args`, `--external-rev
 | `color_task` | Task execution phase color (hex) | `#00ff00` |
 | `color_review` | Review phase color (hex) | `#00ffff` |
 | `color_codex` | Codex review color (hex) | `#ff00ff` |
-| `color_claude_eval` | Claude evaluation color (hex) | `#64c8ff` |
+| `color_gemini_eval` | Gemini evaluation color (hex) | `#64c8ff` |
 | `color_warn` | Warning messages color (hex) | `#ffff00` |
 | `color_error` | Error messages color (hex) | `#ff0000` |
 | `color_signal` | Completion/failure signals color (hex) | `#ff6464` |
 | `color_timestamp` | Timestamp prefix color (hex) | `#8a8a8a` |
 | `color_info` | Informational messages color (hex) | `#b4b4b4` |
-| `claude_error_patterns` | Patterns to detect in claude output (comma-separated) | `You've hit your limit,You've hit your session limit,API Error:,cannot be launched inside another Claude Code session,Not logged in,Your usage allocation has been disabled by your admin,You've hit your org's monthly usage limit` |
+| `gemini_error_patterns` | Patterns to detect in gemini output (comma-separated) | `You've hit your limit,You've hit your session limit,API Error:,cannot be launched inside another Gemini CLI session,Not logged in,Your usage allocation has been disabled by your admin,You've hit your org's monthly usage limit` |
 | `codex_error_patterns` | Patterns to detect in codex output (comma-separated) | `Rate limit exceeded,rate limit reached,429 Too Many Requests,quota exceeded,insufficient_quota,You've hit your usage limit` |
-| `claude_limit_patterns` | Limit patterns for claude triggering wait+retry (comma-separated) | `You've hit your limit,You've hit your session limit,Your usage allocation has been disabled by your admin,You've hit your org's monthly usage limit` |
+| `gemini_limit_patterns` | Limit patterns for gemini triggering wait+retry (comma-separated) | `You've hit your limit,You've hit your session limit,Your usage allocation has been disabled by your admin,You've hit your org's monthly usage limit` |
 | `codex_limit_patterns` | Limit patterns for codex triggering wait+retry (comma-separated) | `Rate limit exceeded,rate limit reached,429 Too Many Requests,quota exceeded,insufficient_quota,You've hit your usage limit` |
-| `claude_retry_patterns` | Transient claude/fya markers retried like executor timeouts (comma-separated) | `FYA_TRANSIENT_TIMEOUT,API Error: 529,API Error: 502,API Error: 503,API Error: 504` |
+| `gemini_retry_patterns` | Transient gemini/fya markers retried like executor timeouts (comma-separated) | `FYA_TRANSIENT_TIMEOUT,API Error: 529,API Error: 502,API Error: 503,API Error: 504` |
 | `wait_on_limit` | Wait duration before retrying on rate limit (e.g., `1h`, `30m`) | disabled |
-| `session_timeout` | Per-session timeout for task/review executor (e.g., `30m`, `1h`). Applies to Claude calls in default executor mode and every executor call under `executor = codex`; external codex/custom review in Claude mode is not affected | disabled |
-| `idle_timeout` | Kill executor session when no output for specified duration (e.g., `5m`). Resets on each output line. Applies to the claude executor in default mode and to every executor call under `--codex`; external codex review in default-claude mode is NOT affected (preserves master behavior). Custom review is also not affected | disabled |
+| `session_timeout` | Per-session timeout for task/review executor (e.g., `30m`, `1h`). Applies to Gemini calls in default executor mode and every executor call under `executor = codex`; external codex/custom review in Gemini mode is not affected | disabled |
+| `idle_timeout` | Kill executor session when no output for specified duration (e.g., `5m`). Resets on each output line. Applies to the gemini executor in default mode and to every executor call under `--codex`; external codex review in default-gemini mode is NOT affected (preserves master behavior). Custom review is also not affected | disabled |
 
 Colors use 24-bit RGB (true color), supported natively by all modern terminals (iTerm2, Kitty, Terminal.app, Windows Terminal, GNOME Terminal, Alacritty, Zed, VS Code, etc). Older terminals will degrade gracefully. Use `--no-color` to disable colors entirely.
 
-Error patterns use case-insensitive substring matching. When a pattern is detected in claude or codex output, ralphex exits gracefully with an informative message suggesting how to check usage/status. Multiple patterns are separated by commas, with whitespace trimmed from each pattern.
+Error patterns use case-insensitive substring matching. When a pattern is detected in gemini or codex output, ralphex exits gracefully with an informative message suggesting how to check usage/status. Multiple patterns are separated by commas, with whitespace trimmed from each pattern.
 
-**Transient retry:** Claude retry patterns (`claude_retry_patterns`) are checked before limit and error patterns. They cover wrapper-level stalls such as fya's `FYA_TRANSIENT_TIMEOUT` and transient server-side HTTP errors (`API Error: 529` Overloaded and the `502`/`503`/`504` gateway errors); matches are retried through the existing timeout-style phase path and do not use `wait_on_limit`, so they recover automatically without `--wait`. The task and review retry loops wait a short fixed backoff (5s) before re-running the failed iteration. `API Error: 500` is intentionally excluded — it can be a deterministic server failure and is caught by the broad `API Error:` error pattern instead.
+**Transient retry:** Gemini retry patterns (`gemini_retry_patterns`) are checked before limit and error patterns. They cover wrapper-level stalls such as fya's `FYA_TRANSIENT_TIMEOUT` and transient server-side HTTP errors (`API Error: 529` Overloaded and the `502`/`503`/`504` gateway errors); matches are retried through the existing timeout-style phase path and do not use `wait_on_limit`, so they recover automatically without `--wait`. The task and review retry loops wait a short fixed backoff (5s) before re-running the failed iteration. `API Error: 500` is intentionally excluded — it can be a deterministic server failure and is caught by the broad `API Error:` error pattern instead.
 
-**Rate limit retry:** Limit patterns (`claude_limit_patterns`, `codex_limit_patterns`) work similarly but support optional wait+retry behavior. When `--wait` is set (or `wait_on_limit` in config), a limit pattern match triggers a wait followed by automatic retry instead of exiting. Without `--wait`, limit patterns fall through to error pattern behavior. Limit patterns are checked before error patterns — if the same string matches both, the limit pattern takes priority when wait is enabled.
+**Rate limit retry:** Limit patterns (`gemini_limit_patterns`, `codex_limit_patterns`) work similarly but support optional wait+retry behavior. When `--wait` is set (or `wait_on_limit` in config), a limit pattern match triggers a wait followed by automatic retry instead of exiting. Without `--wait`, limit patterns fall through to error pattern behavior. Limit patterns are checked before error patterns — if the same string matches both, the limit pattern takes priority when wait is enabled.
 
 **Note for upgrades:** the codex defaults are tightened so review findings that *talk about* rate limiting in a codebase do not trip a false positive. Earlier defaults (`Rate limit,quota exceeded` or `Rate limit,quota exceeded,You've hit your usage limit`) substring-matched any text containing "rate limit", which fired on findings text when codex exited non-zero for an unrelated reason. Users who customized `codex_limit_patterns` or `codex_error_patterns` keep their values on update; comment the line out to inherit the new embedded default. The phrase `You've hit your usage limit` is retained because codex emits it on stderr when the ChatGPT plan quota is exhausted, and it never appears in findings text.
 
@@ -1006,7 +1006,7 @@ For a one-off run without editing config, use `--external-review-tool=custom --c
 
 **Script interface:**
 
-Your script receives a single argument: path to a prompt file containing review instructions. The script outputs findings to stdout - ralphex passes them to Claude for evaluation and fixing.
+Your script receives a single argument: path to a prompt file containing review instructions. The script outputs findings to stdout - ralphex passes them to Gemini for evaluation and fixing.
 
 ```bash
 #!/bin/bash
@@ -1022,7 +1022,7 @@ curl -s https://openrouter.ai/api/v1/chat/completions \
   -H "Authorization: Bearer $OPENROUTER_API_KEY" \
   -H "Content-Type: application/json" \
   -d "{
-    \"model\": \"anthropic/claude-3.5-sonnet\",
+    \"model\": \"gemini/gemini-3.5-sonnet\",
     \"messages\": [{\"role\": \"user\", \"content\": $(echo "$prompt" | jq -Rs .)}]
   }" | jq -r '.choices[0].message.content'
 ```
@@ -1069,7 +1069,7 @@ Customize `~/.config/ralphex/prompts/custom_review.txt` to modify the prompt sen
 - `{{DEFAULT_BRANCH}}` - detected default branch (main, master, etc.)
 - `{{PREVIOUS_REVIEW_CONTEXT}}` - previous review context (empty on first iteration, populated on subsequent)
 
-Customize `~/.config/ralphex/prompts/custom_eval.txt` to modify how Claude evaluates your tool's output.
+Customize `~/.config/ralphex/prompts/custom_eval.txt` to modify how Gemini evaluates your tool's output.
 
 **Docker considerations:**
 
@@ -1078,23 +1078,23 @@ When running ralphex in Docker, your script must be accessible inside the contai
 - Ensure script dependencies are available (curl, jq, etc. are included in base image)
 - Environment variables (API keys) must be passed to container: `-e OPENROUTER_API_KEY`
 
-### Using Alternative Providers for Claude Phases
+### Using Alternative Providers for Gemini Phases
 
-The `claude_command` and `claude_args` config options let you replace Claude Code with any CLI that produces compatible `stream-json` output. This means codex, GitHub Copilot CLI, Gemini CLI, local LLMs, or any other tool can drive task execution and review phases — you just need a wrapper script that translates the tool's output format. Use `--claude-command` and `--claude-args` to choose a wrapper for a single run without changing config.
+The `gemini_command` and `gemini_args` config options let you replace Gemini CLI with any CLI that produces compatible `stream-json` output. This means codex, GitHub Copilot CLI, Gemini CLI, local LLMs, or any other tool can drive task execution and review phases — you just need a wrapper script that translates the tool's output format. Use `--gemini-command` and `--gemini-args` to choose a wrapper for a single run without changing config.
 
 Working examples are included:
 
-- [`scripts/codex-as-claude/codex-as-claude.sh`](https://github.com/umputun/ralphex/blob/master/scripts/codex-as-claude/codex-as-claude.sh) wraps codex to produce Claude-compatible events
-- [`scripts/copilot-as-claude/copilot-as-claude.sh`](https://github.com/umputun/ralphex/blob/master/scripts/copilot-as-claude/copilot-as-claude.sh) wraps GitHub Copilot CLI and translates its native JSONL stream into Claude-compatible events
-- [`scripts/gemini-as-claude/gemini-as-claude.sh`](https://github.com/umputun/ralphex/blob/master/scripts/gemini-as-claude/gemini-as-claude.sh) wraps Gemini CLI for the implementation slot
-- [`scripts/agy-as-claude/agy-as-claude.sh`](https://github.com/umputun/ralphex/blob/master/scripts/agy-as-claude/agy-as-claude.sh) wraps the Antigravity (`agy`) CLI — Google's successor to Gemini CLI — for the implementation slot
-- [`scripts/opencode/opencode-as-claude.sh`](https://github.com/umputun/ralphex/blob/master/scripts/opencode/opencode-as-claude.sh) wraps OpenCode CLI for the implementation slot, and `scripts/opencode/opencode-review.sh` is shipped alongside as a turn-key custom review script
+- [`scripts/codex-as-gemini/codex-as-gemini.sh`](https://github.com/umputun/ralphex/blob/master/scripts/codex-as-gemini/codex-as-gemini.sh) wraps codex to produce Gemini-compatible events
+- [`scripts/copilot-as-gemini/copilot-as-gemini.sh`](https://github.com/umputun/ralphex/blob/master/scripts/copilot-as-gemini/copilot-as-gemini.sh) wraps GitHub Copilot CLI and translates its native JSONL stream into Gemini-compatible events
+- [`scripts/gemini-as-gemini/gemini-as-gemini.sh`](https://github.com/umputun/ralphex/blob/master/scripts/gemini-as-gemini/gemini-as-gemini.sh) wraps Gemini CLI for the implementation slot
+- [`scripts/agy-as-gemini/agy-as-gemini.sh`](https://github.com/umputun/ralphex/blob/master/scripts/agy-as-gemini/agy-as-gemini.sh) wraps the Antigravity (`agy`) CLI — Google's successor to Gemini CLI — for the implementation slot
+- [`scripts/opencode/opencode-as-gemini.sh`](https://github.com/umputun/ralphex/blob/master/scripts/opencode/opencode-as-gemini.sh) wraps OpenCode CLI for the implementation slot, and `scripts/opencode/opencode-review.sh` is shipped alongside as a turn-key custom review script
 
 To use the included Copilot wrapper:
 
 ```ini
 # in ~/.config/ralphex/config or .ralphex/config
-claude_command = /path/to/scripts/copilot-as-claude/copilot-as-claude.sh
+gemini_command = /path/to/scripts/copilot-as-gemini/copilot-as-gemini.sh
 ```
 
 Authenticate with `copilot login` or set one of `COPILOT_GITHUB_TOKEN`, `GH_TOKEN`, or `GITHUB_TOKEN`. Set `COPILOT_MODEL` to choose the model.
@@ -1105,16 +1105,16 @@ To use the included codex wrapper:
 
 ```ini
 # in ~/.config/ralphex/config or .ralphex/config
-claude_command = /path/to/scripts/codex-as-claude/codex-as-claude.sh
+gemini_command = /path/to/scripts/codex-as-gemini/codex-as-gemini.sh
 ```
 
 Or choose it for one invocation:
 
 ```bash
-ralphex --claude-command=/path/to/scripts/codex-as-claude/codex-as-claude.sh docs/plans/feature.md
+ralphex --gemini-command=/path/to/scripts/codex-as-gemini/codex-as-gemini.sh docs/plans/feature.md
 ```
 
-Wrapper scripts should ignore unknown flags gracefully — the included script does this via its `*) shift ;;` catch-all. If a wrapper cannot tolerate the default Claude flags (`--dangerously-skip-permissions`, `--output-format stream-json`, `--verbose`), use `--claude-args=` to explicitly clear configured/default args for that single run.
+Wrapper scripts should ignore unknown flags gracefully — the included script does this via its `*) shift ;;` catch-all. If a wrapper cannot tolerate the default Gemini flags (`--dangerously-skip-permissions`, `--output-format stream-json`, `--verbose`), use `--gemini-args=` to explicitly clear configured/default args for that single run.
 
 The included Codex and Copilot wrappers require `jq` on `PATH` for JSON translation.
 
@@ -1128,22 +1128,22 @@ See [custom providers documentation](https://github.com/umputun/ralphex/blob/mas
 
 ### Swapping Implementation and Review Roles
 
-The default pairing is Claude for implementation and Codex for external review. The same mechanisms that replace Claude with another tool can also flip the roles, putting another tool in the implementation slot and Claude (or anything else) in the review slot. Combine `claude_command` with `external_review_tool = custom` and `custom_review_script`:
+The default pairing is Gemini for implementation and Codex for external review. The same mechanisms that replace Gemini with another tool can also flip the roles, putting another tool in the implementation slot and Gemini (or anything else) in the review slot. Combine `gemini_command` with `external_review_tool = custom` and `custom_review_script`:
 
 ```ini
 # in ~/.config/ralphex/config or .ralphex/config
-claude_command       = /path/to/scripts/codex-as-claude/codex-as-claude.sh
+gemini_command       = /path/to/scripts/codex-as-gemini/codex-as-gemini.sh
 external_review_tool = custom
 custom_review_script = /path/to/scripts/opencode/opencode-review.sh
 ```
 
-The `claude_command` slot is documented above. The `custom_review_script` slot, including the script interface and expected output format, is documented in [Custom External Review](#custom-external-review).
+The `gemini_command` slot is documented above. The `custom_review_script` slot, including the script interface and expected output format, is documented in [Custom External Review](#custom-external-review).
 
-The repository ships a working custom review script at [`scripts/opencode/opencode-review.sh`](https://github.com/umputun/ralphex/blob/master/scripts/opencode/opencode-review.sh) that uses OpenCode CLI to produce review findings. Use it directly, or read it as a template when writing your own (for example, a `claude-as-review.sh` that calls Claude in the review slot).
+The repository ships a working custom review script at [`scripts/opencode/opencode-review.sh`](https://github.com/umputun/ralphex/blob/master/scripts/opencode/opencode-review.sh) that uses OpenCode CLI to produce review findings. Use it directly, or read it as a template when writing your own (for example, a `gemini-as-review.sh` that calls Gemini in the review slot).
 
-The wrappers under `scripts/codex-as-claude/`, `scripts/copilot-as-claude/`, `scripts/gemini-as-claude/`, `scripts/agy-as-claude/`, and `scripts/opencode/` ship in the source tree but are not bundled with the binary. Vendor the one you need into your project (`.ralphex/scripts/`) or reference it from a checkout.
+The wrappers under `scripts/codex-as-gemini/`, `scripts/copilot-as-gemini/`, `scripts/gemini-as-gemini/`, `scripts/agy-as-gemini/`, and `scripts/opencode/` ship in the source tree but are not bundled with the binary. Vendor the one you need into your project (`.ralphex/scripts/`) or reference it from a checkout.
 
-**Log labels reflect the slot, not the underlying tool.** Phase output keeps the internal slot names (`claude execution`, `codex execution`) regardless of what `claude_command` and the external review tool resolve to at runtime. With a wrapper in place, "claude execution" means whatever `claude_command` points at.
+**Log labels reflect the slot, not the underlying tool.** Phase output keeps the internal slot names (`gemini execution`, `codex execution`) regardless of what `gemini_command` and the external review tool resolve to at runtime. With a wrapper in place, "gemini execution" means whatever `gemini_command` points at.
 
 **Per-project config on feature branches.** If tool-swap configuration lives inside the project (`.ralphex/config`, scripts under `.ralphex/scripts/`), commit those files on the default branch before creating a feature branch. Otherwise the reviewer sees its own infrastructure as new in the feature branch, which can trigger `RALPHEX:TASK_FAILED` when project rules forbid modifying `.ralphex/`. Keeping the configuration in `~/.config/ralphex/` instead avoids that case entirely.
 
@@ -1158,7 +1158,7 @@ vcs_command = ~/.config/ralphex/scripts/hg2git.sh
 
 A reference translation script is included at [`scripts/hg2git/hg2git.sh`](https://github.com/umputun/ralphex/blob/master/scripts/hg2git/hg2git.sh). It maps the ~15 git subcommands ralphex uses internally to Mercurial equivalents, with phase-based commit logic (amend on draft, commit on public). Requires bash 4.0+ (for associative arrays used in diff stats parsing).
 
-You will also need to customise prompt files to replace git commands that Claude executes as bash commands during reviews. See [Mercurial support documentation](https://github.com/umputun/ralphex/blob/master/docs/hg-support.md) for full setup instructions, prompt replacement examples, `.hgignore` setup, and known limitations.
+You will also need to customise prompt files to replace git commands that Gemini executes as bash commands during reviews. See [Mercurial support documentation](https://github.com/umputun/ralphex/blob/master/docs/hg-support.md) for full setup instructions, prompt replacement examples, `.hgignore` setup, and known limitations.
 
 <details markdown>
 <summary><b>FAQ</b></summary>
@@ -1171,7 +1171,7 @@ Create a plan file in `docs/plans/` (see [Quick Start](#quick-start) for format)
 
 First review is comprehensive (5 agents by default), second is a final check focusing on critical/major issues only (2 agents). See [How It Works](#how-it-works).
 
-**How do I use my own Claude Code agents?**
+**How do I use my own Gemini CLI agents?**
 
 Reference them directly in prompt files by name, e.g., `qa-expert - "Review for bugs"`. See [Customization](#customization).
 
@@ -1181,7 +1181,7 @@ Codex is optional. If not installed, the codex review phase is skipped automatic
 
 **Can I run just reviews without task execution?**
 
-Yes, use `--review` flag to run the full review pipeline (Phase 2 → Phase 3 → Phase 4) on changes already on the current branch. This works for changes made by any tool — Claude Code's built-in mode, manual edits, other agents, etc. Switch to the feature branch, commit your changes, and run `ralphex --review`. See [Review-Only Mode](#review-only-mode) for details.
+Yes, use `--review` flag to run the full review pipeline (Phase 2 → Phase 3 → Phase 4) on changes already on the current branch. This works for changes made by any tool — Gemini CLI's built-in mode, manual edits, other agents, etc. Switch to the feature branch, commit your changes, and run `ralphex --review`. See [Review-Only Mode](#review-only-mode) for details.
 
 **Can I run ralphex in a non-git directory?**
 
@@ -1197,7 +1197,7 @@ For full mode, start on master - ralphex creates a branch automatically from the
 
 **How do I restore default agents after customizing?**
 
-Run `ralphex --reset` to interactively reset global config. Select which components to reset (config, prompts, agents). Alternatively, delete all `.txt` files from `~/.config/ralphex/agents/` manually. To smart-merge updated defaults into customized files (preserving your changes), use the `/ralphex-update` Claude Code skill or `ralphex --dump-defaults <dir>` to extract defaults for manual comparison.
+Run `ralphex --reset` to interactively reset global config. Select which components to reset (config, prompts, agents). Alternatively, delete all `.txt` files from `~/.config/ralphex/agents/` manually. To smart-merge updated defaults into customized files (preserving your changes), use the `/ralphex-update` Gemini CLI skill or `ralphex --dump-defaults <dir>` to extract defaults for manual comparison.
 
 **How do I disable a default agent?**
 
@@ -1219,7 +1219,7 @@ Completed tasks are already committed to the feature branch. To resume, re-run `
 
 Yes, two approaches depending on the situation:
 
-1. **Edit CLAUDE.md** — for behavioral changes (coding style, libraries, constraints). Each task runs in a fresh Claude Code session that reads CLAUDE.md at startup, so changes take effect on the next task or iteration automatically. No need to stop ralphex.
+1. **Edit GEMINI.md** — for behavioral changes (coding style, libraries, constraints). Each task runs in a fresh Gemini CLI session that reads GEMINI.md at startup, so changes take effect on the next task or iteration automatically. No need to stop ralphex.
 
 2. **Stop, edit plan, re-run** — for structural changes (reorder tasks, add/remove tasks, change requirements). Press Ctrl+C to stop, edit the plan file (uncheck `[x]` → `[ ]` to redo tasks, add new tasks, modify descriptions), then re-run `ralphex docs/plans/<plan>.md`. Ralphex picks up from the first incomplete task and adapts to the updated plan.
 
@@ -1254,7 +1254,7 @@ STEP 4 - STYLE CHECK (only when all tasks are done):
 
 This works because ralphex only checks for the `ALL_TASKS_DONE` signal — it doesn't care how many steps precede it. The same approach works for any tool or skill: security scanning, formatting, documentation generation, etc. Place it in `~/.config/ralphex/prompts/task.txt` for global use or `.ralphex/prompts/task.txt` for a specific project.
 
-**Can I use ralphex with Claude Pro plan?**
+**Can I use ralphex with Gemini Pro plan?**
 
 Yes. Pro plans hit rate limits more frequently. Use `--wait` to pause and retry automatically instead of exiting:
 
@@ -1264,23 +1264,23 @@ ralphex --wait=1h docs/plans/feature.md
 
 When a rate limit is detected, ralphex waits the specified duration and retries. Execution takes longer but completes unattended. You can also set `wait_on_limit = 1h` in config to make it the default.
 
-**Can I use Cursor CLI instead of Claude Code?**
+**Can I use Cursor CLI instead of Gemini CLI?**
 
 Yes. [Cursor CLI](https://cursor.com/cli) is community-tested as a drop-in alternative. Configure in `~/.config/ralphex/config`:
 
 ```ini
-claude_command = agent
-claude_args = --force --output-format stream-json
+gemini_command = agent
+gemini_args = --force --output-format stream-json
 ```
 
-Key differences: `agent` command (not `claude`), `--force` flag (not `--dangerously-skip-permissions`). Stream format and signals are compatible. *Note: this is community-tested, not officially supported. Compatibility depends on Cursor maintaining Claude Code compatibility.*
+Key differences: `agent` command (not `gemini`), `--force` flag (not `--dangerously-skip-permissions`). Stream format and signals are compatible. *Note: this is community-tested, not officially supported. Compatibility depends on Cursor maintaining Gemini CLI compatibility.*
 
-**Can I use codex, GitHub Copilot CLI, or another model for task execution instead of Claude?**
+**Can I use codex, GitHub Copilot CLI, or another model for task execution instead of Gemini?**
 
-Yes. Use one of the included wrapper scripts that translate provider output to Claude's stream-json format:
+Yes. Use one of the included wrapper scripts that translate provider output to Gemini's stream-json format:
 
 ```ini
-claude_command = /path/to/scripts/copilot-as-claude/copilot-as-claude.sh
+gemini_command = /path/to/scripts/copilot-as-gemini/copilot-as-gemini.sh
 ```
 
 For Copilot, authenticate with `copilot login` or one of `COPILOT_GITHUB_TOKEN`, `GH_TOKEN`, or `GITHUB_TOKEN`, and set `COPILOT_MODEL` if you want to override the default model.
@@ -1290,20 +1290,20 @@ For ralphex plan creation, it switches to `--autopilot --allow-all` so clarifica
 Codex works the same way through its wrapper:
 
 ```ini
-claude_command = /path/to/scripts/codex-as-claude/codex-as-claude.sh
+gemini_command = /path/to/scripts/codex-as-gemini/codex-as-gemini.sh
 ```
 
-Set `CODEX_MODEL` env var to choose the model. See [Using Alternative Providers](#using-alternative-providers-for-claude-phases) and [custom providers documentation](https://github.com/umputun/ralphex/blob/master/docs/custom-providers.md) for the included Copilot example and for writing wrappers for other tools.
+Set `CODEX_MODEL` env var to choose the model. See [Using Alternative Providers](#using-alternative-providers-for-gemini-phases) and [custom providers documentation](https://github.com/umputun/ralphex/blob/master/docs/custom-providers.md) for the included Copilot example and for writing wrappers for other tools.
 
-**How do I use multiple Claude accounts?**
+**How do I use multiple Gemini accounts?**
 
-Set the `CLAUDE_CONFIG_DIR` environment variable to point to the alternate Claude config directory:
+Set the `GEMINI_CONFIG_DIR` environment variable to point to the alternate Gemini config directory:
 
 ```bash
-CLAUDE_CONFIG_DIR=~/.claude2 ralphex docs/plans/feature.md
+GEMINI_CONFIG_DIR=~/.gemini2 ralphex docs/plans/feature.md
 ```
 
-This is the same env var Claude Code itself uses. With Docker, the wrapper script mounts the specified directory and derives the correct macOS Keychain service name from the path. Without Docker, the env var passes through to the child Claude Code process directly. Each Claude installation stores credentials under a unique Keychain entry based on its config directory. No additional configuration is needed — just point `CLAUDE_CONFIG_DIR` to the right directory.
+This is the same env var Gemini CLI itself uses. With Docker, the wrapper script mounts the specified directory and derives the correct macOS Keychain service name from the path. Without Docker, the env var passes through to the child Gemini CLI process directly. Each Gemini installation stores credentials under a unique Keychain entry based on its config directory. No additional configuration is needed — just point `GEMINI_CONFIG_DIR` to the right directory.
 
 **Can I run something after all phases complete (notifications, rebase commits, etc.)?**
 
@@ -1348,9 +1348,9 @@ Multi-session features:
 - **Active detection** - pulsing indicator for running sessions via file locking
 - **Auto-discovery** - new sessions appear automatically as they start
 
-## Claude Code Integration (Optional)
+## Gemini CLI Integration (Optional)
 
-ralphex works standalone from the terminal. Optionally, you can add slash commands to Claude Code for a more integrated experience.
+ralphex works standalone from the terminal. Optionally, you can add slash commands to Gemini CLI for a more integrated experience.
 
 ### Available Commands
 
@@ -1363,7 +1363,7 @@ ralphex works standalone from the terminal. Optionally, you can add slash comman
 
 ### Installation
 
-The ralphex CLI is the primary interface. Claude Code skills (`/ralphex`, `/ralphex-plan`, `/ralphex-adopt`, and `/ralphex-update`) are optional convenience commands.
+The ralphex CLI is the primary interface. Gemini CLI skills (`/ralphex`, `/ralphex-plan`, `/ralphex-adopt`, and `/ralphex-update`) are optional convenience commands.
 
 **Via Plugin Marketplace (Recommended)**
 
@@ -1375,24 +1375,24 @@ The ralphex CLI is the primary interface. Claude Code skills (`/ralphex`, `/ralp
 /plugin install ralphex@ralphex
 ```
 
-Benefits: Auto-updates when marketplace refreshes (at Claude Code startup).
+Benefits: Auto-updates when marketplace refreshes (at Gemini CLI startup).
 
 **Manual Installation (Alternative)**
 
 The slash command definitions are hosted at:
-- [`/ralphex`](https://ralphex.com/assets/claude/ralphex.md)
-- [`/ralphex-plan`](https://ralphex.com/assets/claude/ralphex-plan.md)
-- [`/ralphex-adopt`](https://ralphex.com/assets/claude/ralphex-adopt.md)
-- [`/ralphex-update`](https://ralphex.com/assets/claude/ralphex-update.md)
+- [`/ralphex`](https://ralphex.com/assets/gemini/ralphex.md)
+- [`/ralphex-plan`](https://ralphex.com/assets/gemini/ralphex-plan.md)
+- [`/ralphex-adopt`](https://ralphex.com/assets/gemini/ralphex-adopt.md)
+- [`/ralphex-update`](https://ralphex.com/assets/gemini/ralphex-update.md)
 
-To install, ask Claude Code to "install ralphex slash commands" or manually copy the files to `~/.claude/commands/`.
+To install, ask Gemini CLI to "install ralphex slash commands" or manually copy the files to `~/.gemini/commands/`.
 
 ### Usage
 
 Once installed:
 
 ```
-# in Claude Code conversation
+# in Gemini CLI conversation
 /ralphex-plan add user authentication    # creates plan interactively
 /ralphex docs/plans/auth.md              # launches execution
 "check ralphex"                          # gets status update
@@ -1400,7 +1400,7 @@ Once installed:
 
 The `/ralphex` command runs ralphex in the background and provides status updates on request. The `/ralphex-plan` command guides you through creating well-structured plans with context discovery and approach selection.
 
-> **Note:** ralphex automatically strips the `CLAUDECODE` env var from child processes, allowing it to run from inside Claude Code. However, running from a standalone terminal is still recommended for the best experience. If the nested session error is somehow encountered, ralphex detects it via error pattern matching and exits gracefully.
+> **Note:** ralphex automatically strips the `GEMINICODE` env var from child processes, allowing it to run from inside Gemini CLI. However, running from a standalone terminal is still recommended for the best experience. If the nested session error is somehow encountered, ralphex detects it via error pattern matching and exits gracefully.
 
 ## For LLMs
 

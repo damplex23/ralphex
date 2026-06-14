@@ -72,7 +72,7 @@ Add an "Interactive review" option to the plan draft review menu in `ralphex --p
 
 ### Task 4: [Final] Update documentation
 
-- [x] update CLAUDE.md "Plan Creation Mode" section to mention interactive review option
+- [x] update GEMINI.md "Plan Creation Mode" section to mention interactive review option
 - [x] update README.md plan creation section if needed
 
 ## Technical Details

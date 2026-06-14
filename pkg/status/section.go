@@ -6,12 +6,12 @@ import "fmt"
 // the web layer uses these types to emit appropriate boundary events:
 //   - SectionTaskIteration: emits task_start/task_end events
 //   - SectionInternalReview, SectionCodexIteration: emits iteration_start events
-//   - SectionGeneric, SectionClaudeEval: no boundary events, just section headers
+//   - SectionGeneric, SectionGeminiEval: no boundary events, just section headers
 //
 // invariants:
 //   - Iteration > 0 for SectionTaskIteration, SectionCodexIteration
 //   - Iteration >= 0 for SectionInternalReview (first review pass uses 0)
-//   - Iteration == 0 for SectionGeneric, SectionClaudeEval
+//   - Iteration == 0 for SectionGeneric, SectionGeminiEval
 //
 // prefer using the constructor functions (NewTaskIterationSection, etc.) to ensure
 // these invariants are maintained.
@@ -26,8 +26,8 @@ const (
 	SectionInternalReview
 	// SectionCodexIteration represents a Codex review iteration.
 	SectionCodexIteration
-	// SectionClaudeEval represents Claude evaluating codex findings.
-	SectionClaudeEval
+	// SectionGeminiEval represents Gemini evaluating codex findings.
+	SectionGeminiEval
 	// SectionPlanIteration represents a plan creation iteration.
 	SectionPlanIteration
 	// SectionCustomIteration represents a custom review tool iteration.
@@ -55,13 +55,13 @@ func NewTaskIterationSection(iteration int) Section {
 	}
 }
 
-// NewClaudeReviewSection creates a section for Claude review iteration.
+// NewGeminiReviewSection creates a section for Gemini review iteration.
 // suffix is appended after the iteration number (e.g., ": critical/major").
-func NewClaudeReviewSection(iteration int, suffix string) Section {
+func NewGeminiReviewSection(iteration int, suffix string) Section {
 	return Section{
 		Type:      SectionInternalReview,
 		Iteration: iteration,
-		Label:     fmt.Sprintf("claude review %d%s", iteration, suffix),
+		Label:     fmt.Sprintf("gemini review %d%s", iteration, suffix),
 	}
 }
 
@@ -87,11 +87,11 @@ func NewCodexIterationSection(iteration int) Section {
 	}
 }
 
-// NewClaudeEvalSection creates a section for Claude evaluating codex findings.
-func NewClaudeEvalSection() Section {
+// NewGeminiEvalSection creates a section for Gemini evaluating codex findings.
+func NewGeminiEvalSection() Section {
 	return Section{
-		Type:  SectionClaudeEval,
-		Label: "claude evaluating codex findings",
+		Type:  SectionGeminiEval,
+		Label: "gemini evaluating codex findings",
 	}
 }
 

@@ -4,7 +4,7 @@
 
 Add `--tasks-only` flag to run task execution phase without any reviews. Completes the execution mode matrix:
 - `--review` - reviews only (exists)
-- `--codex-only` - codex → claude eval (exists)
+- `--codex-only` - codex → gemini eval (exists)
 - `--tasks-only` - tasks only, no reviews (new)
 
 Use cases:
@@ -84,7 +84,7 @@ Existing patterns:
 
 - [x] add `--tasks-only` to Quick Usage section in README.md
 - [x] add `--tasks-only` to Quick Usage section in llms.txt
-- [x] update CLAUDE.md if needed (execution modes description)
+- [x] update GEMINI.md if needed (execution modes description)
 
 ### Task 6: Final validation
 

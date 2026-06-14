@@ -543,7 +543,7 @@ func TestTaskBoundaryRendering(t *testing.T) {
 	})
 }
 
-// TestIterationBoundaryRendering verifies that Claude review and Codex iteration
+// TestIterationBoundaryRendering verifies that Gemini review and Codex iteration
 // headers are rendered as collapsible section headers with iteration numbers displayed.
 func TestIterationBoundaryRendering(t *testing.T) {
 	page := newPage(t)
@@ -552,17 +552,17 @@ func TestIterationBoundaryRendering(t *testing.T) {
 	// wait for SSE events to load
 	waitVisible(t, page, ".section-header")
 
-	t.Run("Claude review iteration headers render correctly", func(t *testing.T) {
-		// the test fixture contains Claude review sections
+	t.Run("Gemini review iteration headers render correctly", func(t *testing.T) {
+		// the test fixture contains Gemini review sections
 		// these should be rendered as .section-header details elements with data-phase='review'
 		reviewSections := page.Locator(".section-header[data-phase='review']")
 		count, err := reviewSections.Count()
 		require.NoError(t, err)
 		assert.GreaterOrEqual(t, count, 1, "should have at least one review section from test fixture")
-		t.Logf("Found %d Claude review sections", count)
+		t.Logf("Found %d Gemini review sections", count)
 
 		if count == 0 {
-			t.Skip("no Claude review sections found to verify title")
+			t.Skip("no Gemini review sections found to verify title")
 		}
 
 		// verify the section title contains review-related text
@@ -571,8 +571,8 @@ func TestIterationBoundaryRendering(t *testing.T) {
 		text, err := titleEl.TextContent()
 		require.NoError(t, err)
 
-		// section title should contain "Claude" or "review"
-		hasReviewInfo := strings.Contains(strings.ToLower(text), "claude") ||
+		// section title should contain "Gemini" or "review"
+		hasReviewInfo := strings.Contains(strings.ToLower(text), "gemini") ||
 			strings.Contains(strings.ToLower(text), "review")
 		assert.True(t, hasReviewInfo, "review section title should contain review info, got: %q", text)
 	})

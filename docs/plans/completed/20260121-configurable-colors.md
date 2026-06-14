@@ -9,14 +9,14 @@ Move all hardcoded colors to the config file with current colors as defaults. Us
 **Files involved:**
 - `pkg/config/config.go` - config struct and parsing
 - `pkg/config/defaults/config` - embedded default config
-- `pkg/progress/progress.go` - 8 hardcoded colors (task, review, codex, claude_eval, warn, error, signal, timestamp)
+- `pkg/progress/progress.go` - 8 hardcoded colors (task, review, codex, gemini_eval, warn, error, signal, timestamp)
 - `cmd/ralphex/main.go` - 1 hardcoded color (info)
 
 **Current colors (to become defaults):**
 - task: green (#00ff00)
 - review: cyan (#00ffff)
 - codex: magenta (#ff00ff)
-- claude_eval: RGB(100,200,255) → #64c8ff
+- gemini_eval: RGB(100,200,255) → #64c8ff
 - warn: yellow (#ffff00)
 - error: red (#ff0000)
 - signal: RGB(255,100,100) → #ff6464
@@ -51,7 +51,7 @@ Move all hardcoded colors to the config file with current colors as defaults. Us
   - invalid: wrong length
   - invalid: non-hex characters
 - [x] implement `parseHexColor(hex string) (r, g, b int, err error)` in `pkg/config/config.go`
-- [x] add `ColorConfig` struct with 9 color fields (Task, Review, Codex, ClaudeEval, Warn, Error, Signal, Timestamp, Info)
+- [x] add `ColorConfig` struct with 9 color fields (Task, Review, Codex, GeminiEval, Warn, Error, Signal, Timestamp, Info)
 - [x] add `Colors ColorConfig` field to `Config` struct
 - [x] run tests - must pass before next task
 
@@ -98,7 +98,7 @@ Move all hardcoded colors to the config file with current colors as defaults. Us
 
 ### Task 7: Update documentation
 
-- [x] update CLAUDE.md if new patterns discovered
+- [x] update GEMINI.md if new patterns discovered
 - [x] move this plan to `docs/plans/completed/`
 
 ## Technical Details
@@ -109,7 +109,7 @@ Move all hardcoded colors to the config file with current colors as defaults. Us
 color_task = #00ff00
 color_review = #00ffff
 color_codex = #ff00ff
-color_claude_eval = #64c8ff
+color_gemini_eval = #64c8ff
 color_warn = #ffff00
 color_error = #ff0000
 color_signal = #ff6464
@@ -123,7 +123,7 @@ type ColorConfig struct {
     Task       string
     Review     string
     Codex      string
-    ClaudeEval string
+    GeminiEval string
     Warn       string
     Error      string
     Signal     string

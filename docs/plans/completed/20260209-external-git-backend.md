@@ -159,7 +159,7 @@ Add comparison tests into `external_test.go` (one test file per source file rule
 
 ### Task 6: [Final] Update documentation
 
-- [x] update CLAUDE.md — mention `git_backend` config option and `externalBackend`
+- [x] update GEMINI.md — mention `git_backend` config option and `externalBackend`
 - [x] update README.md if git backend option is user-facing enough to document
 - [x] move this plan to `docs/plans/completed/`
 

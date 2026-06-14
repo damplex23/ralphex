@@ -29,7 +29,7 @@ type Colors struct {
 	task       *color.Color
 	review     *color.Color
 	codex      *color.Color
-	claudeEval *color.Color
+	geminiEval *color.Color
 	warn       *color.Color
 	err        *color.Color
 	signal     *color.Color
@@ -46,7 +46,7 @@ func NewColors(cfg config.ColorConfig) *Colors {
 	c.task = parseColorOrPanic(cfg.Task, "task")
 	c.review = parseColorOrPanic(cfg.Review, "review")
 	c.codex = parseColorOrPanic(cfg.Codex, "codex")
-	c.claudeEval = parseColorOrPanic(cfg.ClaudeEval, "claude_eval")
+	c.geminiEval = parseColorOrPanic(cfg.GeminiEval, "gemini_eval")
 	c.warn = parseColorOrPanic(cfg.Warn, "warn")
 	c.err = parseColorOrPanic(cfg.Error, "error")
 	c.signal = parseColorOrPanic(cfg.Signal, "signal")
@@ -56,7 +56,7 @@ func NewColors(cfg config.ColorConfig) *Colors {
 	c.phases[status.PhaseTask] = c.task
 	c.phases[status.PhaseReview] = c.review
 	c.phases[status.PhaseCodex] = c.codex
-	c.phases[status.PhaseClaudeEval] = c.claudeEval
+	c.phases[status.PhaseGeminiEval] = c.geminiEval
 	c.phases[status.PhasePlan] = c.task     // plan phase uses task color (green)
 	c.phases[status.PhaseFinalize] = c.task // finalize phase uses task color (green)
 
@@ -153,7 +153,7 @@ type Config struct {
 // file header. empty fields are omitted from the header so only explicitly
 // configured parameters appear in the dashboard.
 type RunParams struct {
-	Executor    string // executor name when not the default claude (e.g. "codex")
+	Executor    string // executor name when not the default gemini (e.g. "codex")
 	PlanModel   string // model[:effort] spec for plan creation
 	TaskModel   string // model[:effort] spec for task execution
 	ReviewModel string // model[:effort] spec for review phases
@@ -720,7 +720,7 @@ func isProgressCompleted(f *os.File, size int64) bool {
 	}
 
 	// match the exact pattern written by Close(): 60-dash separator followed by "Completed:".
-	// a plain "Completed:" check would false-positive on Claude output containing that text.
+	// a plain "Completed:" check would false-positive on Gemini output containing that text.
 	return strings.Contains(string(buf[:n]), separatorLine+"\nCompleted:")
 }
 

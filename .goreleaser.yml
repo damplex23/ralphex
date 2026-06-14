@@ -36,7 +36,7 @@ nfpms:
     vendor: umputun
     homepage: https://github.com/umputun/ralphex
     maintainer: umputun
-    description: Autonomous plan execution with Claude Code
+    description: Autonomous plan execution with Gemini CLI
     license: MIT
     formats:
       - deb
@@ -55,7 +55,7 @@ brews:
       name: homebrew-apps
     directory: Formula
     homepage: https://github.com/umputun/ralphex
-    description: Autonomous plan execution with Claude Code
+    description: Autonomous plan execution with Gemini CLI
     license: MIT
     extra_install: |
       bash_completion.install "completions/ralphex.bash" => "ralphex"

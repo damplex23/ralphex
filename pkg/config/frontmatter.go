@@ -39,7 +39,7 @@ func (o Options) Validate() []string {
 }
 
 // normalizeModel extracts the keyword (haiku, sonnet, opus, fable) from a model string.
-// e.g. "claude-sonnet-4-5-20250929" → "sonnet", "opus" → "opus", "" → "".
+// e.g. "gemini-sonnet-4-5-20250929" → "sonnet", "opus" → "opus", "" → "".
 func normalizeModel(model string) string {
 	lower := strings.ToLower(model)
 	for kw := range validModels {

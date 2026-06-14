@@ -30,13 +30,13 @@ scripts/
 │   ├── hg2git_test.sh
 │   └── README.md
 ├── opencode/
-│   ├── opencode-as-claude.sh
-│   ├── opencode-as-claude_test.sh
+│   ├── opencode-as-gemini.sh
+│   ├── opencode-as-gemini_test.sh
 │   ├── opencode-review.sh
 │   ├── opencode-review_test.sh
 │   └── README.md
-├── codex-as-claude/
-│   ├── codex-as-claude.sh
+├── codex-as-gemini/
+│   ├── codex-as-gemini.sh
 │   └── README.md
 └── internal/
     ├── prep-toy-test.sh
@@ -88,13 +88,13 @@ Key decisions:
 - [x] create README.md listing all internal scripts with brief descriptions
 - [x] verify each script executes from new path
 
-### Task 2: Move codex-as-claude into subdirectory
+### Task 2: Move codex-as-gemini into subdirectory
 
 **Files:**
-- Move: `scripts/codex-as-claude.sh` → `scripts/codex-as-claude/codex-as-claude.sh`
-- Create: `scripts/codex-as-claude/README.md`
+- Move: `scripts/codex-as-gemini.sh` → `scripts/codex-as-gemini/codex-as-gemini.sh`
+- Create: `scripts/codex-as-gemini/README.md`
 
-- [x] create `scripts/codex-as-claude/` directory
+- [x] create `scripts/codex-as-gemini/` directory
 - [x] move script using `git mv`
 - [x] create README.md with description, usage, and examples
 
@@ -112,14 +112,14 @@ Key decisions:
 ### Task 4: Move opencode scripts into scripts/opencode/
 
 **Files:**
-- Move: `scripts/opencode-as-claude.sh` + `scripts/opencode-as-claude_test.sh` → `scripts/opencode/`
+- Move: `scripts/opencode-as-gemini.sh` + `scripts/opencode-as-gemini_test.sh` → `scripts/opencode/`
 - Move: `scripts/opencode-review.sh` + `scripts/opencode-review_test.sh` → `scripts/opencode/`
 - Create: `scripts/opencode/README.md`
 
 - [x] create `scripts/opencode/` directory
 - [x] move all 4 opencode files using `git mv`
 - [x] verify test scripts use SCRIPT_DIR-relative paths (no changes needed)
-- [x] run `bash scripts/opencode/opencode-as-claude_test.sh` to verify tests pass
+- [x] run `bash scripts/opencode/opencode-as-gemini_test.sh` to verify tests pass
 - [x] run `bash scripts/opencode/opencode-review_test.sh` to verify tests pass
 - [x] create README.md covering both scripts with description, usage, and examples
 
@@ -162,26 +162,26 @@ Key decisions:
 ### Task 7: Update documentation references
 
 **Files:**
-- Modify: `CLAUDE.md`
+- Modify: `GEMINI.md`
 - Modify: `README.md`
 - Modify: `llms.txt`
 - Modify: `docs/custom-providers.md`
 - Modify: `docs/hg-support.md`
-- Modify: `.claude-plugin/README.md`
+- Modify: `.gemini-plugin/README.md`
 
-- [x] update `CLAUDE.md` references: `scripts/codex-as-claude.sh` → `scripts/codex-as-claude/codex-as-claude.sh`, `scripts/hg2git.sh` → `scripts/hg2git/hg2git.sh`, `scripts/prep-toy-test.sh` → `scripts/internal/prep-toy-test.sh`, keep `scripts/ralphex-dk.sh` as-is (symlink)
+- [x] update `GEMINI.md` references: `scripts/codex-as-gemini.sh` → `scripts/codex-as-gemini/codex-as-gemini.sh`, `scripts/hg2git.sh` → `scripts/hg2git/hg2git.sh`, `scripts/prep-toy-test.sh` → `scripts/internal/prep-toy-test.sh`, keep `scripts/ralphex-dk.sh` as-is (symlink)
 - [x] update `README.md` references: same pattern, keep curl URL as `scripts/ralphex-dk.sh`
 - [x] update `llms.txt` references: same pattern
-- [x] update `docs/custom-providers.md`: `scripts/codex-as-claude.sh` → `scripts/codex-as-claude/codex-as-claude.sh`, `scripts/opencode-as-claude.sh` → `scripts/opencode/opencode-as-claude.sh`
+- [x] update `docs/custom-providers.md`: `scripts/codex-as-gemini.sh` → `scripts/codex-as-gemini/codex-as-gemini.sh`, `scripts/opencode-as-gemini.sh` → `scripts/opencode/opencode-as-gemini.sh`
 - [x] update `docs/hg-support.md`: `scripts/hg2git.sh` → `scripts/hg2git/hg2git.sh`
-- [x] update `.claude-plugin/README.md`: `scripts/update-plugin-version.sh` → `scripts/internal/update-plugin-version.sh`
+- [x] update `.gemini-plugin/README.md`: `scripts/update-plugin-version.sh` → `scripts/internal/update-plugin-version.sh`
 - [x] do NOT update `docs/plans/completed/` files (historical records)
 
 ### Task 8: Verify and push
 
 - [x] run `python3 scripts/ralphex-dk.sh --test` (all 165+ tests pass via symlink)
 - [x] run `bash scripts/hg2git/hg2git_test.sh`
-- [x] run `bash scripts/opencode/opencode-as-claude_test.sh`
+- [x] run `bash scripts/opencode/opencode-as-gemini_test.sh`
 - [x] run `bash scripts/opencode/opencode-review_test.sh`
 - [x] run `go test ./...`
 - [x] run `golangci-lint run --max-issues-per-linter=0 --max-same-issues=0`
@@ -190,7 +190,7 @@ Key decisions:
 
 ### Task 9: [Final] Update project documentation
 
-- [x] update CLAUDE.md project structure section to reflect new layout
+- [x] update GEMINI.md project structure section to reflect new layout
 - [x] update README.md if scripts section needs structural changes
 - [x] move this plan to `docs/plans/completed/`
 

@@ -624,7 +624,7 @@
                 statusBadge.textContent = 'CODEX';
                 statusBadge.classList.add('codex', 'pulse');
                 break;
-            case 'claude-eval':
+            case 'gemini-eval':
                 statusBadge.textContent = 'EVAL';
                 statusBadge.classList.add('review', 'pulse');
                 break;
@@ -1967,7 +1967,7 @@
         return '<nav class="phase-nav">\n' +
             '<button class="phase-tab active" data-phase="all">All</button>\n' +
             '<button class="phase-tab" data-phase="task">Implementation</button>\n' +
-            '<button class="phase-tab" data-phase="review">Claude Review</button>\n' +
+            '<button class="phase-tab" data-phase="review">Gemini Review</button>\n' +
             '<button class="phase-tab" data-phase="codex">Codex Review</button>\n' +
             '<span class="nav-separator"></span>\n' +
             '<button class="collapse-btn" id="expand-all">Expand All</button>\n' +

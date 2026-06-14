@@ -33,25 +33,25 @@ type CodexRunner interface {
 // codex outputs streaming progress to stderr, final response to stdout.
 // when stdin is non-nil, it is connected to the child process's stdin (used to pass
 // the prompt via pipe instead of a CLI argument to avoid Windows 8191-char cmd limit).
-// stripAnthropicKey scopes ANTHROPIC_API_KEY filtering to first-class --codex runs;
-// external codex review in default claude mode keeps the host env intact so custom
-// codex wrappers proxying through Anthropic (e.g., scripts/codex-as-claude/codex-as-claude.sh) keep
-// authenticating. CLAUDECODE is always stripped regardless of mode to prevent
-// nested-session errors when codex is launched from inside a Claude Code session.
+// stripGeminiKey scopes GEMINI_API_KEY filtering to first-class --codex runs;
+// external codex review in default gemini mode keeps the host env intact so custom
+// codex wrappers proxying through Gemini (e.g., scripts/codex-as-gemini/codex-as-gemini.sh) keep
+// authenticating. GEMINICODE is always stripped regardless of mode to prevent
+// nested-session errors when codex is launched from inside a Gemini Code session.
 type execCodexRunner struct {
 	stdin             io.Reader
-	stripAnthropicKey bool
+	stripGeminiKey bool
 }
 
-// childEnv builds the codex child-process env. CLAUDECODE is always stripped to
-// prevent nested-session errors. ANTHROPIC_API_KEY is stripped only when the
-// caller requested it (first-class --codex mode); default-claude external codex
-// review passes the key through so custom Anthropic-proxying wrappers keep working.
+// childEnv builds the codex child-process env. GEMINICODE is always stripped to
+// prevent nested-session errors. GEMINI_API_KEY is stripped only when the
+// caller requested it (first-class --codex mode); default-gemini external codex
+// review passes the key through so custom Gemini-proxying wrappers keep working.
 func (r *execCodexRunner) childEnv(env []string) []string {
-	if r.stripAnthropicKey {
-		return filterEnv(env, "ANTHROPIC_API_KEY", "CLAUDECODE")
+	if r.stripGeminiKey {
+		return filterEnv(env, "GEMINI_API_KEY", "GEMINICODE")
 	}
-	return filterEnv(env, "CLAUDECODE")
+	return filterEnv(env, "GEMINICODE")
 }
 
 func (r *execCodexRunner) Run(ctx context.Context, name string, args ...string) (CodexStreams, func() error, error) {
@@ -107,7 +107,7 @@ type CodexExecutor struct {
 	ErrorPatterns   []string          // patterns to detect in output (e.g., rate limit messages)
 	LimitPatterns   []string          // patterns to detect rate limits (checked before error patterns)
 	MultiAgent      bool              // enable codex multi_agent feature + reviewer agent registration; set to true on the review-phase codex instance built by processor.New() for first-class --codex mode
-	PassClaudeMd    bool              // pass project-level CLAUDE.md to codex via project_doc_fallback_filenames (set by processor.New() only when cfg.AppConfig.Executor == ExecutorCodex)
+	PassGeminiMd    bool              // pass project-level GEMINI.md to codex via project_doc_fallback_filenames (set by processor.New() only when cfg.AppConfig.Executor == ExecutorCodex)
 	IdleTimeout     time.Duration     // kill session after this duration of no output, zero = disabled
 	headerEmitted   atomic.Bool       // tracks first invocation across Run() calls; false until first task/review then suppressed permanently — used to emit codex's resolved model/sandbox/effort once at the top of the run
 	runner          CodexRunner       // for testing, nil uses default
@@ -131,7 +131,7 @@ const CodexReviewerAgentName = "reviewer"
 const codexReviewerDescription = "general code review specialist; behavior driven by the task argument"
 
 // configOverrides returns the -c key=value arg slice to splice into the codex CLI
-// invocation based on the executor's MultiAgent and PassClaudeMd flags. All overrides
+// invocation based on the executor's MultiAgent and PassGeminiMd flags. All overrides
 // are additive on top of the user's ~/.codex/config.toml.
 func (e *CodexExecutor) configOverrides() []string {
 	var args []string
@@ -141,8 +141,8 @@ func (e *CodexExecutor) configOverrides() []string {
 			"-c", fmt.Sprintf("agents.%s.description=%q", CodexReviewerAgentName, codexReviewerDescription),
 		)
 	}
-	if e.PassClaudeMd {
-		args = append(args, "-c", `project_doc_fallback_filenames=["CLAUDE.md"]`)
+	if e.PassGeminiMd {
+		args = append(args, "-c", `project_doc_fallback_filenames=["GEMINI.md"]`)
 	}
 	return args
 }
@@ -181,8 +181,8 @@ func (e *CodexExecutor) Run(ctx context.Context, prompt string) Result {
 	args = append(args, e.configOverrides()...)
 	// --dangerously-bypass-approvals-and-sandbox is required for unattended first-class
 	// --codex runs (which use danger-full-access by default). External codex review in
-	// claude mode worked on master without this flag and adding it would silently change
-	// approval semantics for default-claude users (esp. Docker mode where the sandbox is
+	// gemini mode worked on master without this flag and adding it would silently change
+	// approval semantics for default-gemini users (esp. Docker mode where the sandbox is
 	// forced to danger-full-access); gate the flag on MultiAgent which is true only in
 	// first-class --codex (set by processor.buildCodexExecutor).
 	if sandbox == "danger-full-access" && e.MultiAgent {
@@ -191,7 +191,7 @@ func (e *CodexExecutor) Run(ctx context.Context, prompt string) Result {
 	args = append(args, "--sandbox", sandbox)
 	// model and reasoning effort are emitted only when explicitly set in ralphex config,
 	// so the user's ~/.codex/config.toml choice is preserved otherwise (matches the
-	// "additive -c overrides" promise documented in CLAUDE.md / llms.txt).
+	// "additive -c overrides" promise documented in GEMINI.md / llms.txt).
 	if e.Model != "" {
 		args = append(args, "-c", fmt.Sprintf("model=%q", e.Model))
 	}
@@ -208,17 +208,17 @@ func (e *CodexExecutor) Run(ctx context.Context, prompt string) Result {
 	// codex reads from stdin when no positional prompt argument is given.
 	// MultiAgent signals first-class --codex (set by processor.buildCodexExecutor only;
 	// external codex review built by buildExternalCodexExecutor leaves it false), so it
-	// also gates ANTHROPIC_API_KEY stripping — default-claude external codex review
-	// preserves the host env so wrappers proxying through Anthropic keep working.
+	// also gates GEMINI_API_KEY stripping — default-gemini external codex review
+	// preserves the host env so wrappers proxying through Gemini keep working.
 	stdinReader := strings.NewReader(prompt)
 	runner := e.runner
 	if runner == nil {
-		runner = &execCodexRunner{stdin: stdinReader, stripAnthropicKey: e.MultiAgent}
+		runner = &execCodexRunner{stdin: stdinReader, stripGeminiKey: e.MultiAgent}
 	}
 
 	// set up idle timeout: derive a cancellable context that fires when no output
 	// is received for IdleTimeout duration. the touch closure resets the timer on
-	// each stderr line and on each stdout read; mirrors the ClaudeExecutor pattern.
+	// each stderr line and on each stdout read; mirrors the GeminiExecutor pattern.
 	execCtx := ctx
 	idleTouch := func() {} // no-op by default
 	if e.IdleTimeout > 0 {
@@ -279,7 +279,7 @@ func (e *CodexExecutor) Run(ctx context.Context, prompt string) Result {
 	signal := detectSignal(stdoutContent)
 
 	// idle timeout: derived context canceled but parent is alive — not an error.
-	// mirrors the ClaudeExecutor idle-timeout completion path so callers see uniform behavior.
+	// mirrors the GeminiExecutor idle-timeout completion path so callers see uniform behavior.
 	if e.IdleTimeout > 0 && execCtx.Err() != nil && ctx.Err() == nil {
 		e.logDroppedIdleErrors(stdoutErr, waitErr)
 		return e.idleTimeoutResult(stdoutContent, signal, stderrRes)
@@ -538,7 +538,7 @@ func (e *CodexExecutor) readStdout(r io.Reader) (string, error) {
 // also shows codex's resolved model/sandbox/effort lines from the header
 // block so the user sees what codex actually picked from ~/.codex/config.toml.
 // per-iteration header repetition (workdir/provider/approval/session id) is
-// always suppressed to match ClaudeExecutor's empty-banner UX. session id
+// always suppressed to match GeminiExecutor's empty-banner UX. session id
 // detection in processStderr is independent of display so the rollout tailer
 // still works whether the line is forwarded or not.
 // also deduplicates lines to avoid non-consecutive repeats.
@@ -780,7 +780,7 @@ type rolloutPayload struct {
 // formatRolloutEvent turns one JSONL rollout line into a display string for
 // OutputHandler, or "" when the event has no user-visible substance. only
 // assistant message text (the model's actual reply, the codex equivalent of
-// claude's stream-json text blocks) is forwarded.
+// gemini's stream-json text blocks) is forwarded.
 //
 // reasoning records are skipped because their summaries are already streamed
 // live from stderr. all function_call records (exec_command for git/grep/file

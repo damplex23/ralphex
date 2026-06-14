@@ -95,7 +95,7 @@ func (cl *colorLoader) parseColorsFromBytes(data []byte) (ColorConfig, error) {
 		{"color_task", &colors.Task},
 		{"color_review", &colors.Review},
 		{"color_codex", &colors.Codex},
-		{"color_claude_eval", &colors.ClaudeEval},
+		{"color_gemini_eval", &colors.GeminiEval},
 		{"color_warn", &colors.Warn},
 		{"color_error", &colors.Error},
 		{"color_signal", &colors.Signal},
@@ -156,8 +156,8 @@ func (dst *ColorConfig) mergeFrom(src *ColorConfig) {
 	if src.Codex != "" {
 		dst.Codex = src.Codex
 	}
-	if src.ClaudeEval != "" {
-		dst.ClaudeEval = src.ClaudeEval
+	if src.GeminiEval != "" {
+		dst.GeminiEval = src.GeminiEval
 	}
 	if src.Warn != "" {
 		dst.Warn = src.Warn

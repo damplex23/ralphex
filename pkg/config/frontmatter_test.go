@@ -33,10 +33,10 @@ func TestParseOptions(t *testing.T) {
 
 		// yaml edge cases
 		// model normalization
-		{"full model id normalized", "---\nmodel: claude-sonnet-4-5-20250929\n---\nbody", Options{Model: "sonnet"}, "body"},
-		{"full model id haiku normalized", "---\nmodel: claude-haiku-4-5-20251001\n---\nbody", Options{Model: "haiku"}, "body"},
-		{"full model id opus normalized", "---\nmodel: claude-opus-4-6\n---\nbody", Options{Model: "opus"}, "body"},
-		{"full model id fable normalized", "---\nmodel: claude-fable-5\n---\nbody", Options{Model: "fable"}, "body"},
+		{"full model id normalized", "---\nmodel: gemini-sonnet-4-5-20250929\n---\nbody", Options{Model: "sonnet"}, "body"},
+		{"full model id haiku normalized", "---\nmodel: gemini-haiku-4-5-20251001\n---\nbody", Options{Model: "haiku"}, "body"},
+		{"full model id opus normalized", "---\nmodel: gemini-opus-4-6\n---\nbody", Options{Model: "opus"}, "body"},
+		{"full model id fable normalized", "---\nmodel: gemini-fable-5\n---\nbody", Options{Model: "fable"}, "body"},
 		{"model keyword preserved", "---\nmodel: sonnet\n---\nbody", Options{Model: "sonnet"}, "body"},
 		{"unknown model kept as-is", "---\nmodel: gpt-5\n---\nbody", Options{Model: "gpt-5"}, "body"},
 

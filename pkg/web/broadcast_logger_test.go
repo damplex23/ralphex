@@ -207,9 +207,9 @@ func TestBroadcastLogger_PrintSection_IterationEvents(t *testing.T) {
 	holder := &status.PhaseHolder{}
 	bl := NewBroadcastLogger(mockLogger, session, holder)
 
-	// test claude review iteration pattern
+	// test gemini review iteration pattern
 	holder.Set(status.PhaseReview)
-	bl.PrintSection(status.NewClaudeReviewSection(3, ": critical/major"))
+	bl.PrintSection(status.NewGeminiReviewSection(3, ": critical/major"))
 
 	// verify inner logger was called
 	require.Len(t, mockLogger.PrintSectionCalls(), 1)

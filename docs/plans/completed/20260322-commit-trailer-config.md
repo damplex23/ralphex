@@ -89,7 +89,7 @@ Related to #240.
 - [x] run linter: `make lint`
 - [x] run formatters: `make fmt`
 - [x] update README.md customization section (add `commit_trailer` to config options)
-- [x] update CLAUDE.md configuration section
+- [x] update GEMINI.md configuration section
 - [x] move this plan to `docs/plans/completed/`
 
 ## Post-Completion

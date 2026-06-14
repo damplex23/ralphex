@@ -25,7 +25,7 @@ func TestExecutionPolicy_RunReturnsPerCallTimeoutState(t *testing.T) {
 		<-ctx.Done()
 		return executor.Result{Error: ctx.Err(), Signal: status.Completed}
 	}
-	result := policy.Run(t.Context(), blockingRun, "prompt", "claude")
+	result := policy.Run(t.Context(), blockingRun, "prompt", "gemini")
 	require.NoError(t, result.Result.Error)
 	assert.Empty(t, result.Result.Signal)
 	assert.True(t, result.TimedOut)
@@ -33,7 +33,7 @@ func TestExecutionPolicy_RunReturnsPerCallTimeoutState(t *testing.T) {
 	successRun := func(_ context.Context, _ string) executor.Result {
 		return executor.Result{Output: "ok", Signal: status.Completed}
 	}
-	result = policy.Run(t.Context(), successRun, "prompt", "claude")
+	result = policy.Run(t.Context(), successRun, "prompt", "gemini")
 	require.NoError(t, result.Result.Error)
 	assert.Equal(t, "ok", result.Result.Output)
 	assert.False(t, result.TimedOut)
@@ -52,7 +52,7 @@ func TestExecutionPolicy_RunRetriesLimitErrors(t *testing.T) {
 		return executor.Result{Output: "done"}
 	}
 
-	result := policy.Run(t.Context(), run, "prompt", "claude")
+	result := policy.Run(t.Context(), run, "prompt", "gemini")
 	require.NoError(t, result.Result.Error)
 	assert.Equal(t, "done", result.Result.Output)
 	assert.Equal(t, 2, calls)
@@ -74,12 +74,12 @@ func TestExecutionPolicy_RunWithLimitRetryRetryOnLimitError(t *testing.T) {
 	run := func(_ context.Context, _ string) executor.Result {
 		callCount++
 		if callCount == 1 {
-			return executor.Result{Error: &executor.LimitPatternError{Pattern: "You've hit your limit", HelpCmd: "claude /usage"}}
+			return executor.Result{Error: &executor.LimitPatternError{Pattern: "You've hit your limit", HelpCmd: "gemini /usage"}}
 		}
 		return executor.Result{Output: "success", Signal: status.Completed}
 	}
 
-	result := policy.Run(t.Context(), run, "test prompt", "claude")
+	result := policy.Run(t.Context(), run, "test prompt", "gemini")
 
 	require.NoError(t, result.Result.Error)
 	assert.Equal(t, "success", result.Result.Output)
@@ -94,7 +94,7 @@ func TestExecutionPolicy_RunMapsRetryPatternToTimedOut(t *testing.T) {
 	result := policy.Run(t.Context(), func(_ context.Context, _ string) executor.Result {
 		// stale signal must be cleared so downstream phases see a timeout, not completion
 		return executor.Result{Signal: "COMPLETED", Error: &executor.RetryPatternError{Pattern: "FYA_TRANSIENT_TIMEOUT"}}
-	}, "test prompt", "claude")
+	}, "test prompt", "gemini")
 
 	require.NoError(t, result.Result.Error)
 	assert.True(t, result.TimedOut)
@@ -108,10 +108,10 @@ func TestExecutionPolicy_RunWithLimitRetryNoRetryWhenWaitZero(t *testing.T) {
 	callCount := 0
 	run := func(_ context.Context, _ string) executor.Result {
 		callCount++
-		return executor.Result{Error: &executor.LimitPatternError{Pattern: "You've hit your limit", HelpCmd: "claude /usage"}}
+		return executor.Result{Error: &executor.LimitPatternError{Pattern: "You've hit your limit", HelpCmd: "gemini /usage"}}
 	}
 
-	result := policy.Run(t.Context(), run, "test prompt", "claude")
+	result := policy.Run(t.Context(), run, "test prompt", "gemini")
 
 	require.Error(t, result.Result.Error)
 	var limitErr *executor.LimitPatternError
@@ -128,10 +128,10 @@ func TestExecutionPolicy_RunWithLimitRetryContextCancelledDuringWait(t *testing.
 	run := func(_ context.Context, _ string) executor.Result {
 		callCount++
 		cancel()
-		return executor.Result{Error: &executor.LimitPatternError{Pattern: "limit hit", HelpCmd: "claude /usage"}}
+		return executor.Result{Error: &executor.LimitPatternError{Pattern: "limit hit", HelpCmd: "gemini /usage"}}
 	}
 
-	result := policy.Run(ctx, run, "test prompt", "claude")
+	result := policy.Run(ctx, run, "test prompt", "gemini")
 
 	require.Error(t, result.Result.Error)
 	require.ErrorIs(t, result.Result.Error, context.Canceled)
@@ -144,10 +144,10 @@ func TestExecutionPolicy_RunWithLimitRetryPatternMatchErrorNotRetried(t *testing
 	callCount := 0
 	run := func(_ context.Context, _ string) executor.Result {
 		callCount++
-		return executor.Result{Error: &executor.PatternMatchError{Pattern: "API Error", HelpCmd: "claude /usage"}}
+		return executor.Result{Error: &executor.PatternMatchError{Pattern: "API Error", HelpCmd: "gemini /usage"}}
 	}
 
-	result := policy.Run(t.Context(), run, "test prompt", "claude")
+	result := policy.Run(t.Context(), run, "test prompt", "gemini")
 
 	require.Error(t, result.Result.Error)
 	var patternErr *executor.PatternMatchError
@@ -163,12 +163,12 @@ func TestExecutionPolicy_RunWithLimitRetryMultipleRetries(t *testing.T) {
 	run := func(_ context.Context, _ string) executor.Result {
 		callCount++
 		if callCount <= 3 {
-			return executor.Result{Error: &executor.LimitPatternError{Pattern: "rate limit", HelpCmd: "claude /usage"}}
+			return executor.Result{Error: &executor.LimitPatternError{Pattern: "rate limit", HelpCmd: "gemini /usage"}}
 		}
 		return executor.Result{Output: "finally done"}
 	}
 
-	result := policy.Run(t.Context(), run, "test prompt", "claude")
+	result := policy.Run(t.Context(), run, "test prompt", "gemini")
 
 	require.NoError(t, result.Result.Error)
 	assert.Equal(t, "finally done", result.Result.Output)
@@ -184,7 +184,7 @@ func TestExecutionPolicy_RunWithLimitRetryNoErrorPassesThrough(t *testing.T) {
 		return executor.Result{Output: "success", Signal: status.Completed}
 	}
 
-	result := policy.Run(t.Context(), run, "test prompt", "claude")
+	result := policy.Run(t.Context(), run, "test prompt", "gemini")
 
 	require.NoError(t, result.Result.Error)
 	assert.Equal(t, "success", result.Result.Output)
@@ -205,7 +205,7 @@ func TestExecutionPolicy_SessionTimeoutBlockingExecutor(t *testing.T) {
 	}
 
 	start := time.Now()
-	result := policy.runWithSessionTimeout(t.Context(), run, "test prompt", "claude")
+	result := policy.runWithSessionTimeout(t.Context(), run, "test prompt", "gemini")
 	elapsed := time.Since(start)
 
 	assert.Less(t, elapsed, 500*time.Millisecond)
@@ -225,7 +225,7 @@ func TestExecutionPolicy_SessionTimeoutZeroDoesNotAddDeadline(t *testing.T) {
 		return executor.Result{Output: "success", Signal: status.Completed}
 	}
 
-	result := policy.runWithSessionTimeout(t.Context(), run, "test prompt", "claude")
+	result := policy.runWithSessionTimeout(t.Context(), run, "test prompt", "gemini")
 
 	require.NoError(t, result.Result.Error)
 	assert.Equal(t, "success", result.Result.Output)
@@ -249,7 +249,7 @@ func TestExecutionPolicy_SessionTimeoutParentCancelNotMisidentified(t *testing.T
 		return executor.Result{Error: runCtx.Err()}
 	}
 
-	result := policy.runWithSessionTimeout(ctx, run, "test prompt", "claude")
+	result := policy.runWithSessionTimeout(ctx, run, "test prompt", "gemini")
 
 	require.Error(t, result.Result.Error)
 	assert.False(t, result.TimedOut)
@@ -269,7 +269,7 @@ func TestExecutionPolicy_SessionTimeoutIntegrationWithLimitRetry(t *testing.T) {
 		return executor.Result{Error: ctx.Err()}
 	}
 
-	result := policy.Run(t.Context(), run, "test prompt", "claude")
+	result := policy.Run(t.Context(), run, "test prompt", "gemini")
 
 	require.NoError(t, result.Result.Error)
 	assert.True(t, result.TimedOut)
@@ -282,10 +282,10 @@ func TestExecutionPolicy_SessionTimeoutGatedByExecutorAndToolName(t *testing.T) 
 		toolName    string
 		wantApplied bool
 	}{
-		{name: "default executor mode, claude tool", executor: config.ExecutorClaude, toolName: "claude", wantApplied: true},
-		{name: "default executor mode, codex external review", executor: config.ExecutorClaude, toolName: "codex", wantApplied: false},
-		{name: "default executor mode, custom external review", executor: config.ExecutorClaude, toolName: "custom", wantApplied: false},
-		{name: "codex mode, claude tool", executor: config.ExecutorCodex, toolName: "claude", wantApplied: true},
+		{name: "default executor mode, gemini tool", executor: config.ExecutorGemini, toolName: "gemini", wantApplied: true},
+		{name: "default executor mode, codex external review", executor: config.ExecutorGemini, toolName: "codex", wantApplied: false},
+		{name: "default executor mode, custom external review", executor: config.ExecutorGemini, toolName: "custom", wantApplied: false},
+		{name: "codex mode, gemini tool", executor: config.ExecutorCodex, toolName: "gemini", wantApplied: true},
 		{name: "codex mode, codex tool", executor: config.ExecutorCodex, toolName: "codex", wantApplied: true},
 		{name: "codex mode, custom external review", executor: config.ExecutorCodex, toolName: "custom", wantApplied: true},
 	}
@@ -328,7 +328,7 @@ func TestExecutionPolicy_ExternalReviewBypassPreservesIdleTimeoutDiagnostic(t *t
 			appCfg := testAppConfig(t)
 			appCfg.SessionTimeout = 50 * time.Millisecond
 			appCfg.SessionTimeoutSet = true
-			appCfg.Executor = config.ExecutorClaude
+			appCfg.Executor = config.ExecutorGemini
 			policy := newRetryPolicy(retryPolicyOpts{cfg: Config{AppConfig: appCfg}, log: log})
 
 			var hadDeadline bool
@@ -357,7 +357,7 @@ func TestExecutionPolicy_SessionTimeoutClearsSignalOnTimeout(t *testing.T) {
 		return executor.Result{Output: "partial output", Signal: status.Completed, Error: ctx.Err()}
 	}
 
-	result := policy.runWithSessionTimeout(t.Context(), run, "test prompt", "claude")
+	result := policy.runWithSessionTimeout(t.Context(), run, "test prompt", "gemini")
 
 	require.NoError(t, result.Result.Error)
 	assert.Empty(t, result.Result.Signal)

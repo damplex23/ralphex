@@ -21,7 +21,7 @@ const (
 	PhaseTask       Phase = "task"        // execution phase (green)
 	PhaseReview     Phase = "review"      // code review phase (cyan)
 	PhaseCodex      Phase = "codex"       // codex analysis phase (magenta)
-	PhaseClaudeEval Phase = "claude-eval" // claude evaluating codex (bright cyan)
+	PhaseGeminiEval Phase = "gemini-eval" // gemini evaluating codex (bright cyan)
 	PhasePlan       Phase = "plan"        // plan creation phase (info color)
 	PhaseFinalize   Phase = "finalize"    // finalize step phase (green)
 )

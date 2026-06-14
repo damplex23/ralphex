@@ -28,12 +28,12 @@ const (
 )
 
 // Executor mode constants for the Config.Executor field.
-// ExecutorClaude is the default — the empty string is intentional so that an
+// ExecutorGemini is the default — the empty string is intentional so that an
 // unset `executor` field in config (or no flag on the CLI) resolves to the
-// claude pipeline without users having to spell it out. ExecutorCodex is the
+// gemini pipeline without users having to spell it out. ExecutorCodex is the
 // opt-in first-class --codex path.
 const (
-	ExecutorClaude = ""
+	ExecutorGemini = ""
 	ExecutorCodex  = "codex"
 )
 
@@ -41,12 +41,12 @@ const (
 // Fields ending in *Set mostly track whether that field was explicitly set in config.
 // This allows distinguishing explicit false/0 from "not set", enabling proper
 // merge behavior where local config can override global config with zero values.
-// Runtime-only exceptions, such as ClaudeArgsSet, are documented inline.
+// Runtime-only exceptions, such as GeminiArgsSet, are documented inline.
 // The inline field comments are the source of truth for which *Set sentinels exist.
 type Config struct {
-	ClaudeCommand string `json:"claude_command"`
-	ClaudeArgs    string `json:"claude_args"`
-	ClaudeArgsSet bool   `json:"-"`            // tracks runtime overrides, including an explicit empty --claude-args=
+	GeminiCommand string `json:"gemini_command"`
+	GeminiArgs    string `json:"gemini_args"`
+	GeminiArgsSet bool   `json:"-"`            // tracks runtime overrides, including an explicit empty --gemini-args=
 	PlanModel     string `json:"plan_model"`   // model[:effort] spec for plan creation (falls back to TaskModel)
 	TaskModel     string `json:"task_model"`   // model[:effort] spec for task execution (e.g., "opus", "opus:high", ":medium")
 	ReviewModel   string `json:"review_model"` // model[:effort] spec for review phases (falls back to TaskModel)
@@ -77,10 +77,10 @@ type Config struct {
 	FinalizeEnabled    bool `json:"finalize_enabled"`
 	FinalizeEnabledSet bool `json:"-"` // tracks if finalize_enabled was explicitly set in config
 
-	PreserveAnthropicAPIKey bool `json:"preserve_anthropic_api_key"` // when true, ANTHROPIC_API_KEY is passed through to the claude child process
+	PreserveGeminiAPIKey bool `json:"preserve_gemini_api_key"` // when true, GEMINI_API_KEY is passed through to the gemini child process
 
-	Executor     string `json:"executor"`       // "" (= claude, default) or ExecutorCodex
-	PassClaudeMd bool   `json:"pass_claude_md"` // when true, codex reads project CLAUDE.md via project_doc_fallback_filenames; user-level ~/.claude/CLAUDE.md is not auto-passed (a one-time setup hint is printed)
+	Executor     string `json:"executor"`       // "" (= gemini, default) or ExecutorCodex
+	PassGeminiMd bool   `json:"pass_gemini_md"` // when true, codex reads project GEMINI.md via project_doc_fallback_filenames; user-level ~/.gemini/GEMINI.md is not auto-passed (a one-time setup hint is printed)
 
 	MovePlanOnCompletion bool `json:"move_plan_on_completion"`
 
@@ -93,20 +93,20 @@ type Config struct {
 	VcsCommand    string   `json:"vcs_command"`    // custom VCS command (default: "git")
 	CommitTrailer string   `json:"commit_trailer"` // trailer line to append to all commits
 
-	ClaudeErrorPatterns []string `json:"claude_error_patterns"` // patterns to detect in claude output (e.g., rate limit messages)
+	GeminiErrorPatterns []string `json:"gemini_error_patterns"` // patterns to detect in gemini output (e.g., rate limit messages)
 	CodexErrorPatterns  []string `json:"codex_error_patterns"`  // patterns to detect in codex output (e.g., rate limit messages)
-	ClaudeLimitPatterns []string `json:"claude_limit_patterns"` // patterns to detect rate limits in claude output (for wait+retry)
+	GeminiLimitPatterns []string `json:"gemini_limit_patterns"` // patterns to detect rate limits in gemini output (for wait+retry)
 	CodexLimitPatterns  []string `json:"codex_limit_patterns"`  // patterns to detect rate limits in codex output (for wait+retry)
-	ClaudeRetryPatterns []string `json:"claude_retry_patterns"` // transient claude/fya errors to retry like timeouts
+	GeminiRetryPatterns []string `json:"gemini_retry_patterns"` // transient gemini/fya errors to retry like timeouts
 
 	WaitOnLimit    time.Duration `json:"wait_on_limit"`
 	WaitOnLimitSet bool          `json:"-"` // tracks if wait_on_limit was explicitly set in config
 
-	// session timeout for configured executor sessions (external review in Claude mode is excluded)
+	// session timeout for configured executor sessions (external review in Gemini mode is excluded)
 	SessionTimeout    time.Duration `json:"session_timeout"`
 	SessionTimeoutSet bool          `json:"-"` // tracks if session_timeout was explicitly set in config
 
-	// idle timeout for claude and codex executor sessions
+	// idle timeout for gemini and codex executor sessions
 	IdleTimeout    time.Duration `json:"idle_timeout"`
 	IdleTimeoutSet bool          `json:"-"` // tracks if idle_timeout was explicitly set in config
 
@@ -147,7 +147,7 @@ type ColorConfig struct {
 	Task       string // task execution phase
 	Review     string // review phase
 	Codex      string // codex external review
-	ClaudeEval string // claude evaluation of codex output
+	GeminiEval string // gemini evaluation of codex output
 	Warn       string // warning messages
 	Error      string // error messages
 	Signal     string // completion/failure signals
@@ -287,8 +287,8 @@ func loadConfigFromDirs(globalDir, localDir string) (*Config, error) {
 
 	// assemble config
 	c := &Config{
-		ClaudeCommand:           values.ClaudeCommand,
-		ClaudeArgs:              values.ClaudeArgs,
+		GeminiCommand:           values.GeminiCommand,
+		GeminiArgs:              values.GeminiArgs,
 		PlanModel:               values.PlanModel,
 		TaskModel:               values.TaskModel,
 		ReviewModel:             values.ReviewModel,
@@ -314,9 +314,9 @@ func loadConfigFromDirs(globalDir, localDir string) (*Config, error) {
 		ReviewPatience:          values.ReviewPatience,
 		FinalizeEnabled:         values.FinalizeEnabled,
 		FinalizeEnabledSet:      values.FinalizeEnabledSet,
-		PreserveAnthropicAPIKey: values.PreserveAnthropicAPIKey,
+		PreserveGeminiAPIKey: values.PreserveGeminiAPIKey,
 		Executor:                values.Executor,
-		PassClaudeMd:            values.PassClaudeMd,
+		PassGeminiMd:            values.PassGeminiMd,
 		MovePlanOnCompletion:    values.MovePlanOnCompletion,
 		WorktreeEnabled:         values.WorktreeEnabled,
 		WorktreeEnabledSet:      values.WorktreeEnabledSet,
@@ -325,11 +325,11 @@ func loadConfigFromDirs(globalDir, localDir string) (*Config, error) {
 		VcsCommand:              values.VcsCommand,
 		CommitTrailer:           values.CommitTrailer,
 		WatchDirs:               values.WatchDirs,
-		ClaudeErrorPatterns:     values.ClaudeErrorPatterns,
+		GeminiErrorPatterns:     values.GeminiErrorPatterns,
 		CodexErrorPatterns:      values.CodexErrorPatterns,
-		ClaudeLimitPatterns:     values.ClaudeLimitPatterns,
+		GeminiLimitPatterns:     values.GeminiLimitPatterns,
 		CodexLimitPatterns:      values.CodexLimitPatterns,
-		ClaudeRetryPatterns:     values.ClaudeRetryPatterns,
+		GeminiRetryPatterns:     values.GeminiRetryPatterns,
 		WaitOnLimit:             values.WaitOnLimit,
 		WaitOnLimitSet:          values.WaitOnLimitSet,
 		SessionTimeout:          values.SessionTimeout,
@@ -403,7 +403,7 @@ func (c *Config) LocalDir() string {
 // executor (--codex mode). Defaults to "danger-full-access" because the codex
 // executor needs to write git metadata and commit; an explicit codex_sandbox in
 // user config wins. Distinct from the raw CodexSandbox field, which is what the
-// external-review codex (claude mode) reads directly.
+// external-review codex (gemini mode) reads directly.
 func (c *Config) CodexExecutorSandbox() string {
 	if c == nil || !c.CodexSandboxSet || c.CodexSandbox == "" {
 		return "danger-full-access"

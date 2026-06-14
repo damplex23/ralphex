@@ -302,7 +302,7 @@ func TestPromptLoader_loadPromptFromEmbedFS(t *testing.T) {
 	pl := &promptLoader{embedFS: defaultsFS}
 	content, err := pl.loadPromptFromEmbedFS("defaults/config")
 	require.NoError(t, err)
-	assert.Contains(t, content, "claude_command")
+	assert.Contains(t, content, "gemini_command")
 }
 
 func TestPromptLoader_loadPromptFromEmbedFS_StripsLeadingCommentsPreservesBodyHeaders(t *testing.T) {
@@ -785,7 +785,7 @@ func TestPromptLoader_Load_CustomEvalPrompt_LocalOverridesGlobal(t *testing.T) {
 	assert.Equal(t, "local custom eval", prompts.CustomEval)
 }
 
-// tripwire regression test: the embedded make_plan.txt must not instruct claude to relocate
+// tripwire regression test: the embedded make_plan.txt must not instruct gemini to relocate
 // the plan file at end of run. the framework's MovePlanToCompleted (pkg/git/service.go) already
 // handles that move idempotently using the resolved plan-file basename, so any LLM-driven git mv
 // can rename the file out from under the runtime and trigger the infinite warning loop described

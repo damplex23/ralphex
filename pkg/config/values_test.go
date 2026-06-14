@@ -49,8 +49,8 @@ func TestValuesLoader_Load_EmbeddedOnly(t *testing.T) {
 	require.NoError(t, err)
 
 	// all values should come from embedded defaults
-	assert.Equal(t, "claude", values.ClaudeCommand)
-	assert.Equal(t, "--dangerously-skip-permissions --output-format stream-json --verbose", values.ClaudeArgs)
+	assert.Equal(t, "gemini", values.GeminiCommand)
+	assert.Equal(t, "--non-interactive --output-format stream-json --verbose", values.GeminiArgs)
 	assert.True(t, values.CodexEnabled)
 	assert.True(t, values.CodexEnabledSet)
 	assert.Equal(t, "codex", values.CodexCommand)
@@ -70,11 +70,11 @@ func TestValuesLoader_Load_EmbeddedOnly(t *testing.T) {
 	assert.Equal(t, "docs/plans", values.PlansDir)
 	assert.Equal(t, "git", values.VcsCommand)
 	assert.Empty(t, values.CommitTrailer)
-	assert.Equal(t, []string{"You've hit your limit", "You've hit your session limit", "API Error:", "cannot be launched inside another Claude Code session", "Not logged in", "Your usage allocation has been disabled by your admin", "You've hit your org's monthly usage limit"}, values.ClaudeErrorPatterns)
+	assert.Equal(t, []string{"You've hit your limit", "You've hit your session limit", "API Error:", "cannot be launched inside another Gemini CLI session", "Not logged in", "Your usage allocation has been disabled by your admin", "You've hit your org's monthly usage limit"}, values.GeminiErrorPatterns)
 	assert.Equal(t, []string{"Rate limit exceeded", "rate limit reached", "429 Too Many Requests", "quota exceeded", "insufficient_quota", "You've hit your usage limit"}, values.CodexErrorPatterns)
-	assert.Equal(t, []string{"You've hit your limit", "You've hit your session limit", "Your usage allocation has been disabled by your admin", "You've hit your org's monthly usage limit"}, values.ClaudeLimitPatterns)
+	assert.Equal(t, []string{"You've hit your limit", "You've hit your session limit", "Your usage allocation has been disabled by your admin", "You've hit your org's monthly usage limit"}, values.GeminiLimitPatterns)
 	assert.Equal(t, []string{"Rate limit exceeded", "rate limit reached", "429 Too Many Requests", "quota exceeded", "insufficient_quota", "You've hit your usage limit"}, values.CodexLimitPatterns)
-	assert.Equal(t, []string{"FYA_TRANSIENT_TIMEOUT", "API Error: 529", "API Error: 502", "API Error: 503", "API Error: 504"}, values.ClaudeRetryPatterns)
+	assert.Equal(t, []string{"FYA_TRANSIENT_TIMEOUT", "API Error: 529", "API Error: 502", "API Error: 503", "API Error: 504"}, values.GeminiRetryPatterns)
 	assert.Zero(t, values.WaitOnLimit)
 	assert.False(t, values.WaitOnLimitSet)
 }
@@ -84,8 +84,8 @@ func TestValuesLoader_Load_GlobalOnly(t *testing.T) {
 	globalConfig := filepath.Join(tmpDir, "config")
 
 	configContent := `
-claude_command = /global/claude
-claude_args = --global-args
+gemini_command = /global/gemini
+gemini_args = --global-args
 iteration_delay_ms = 5000
 `
 	require.NoError(t, os.WriteFile(globalConfig, []byte(configContent), 0o600))
@@ -95,8 +95,8 @@ iteration_delay_ms = 5000
 	require.NoError(t, err)
 
 	// values from global config
-	assert.Equal(t, "/global/claude", values.ClaudeCommand)
-	assert.Equal(t, "--global-args", values.ClaudeArgs)
+	assert.Equal(t, "/global/gemini", values.GeminiCommand)
+	assert.Equal(t, "--global-args", values.GeminiArgs)
 	assert.Equal(t, 5000, values.IterationDelayMs)
 
 	// values from embedded (not set in global)
@@ -112,15 +112,15 @@ func TestValuesLoader_Load_LocalOverridesGlobal(t *testing.T) {
 	localConfig := filepath.Join(tmpDir, "local-config")
 
 	globalContent := `
-claude_command = /global/claude
-claude_args = --global-args
+gemini_command = /global/gemini
+gemini_args = --global-args
 iteration_delay_ms = 5000
 plans_dir = global/plans
 `
 	require.NoError(t, os.WriteFile(globalConfig, []byte(globalContent), 0o600))
 
 	localContent := `
-claude_command = /local/claude
+gemini_command = /local/gemini
 plans_dir = local/plans
 `
 	require.NoError(t, os.WriteFile(localConfig, []byte(localContent), 0o600))
@@ -130,11 +130,11 @@ plans_dir = local/plans
 	require.NoError(t, err)
 
 	// local values override global
-	assert.Equal(t, "/local/claude", values.ClaudeCommand)
+	assert.Equal(t, "/local/gemini", values.GeminiCommand)
 	assert.Equal(t, "local/plans", values.PlansDir)
 
 	// global values preserved when not overridden
-	assert.Equal(t, "--global-args", values.ClaudeArgs)
+	assert.Equal(t, "--global-args", values.GeminiArgs)
 	assert.Equal(t, 5000, values.IterationDelayMs)
 }
 
@@ -154,8 +154,8 @@ func TestValuesLoader_Load_PartialConfigs(t *testing.T) {
 	assert.Equal(t, "custom/plans", values.PlansDir)
 
 	// missing values filled from embedded defaults
-	assert.Equal(t, "claude", values.ClaudeCommand)
-	assert.Equal(t, "--dangerously-skip-permissions --output-format stream-json --verbose", values.ClaudeArgs)
+	assert.Equal(t, "gemini", values.GeminiCommand)
+	assert.Equal(t, "--non-interactive --output-format stream-json --verbose", values.GeminiArgs)
 	assert.Equal(t, "codex", values.CodexCommand)
 	assert.Equal(t, 2000, values.IterationDelayMs)
 }
@@ -205,7 +205,7 @@ func TestValuesLoader_Load_NonExistentFile(t *testing.T) {
 	require.NoError(t, err)
 
 	// should fall back to embedded defaults
-	assert.Equal(t, "claude", values.ClaudeCommand)
+	assert.Equal(t, "gemini", values.GeminiCommand)
 	assert.True(t, values.CodexEnabled)
 }
 
@@ -465,32 +465,32 @@ func TestValuesLoader_Load_LocalOverridesMovePlanOnCompletion(t *testing.T) {
 	assert.True(t, values.MovePlanOnCompletionSet)
 }
 
-func TestValues_mergeFrom_PreserveAnthropicAPIKey(t *testing.T) {
+func TestValues_mergeFrom_PreserveGeminiAPIKey(t *testing.T) {
 	t.Run("set flag merges", func(t *testing.T) {
-		dst := Values{PreserveAnthropicAPIKey: false, PreserveAnthropicAPIKeySet: false}
-		src := Values{PreserveAnthropicAPIKey: true, PreserveAnthropicAPIKeySet: true}
+		dst := Values{PreserveGeminiAPIKey: false, PreserveGeminiAPIKeySet: false}
+		src := Values{PreserveGeminiAPIKey: true, PreserveGeminiAPIKeySet: true}
 		dst.mergeFrom(&src)
-		assert.True(t, dst.PreserveAnthropicAPIKey)
-		assert.True(t, dst.PreserveAnthropicAPIKeySet)
+		assert.True(t, dst.PreserveGeminiAPIKey)
+		assert.True(t, dst.PreserveGeminiAPIKeySet)
 	})
 
 	t.Run("unset flag preserves dst", func(t *testing.T) {
-		dst := Values{PreserveAnthropicAPIKey: true, PreserveAnthropicAPIKeySet: true}
-		src := Values{PreserveAnthropicAPIKey: false, PreserveAnthropicAPIKeySet: false}
+		dst := Values{PreserveGeminiAPIKey: true, PreserveGeminiAPIKeySet: true}
+		src := Values{PreserveGeminiAPIKey: false, PreserveGeminiAPIKeySet: false}
 		dst.mergeFrom(&src)
-		assert.True(t, dst.PreserveAnthropicAPIKey)
-		assert.True(t, dst.PreserveAnthropicAPIKeySet)
+		assert.True(t, dst.PreserveGeminiAPIKey)
+		assert.True(t, dst.PreserveGeminiAPIKeySet)
 	})
 
 	t.Run("local explicit false overrides global true", func(t *testing.T) {
 		// safety case: this is the whole reason the *Set sentinel exists.
 		// without it, a local config that omits the key would zero-value-overwrite
 		// a global true; with explicit false we must propagate the disable.
-		dst := Values{PreserveAnthropicAPIKey: true, PreserveAnthropicAPIKeySet: true}
-		src := Values{PreserveAnthropicAPIKey: false, PreserveAnthropicAPIKeySet: true}
+		dst := Values{PreserveGeminiAPIKey: true, PreserveGeminiAPIKeySet: true}
+		src := Values{PreserveGeminiAPIKey: false, PreserveGeminiAPIKeySet: true}
 		dst.mergeFrom(&src)
-		assert.False(t, dst.PreserveAnthropicAPIKey)
-		assert.True(t, dst.PreserveAnthropicAPIKeySet)
+		assert.False(t, dst.PreserveGeminiAPIKey)
+		assert.True(t, dst.PreserveGeminiAPIKeySet)
 	})
 
 	t.Run("local file overrides global through Load", func(t *testing.T) {
@@ -499,14 +499,14 @@ func TestValues_mergeFrom_PreserveAnthropicAPIKey(t *testing.T) {
 		tmpDir := t.TempDir()
 		globalCfg := filepath.Join(tmpDir, "global")
 		localCfg := filepath.Join(tmpDir, "local")
-		require.NoError(t, os.WriteFile(globalCfg, []byte(`preserve_anthropic_api_key = true`), 0o600))
-		require.NoError(t, os.WriteFile(localCfg, []byte(`preserve_anthropic_api_key = false`), 0o600))
+		require.NoError(t, os.WriteFile(globalCfg, []byte(`preserve_gemini_api_key = true`), 0o600))
+		require.NoError(t, os.WriteFile(localCfg, []byte(`preserve_gemini_api_key = false`), 0o600))
 
 		loader := newValuesLoader(defaultsFS)
 		values, err := loader.Load(localCfg, globalCfg)
 		require.NoError(t, err)
-		assert.False(t, values.PreserveAnthropicAPIKey)
-		assert.True(t, values.PreserveAnthropicAPIKeySet)
+		assert.False(t, values.PreserveGeminiAPIKey)
+		assert.True(t, values.PreserveGeminiAPIKeySet)
 	})
 
 	t.Run("local omitted preserves global true", func(t *testing.T) {
@@ -515,14 +515,14 @@ func TestValues_mergeFrom_PreserveAnthropicAPIKey(t *testing.T) {
 		tmpDir := t.TempDir()
 		globalCfg := filepath.Join(tmpDir, "global")
 		localCfg := filepath.Join(tmpDir, "local")
-		require.NoError(t, os.WriteFile(globalCfg, []byte(`preserve_anthropic_api_key = true`), 0o600))
+		require.NoError(t, os.WriteFile(globalCfg, []byte(`preserve_gemini_api_key = true`), 0o600))
 		require.NoError(t, os.WriteFile(localCfg, []byte(`# unrelated comment`), 0o600))
 
 		loader := newValuesLoader(defaultsFS)
 		values, err := loader.Load(localCfg, globalCfg)
 		require.NoError(t, err)
-		assert.True(t, values.PreserveAnthropicAPIKey)
-		assert.True(t, values.PreserveAnthropicAPIKeySet)
+		assert.True(t, values.PreserveGeminiAPIKey)
+		assert.True(t, values.PreserveGeminiAPIKeySet)
 	})
 }
 
@@ -650,54 +650,54 @@ func TestValues_mergeFrom_CodexModel(t *testing.T) {
 	})
 }
 
-func TestValues_mergeFrom_PassClaudeMd(t *testing.T) {
+func TestValues_mergeFrom_PassGeminiMd(t *testing.T) {
 	t.Run("set flag merges", func(t *testing.T) {
-		dst := Values{PassClaudeMd: false, PassClaudeMdSet: false}
-		src := Values{PassClaudeMd: true, PassClaudeMdSet: true}
+		dst := Values{PassGeminiMd: false, PassGeminiMdSet: false}
+		src := Values{PassGeminiMd: true, PassGeminiMdSet: true}
 		dst.mergeFrom(&src)
-		assert.True(t, dst.PassClaudeMd)
-		assert.True(t, dst.PassClaudeMdSet)
+		assert.True(t, dst.PassGeminiMd)
+		assert.True(t, dst.PassGeminiMdSet)
 	})
 
 	t.Run("unset flag preserves dst", func(t *testing.T) {
-		dst := Values{PassClaudeMd: true, PassClaudeMdSet: true}
-		src := Values{PassClaudeMd: false, PassClaudeMdSet: false}
+		dst := Values{PassGeminiMd: true, PassGeminiMdSet: true}
+		src := Values{PassGeminiMd: false, PassGeminiMdSet: false}
 		dst.mergeFrom(&src)
-		assert.True(t, dst.PassClaudeMd)
-		assert.True(t, dst.PassClaudeMdSet)
+		assert.True(t, dst.PassGeminiMd)
+		assert.True(t, dst.PassGeminiMdSet)
 	})
 
 	t.Run("local explicit false overrides global true", func(t *testing.T) {
-		dst := Values{PassClaudeMd: true, PassClaudeMdSet: true}
-		src := Values{PassClaudeMd: false, PassClaudeMdSet: true}
+		dst := Values{PassGeminiMd: true, PassGeminiMdSet: true}
+		src := Values{PassGeminiMd: false, PassGeminiMdSet: true}
 		dst.mergeFrom(&src)
-		assert.False(t, dst.PassClaudeMd)
-		assert.True(t, dst.PassClaudeMdSet)
+		assert.False(t, dst.PassGeminiMd)
+		assert.True(t, dst.PassGeminiMdSet)
 	})
 
 	t.Run("local file overrides global through Load", func(t *testing.T) {
 		tmpDir := t.TempDir()
 		globalCfg := filepath.Join(tmpDir, "global")
 		localCfg := filepath.Join(tmpDir, "local")
-		require.NoError(t, os.WriteFile(globalCfg, []byte(`pass_claude_md = true`), 0o600))
-		require.NoError(t, os.WriteFile(localCfg, []byte(`pass_claude_md = false`), 0o600))
+		require.NoError(t, os.WriteFile(globalCfg, []byte(`pass_gemini_md = true`), 0o600))
+		require.NoError(t, os.WriteFile(localCfg, []byte(`pass_gemini_md = false`), 0o600))
 
 		loader := newValuesLoader(defaultsFS)
 		values, err := loader.Load(localCfg, globalCfg)
 		require.NoError(t, err)
-		assert.False(t, values.PassClaudeMd)
-		assert.True(t, values.PassClaudeMdSet)
+		assert.False(t, values.PassGeminiMd)
+		assert.True(t, values.PassGeminiMdSet)
 	})
 
 	t.Run("invalid value returns error", func(t *testing.T) {
 		tmpDir := t.TempDir()
 		globalCfg := filepath.Join(tmpDir, "global")
-		require.NoError(t, os.WriteFile(globalCfg, []byte(`pass_claude_md = notabool`), 0o600))
+		require.NoError(t, os.WriteFile(globalCfg, []byte(`pass_gemini_md = notabool`), 0o600))
 
 		loader := newValuesLoader(defaultsFS)
 		_, err := loader.Load("", globalCfg)
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "pass_claude_md")
+		assert.Contains(t, err.Error(), "pass_gemini_md")
 	})
 }
 
@@ -798,8 +798,8 @@ func TestValuesLoader_Load_AllValuesFromUserConfig(t *testing.T) {
 	configPath := filepath.Join(tmpDir, "config")
 
 	configContent := `
-claude_command = /custom/claude
-claude_args = --custom
+gemini_command = /custom/gemini
+gemini_args = --custom
 codex_enabled = false
 codex_command = /custom/codex
 codex_model = custom-model
@@ -817,8 +817,8 @@ plans_dir = my/plans
 	values, err := loader.Load("", configPath)
 	require.NoError(t, err)
 
-	assert.Equal(t, "/custom/claude", values.ClaudeCommand)
-	assert.Equal(t, "--custom", values.ClaudeArgs)
+	assert.Equal(t, "/custom/gemini", values.GeminiCommand)
+	assert.Equal(t, "--custom", values.GeminiArgs)
 	assert.False(t, values.CodexEnabled)
 	assert.True(t, values.CodexEnabledSet)
 	assert.Equal(t, "/custom/codex", values.CodexCommand)
@@ -840,31 +840,31 @@ plans_dir = my/plans
 func TestValues_mergeFrom(t *testing.T) {
 	t.Run("merge non-empty values", func(t *testing.T) {
 		dst := Values{
-			ClaudeCommand: "dst-claude",
+			GeminiCommand: "dst-gemini",
 			PlansDir:      "dst-plans",
 		}
 		src := Values{
-			ClaudeCommand: "src-claude",
-			ClaudeArgs:    "src-args",
+			GeminiCommand: "src-gemini",
+			GeminiArgs:    "src-args",
 		}
 		dst.mergeFrom(&src)
 
-		assert.Equal(t, "src-claude", dst.ClaudeCommand)
-		assert.Equal(t, "src-args", dst.ClaudeArgs)
+		assert.Equal(t, "src-gemini", dst.GeminiCommand)
+		assert.Equal(t, "src-args", dst.GeminiArgs)
 		assert.Equal(t, "dst-plans", dst.PlansDir)
 	})
 
 	t.Run("empty source doesn't overwrite", func(t *testing.T) {
 		dst := Values{
-			ClaudeCommand: "dst-claude",
+			GeminiCommand: "dst-gemini",
 			PlansDir:      "dst-plans",
 		}
 		src := Values{
-			ClaudeCommand: "", // empty, shouldn't overwrite
+			GeminiCommand: "", // empty, shouldn't overwrite
 		}
 		dst.mergeFrom(&src)
 
-		assert.Equal(t, "dst-claude", dst.ClaudeCommand)
+		assert.Equal(t, "dst-gemini", dst.GeminiCommand)
 		assert.Equal(t, "dst-plans", dst.PlansDir)
 	})
 
@@ -932,8 +932,8 @@ func TestValuesLoader_parseValuesFromBytes(t *testing.T) {
 
 	t.Run("full config", func(t *testing.T) {
 		data := []byte(`
-claude_command = /custom/claude
-claude_args = --custom-arg
+gemini_command = /custom/gemini
+gemini_args = --custom-arg
 codex_enabled = false
 codex_command = /custom/codex
 codex_model = gpt-5
@@ -947,8 +947,8 @@ plans_dir = custom/plans
 		values, err := vl.parseValuesFromBytes(data)
 		require.NoError(t, err)
 
-		assert.Equal(t, "/custom/claude", values.ClaudeCommand)
-		assert.Equal(t, "--custom-arg", values.ClaudeArgs)
+		assert.Equal(t, "/custom/gemini", values.GeminiCommand)
+		assert.Equal(t, "--custom-arg", values.GeminiArgs)
 		assert.False(t, values.CodexEnabled)
 		assert.True(t, values.CodexEnabledSet)
 		assert.Equal(t, "/custom/codex", values.CodexCommand)
@@ -967,7 +967,7 @@ plans_dir = custom/plans
 		values, err := vl.parseValuesFromBytes(data)
 		require.NoError(t, err)
 
-		assert.Empty(t, values.ClaudeCommand)
+		assert.Empty(t, values.GeminiCommand)
 		assert.False(t, values.CodexEnabled)
 		assert.False(t, values.CodexEnabledSet)
 	})
@@ -1001,7 +1001,7 @@ plans_dir = custom/plans
 func TestValuesLoader_parseValuesFromFile_PermissionDenied(t *testing.T) {
 	tmpDir := t.TempDir()
 	configPath := filepath.Join(tmpDir, "config")
-	require.NoError(t, os.WriteFile(configPath, []byte("claude_command = test"), 0o600))
+	require.NoError(t, os.WriteFile(configPath, []byte("gemini_command = test"), 0o600))
 
 	// remove read permission
 	require.NoError(t, os.Chmod(configPath, 0o000))
@@ -1028,43 +1028,43 @@ func TestValuesLoader_parseValuesFromBytes_ErrorPatterns(t *testing.T) {
 	tests := []struct {
 		name           string
 		input          string
-		expectedClaude []string
+		expectedGemini []string
 		expectedCodex  []string
 	}{
 		{
 			name:           "single pattern",
-			input:          "claude_error_patterns = rate limit",
-			expectedClaude: []string{"rate limit"},
+			input:          "gemini_error_patterns = rate limit",
+			expectedGemini: []string{"rate limit"},
 			expectedCodex:  nil,
 		},
 		{
 			name:           "multiple patterns comma-separated",
 			input:          "codex_error_patterns = rate limit,quota exceeded,too many requests",
-			expectedClaude: nil,
+			expectedGemini: nil,
 			expectedCodex:  []string{"rate limit", "quota exceeded", "too many requests"},
 		},
 		{
 			name:           "whitespace trimming around commas",
-			input:          "claude_error_patterns =  pattern1 ,  pattern2  , pattern3 ",
-			expectedClaude: []string{"pattern1", "pattern2", "pattern3"},
+			input:          "gemini_error_patterns =  pattern1 ,  pattern2  , pattern3 ",
+			expectedGemini: []string{"pattern1", "pattern2", "pattern3"},
 			expectedCodex:  nil,
 		},
 		{
 			name:           "empty patterns filtered out",
-			input:          "claude_error_patterns = pattern1,,pattern2,  ,pattern3",
-			expectedClaude: []string{"pattern1", "pattern2", "pattern3"},
+			input:          "gemini_error_patterns = pattern1,,pattern2,  ,pattern3",
+			expectedGemini: []string{"pattern1", "pattern2", "pattern3"},
 			expectedCodex:  nil,
 		},
 		{
-			name:           "both claude and codex patterns",
-			input:          "claude_error_patterns = hit limit\ncodex_error_patterns = rate exceeded",
-			expectedClaude: []string{"hit limit"},
+			name:           "both gemini and codex patterns",
+			input:          "gemini_error_patterns = hit limit\ncodex_error_patterns = rate exceeded",
+			expectedGemini: []string{"hit limit"},
 			expectedCodex:  []string{"rate exceeded"},
 		},
 		{
 			name:           "empty value",
-			input:          "claude_error_patterns = ",
-			expectedClaude: nil,
+			input:          "gemini_error_patterns = ",
+			expectedGemini: nil,
 			expectedCodex:  nil,
 		},
 	}
@@ -1073,7 +1073,7 @@ func TestValuesLoader_parseValuesFromBytes_ErrorPatterns(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			values, err := vl.parseValuesFromBytes([]byte(tc.input))
 			require.NoError(t, err)
-			assert.Equal(t, tc.expectedClaude, values.ClaudeErrorPatterns)
+			assert.Equal(t, tc.expectedGemini, values.GeminiErrorPatterns)
 			assert.Equal(t, tc.expectedCodex, values.CodexErrorPatterns)
 		})
 	}
@@ -1082,31 +1082,31 @@ func TestValuesLoader_parseValuesFromBytes_ErrorPatterns(t *testing.T) {
 func TestValues_mergeFrom_ErrorPatterns(t *testing.T) {
 	t.Run("merge error patterns when src has values", func(t *testing.T) {
 		dst := Values{
-			ClaudeErrorPatterns: []string{"dst pattern"},
+			GeminiErrorPatterns: []string{"dst pattern"},
 			CodexErrorPatterns:  []string{"dst codex"},
 		}
 		src := Values{
-			ClaudeErrorPatterns: []string{"src pattern 1", "src pattern 2"},
+			GeminiErrorPatterns: []string{"src pattern 1", "src pattern 2"},
 			CodexErrorPatterns:  []string{"src codex"},
 		}
 		dst.mergeFrom(&src)
 
-		assert.Equal(t, []string{"src pattern 1", "src pattern 2"}, dst.ClaudeErrorPatterns)
+		assert.Equal(t, []string{"src pattern 1", "src pattern 2"}, dst.GeminiErrorPatterns)
 		assert.Equal(t, []string{"src codex"}, dst.CodexErrorPatterns)
 	})
 
 	t.Run("preserve dst when src is empty", func(t *testing.T) {
 		dst := Values{
-			ClaudeErrorPatterns: []string{"dst pattern"},
+			GeminiErrorPatterns: []string{"dst pattern"},
 			CodexErrorPatterns:  []string{"dst codex"},
 		}
 		src := Values{
-			ClaudeErrorPatterns: nil,
+			GeminiErrorPatterns: nil,
 			CodexErrorPatterns:  nil,
 		}
 		dst.mergeFrom(&src)
 
-		assert.Equal(t, []string{"dst pattern"}, dst.ClaudeErrorPatterns)
+		assert.Equal(t, []string{"dst pattern"}, dst.GeminiErrorPatterns)
 		assert.Equal(t, []string{"dst codex"}, dst.CodexErrorPatterns)
 	})
 }
@@ -1117,11 +1117,11 @@ func TestValuesLoader_Load_ErrorPatternsOverride(t *testing.T) {
 	localConfig := filepath.Join(tmpDir, "local")
 
 	// global has one set of patterns
-	globalContent := `claude_error_patterns = global pattern 1, global pattern 2`
+	globalContent := `gemini_error_patterns = global pattern 1, global pattern 2`
 	require.NoError(t, os.WriteFile(globalConfig, []byte(globalContent), 0o600))
 
 	// local overrides with different patterns
-	localContent := `claude_error_patterns = local pattern`
+	localContent := `gemini_error_patterns = local pattern`
 	require.NoError(t, os.WriteFile(localConfig, []byte(localContent), 0o600))
 
 	loader := newValuesLoader(defaultsFS)
@@ -1129,7 +1129,7 @@ func TestValuesLoader_Load_ErrorPatternsOverride(t *testing.T) {
 	require.NoError(t, err)
 
 	// local should override global completely (not merge)
-	assert.Equal(t, []string{"local pattern"}, values.ClaudeErrorPatterns)
+	assert.Equal(t, []string{"local pattern"}, values.GeminiErrorPatterns)
 }
 
 func TestValuesLoader_Load_AllCommentedConfigFallsBackToEmbedded(t *testing.T) {
@@ -1139,7 +1139,7 @@ func TestValuesLoader_Load_AllCommentedConfigFallsBackToEmbedded(t *testing.T) {
 	// config with only comments and whitespace - should fall back to embedded
 	commentedConfig := `# this is a commented config file
 # all lines are comments
-# claude_command = /custom/claude
+# gemini_command = /custom/gemini
 
 # empty lines below
 
@@ -1151,8 +1151,8 @@ func TestValuesLoader_Load_AllCommentedConfigFallsBackToEmbedded(t *testing.T) {
 	require.NoError(t, err)
 
 	// should fall back to embedded defaults since file has no actual content
-	assert.Equal(t, "claude", values.ClaudeCommand)
-	assert.Equal(t, "--dangerously-skip-permissions --output-format stream-json --verbose", values.ClaudeArgs)
+	assert.Equal(t, "gemini", values.GeminiCommand)
+	assert.Equal(t, "--non-interactive --output-format stream-json --verbose", values.GeminiArgs)
 	assert.True(t, values.CodexEnabled)
 	assert.Equal(t, "codex", values.CodexCommand)
 	assert.Equal(t, "gpt-5.5", values.CodexModel, "codex_model defaults to embedded gpt-5.5 (uncommented in embedded default)")
@@ -1165,9 +1165,9 @@ func TestValuesLoader_Load_PartiallyCommentedConfigUsesUncommentedValues(t *test
 
 	// config with some commented and some uncommented lines
 	partialConfig := `# this line is a comment
-claude_command = /custom/claude
-# claude_args is commented out
-# claude_args = --some-args
+gemini_command = /custom/gemini
+# gemini_args is commented out
+# gemini_args = --some-args
 plans_dir = custom/plans
 `
 	require.NoError(t, os.WriteFile(globalConfig, []byte(partialConfig), 0o600))
@@ -1177,11 +1177,11 @@ plans_dir = custom/plans
 	require.NoError(t, err)
 
 	// uncommented values should be used
-	assert.Equal(t, "/custom/claude", values.ClaudeCommand)
+	assert.Equal(t, "/custom/gemini", values.GeminiCommand)
 	assert.Equal(t, "custom/plans", values.PlansDir)
 
 	// commented-out values should fall back to embedded defaults
-	assert.Equal(t, "--dangerously-skip-permissions --output-format stream-json --verbose", values.ClaudeArgs)
+	assert.Equal(t, "--non-interactive --output-format stream-json --verbose", values.GeminiArgs)
 }
 
 func TestValuesLoader_Load_LocalAllCommentedGlobalHasContent(t *testing.T) {
@@ -1190,7 +1190,7 @@ func TestValuesLoader_Load_LocalAllCommentedGlobalHasContent(t *testing.T) {
 	localConfig := filepath.Join(tmpDir, "local-config")
 
 	// global has actual content
-	globalContent := `claude_command = /global/claude
+	globalContent := `gemini_command = /global/gemini
 plans_dir = global/plans
 `
 	require.NoError(t, os.WriteFile(globalConfig, []byte(globalContent), 0o600))
@@ -1198,7 +1198,7 @@ plans_dir = global/plans
 	// local is all-commented (installed template)
 	localCommented := `# local config template
 # uncomment values to customize
-# claude_command = /local/claude
+# gemini_command = /local/gemini
 `
 	require.NoError(t, os.WriteFile(localConfig, []byte(localCommented), 0o600))
 
@@ -1207,7 +1207,7 @@ plans_dir = global/plans
 	require.NoError(t, err)
 
 	// local all-commented falls back, so global values should be used
-	assert.Equal(t, "/global/claude", values.ClaudeCommand)
+	assert.Equal(t, "/global/gemini", values.GeminiCommand)
 	assert.Equal(t, "global/plans", values.PlansDir)
 }
 
@@ -1219,7 +1219,7 @@ func TestValuesLoader_Load_BothAllCommentedFallsBackToEmbedded(t *testing.T) {
 	// both files are all-commented templates
 	commentedTemplate := `# config template
 # uncomment values to customize
-# claude_command = /custom/claude
+# gemini_command = /custom/gemini
 # plans_dir = custom/plans
 `
 	require.NoError(t, os.WriteFile(globalConfig, []byte(commentedTemplate), 0o600))
@@ -1230,7 +1230,7 @@ func TestValuesLoader_Load_BothAllCommentedFallsBackToEmbedded(t *testing.T) {
 	require.NoError(t, err)
 
 	// both all-commented, should fall back to embedded defaults
-	assert.Equal(t, "claude", values.ClaudeCommand)
+	assert.Equal(t, "gemini", values.GeminiCommand)
 	assert.Equal(t, "docs/plans", values.PlansDir)
 	assert.True(t, values.CodexEnabled)
 }
@@ -2074,43 +2074,43 @@ func TestValuesLoader_parseValuesFromBytes_LimitPatterns(t *testing.T) {
 	tests := []struct {
 		name           string
 		input          string
-		expectedClaude []string
+		expectedGemini []string
 		expectedCodex  []string
 	}{
 		{
-			name:           "single claude limit pattern",
-			input:          "claude_limit_patterns = rate limit hit",
-			expectedClaude: []string{"rate limit hit"},
+			name:           "single gemini limit pattern",
+			input:          "gemini_limit_patterns = rate limit hit",
+			expectedGemini: []string{"rate limit hit"},
 			expectedCodex:  nil,
 		},
 		{
 			name:           "multiple codex limit patterns",
 			input:          "codex_limit_patterns = Rate limit,quota exceeded,too many requests",
-			expectedClaude: nil,
+			expectedGemini: nil,
 			expectedCodex:  []string{"Rate limit", "quota exceeded", "too many requests"},
 		},
 		{
 			name:           "whitespace trimming around commas",
-			input:          "claude_limit_patterns =  pattern1 ,  pattern2  , pattern3 ",
-			expectedClaude: []string{"pattern1", "pattern2", "pattern3"},
+			input:          "gemini_limit_patterns =  pattern1 ,  pattern2  , pattern3 ",
+			expectedGemini: []string{"pattern1", "pattern2", "pattern3"},
 			expectedCodex:  nil,
 		},
 		{
 			name:           "empty patterns filtered out",
-			input:          "claude_limit_patterns = pattern1,,pattern2,  ,pattern3",
-			expectedClaude: []string{"pattern1", "pattern2", "pattern3"},
+			input:          "gemini_limit_patterns = pattern1,,pattern2,  ,pattern3",
+			expectedGemini: []string{"pattern1", "pattern2", "pattern3"},
 			expectedCodex:  nil,
 		},
 		{
-			name:           "both claude and codex limit patterns",
-			input:          "claude_limit_patterns = hit limit\ncodex_limit_patterns = rate exceeded",
-			expectedClaude: []string{"hit limit"},
+			name:           "both gemini and codex limit patterns",
+			input:          "gemini_limit_patterns = hit limit\ncodex_limit_patterns = rate exceeded",
+			expectedGemini: []string{"hit limit"},
 			expectedCodex:  []string{"rate exceeded"},
 		},
 		{
 			name:           "empty value",
-			input:          "claude_limit_patterns = ",
-			expectedClaude: nil,
+			input:          "gemini_limit_patterns = ",
+			expectedGemini: nil,
 			expectedCodex:  nil,
 		},
 	}
@@ -2119,7 +2119,7 @@ func TestValuesLoader_parseValuesFromBytes_LimitPatterns(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			values, err := vl.parseValuesFromBytes([]byte(tc.input))
 			require.NoError(t, err)
-			assert.Equal(t, tc.expectedClaude, values.ClaudeLimitPatterns)
+			assert.Equal(t, tc.expectedGemini, values.GeminiLimitPatterns)
 			assert.Equal(t, tc.expectedCodex, values.CodexLimitPatterns)
 		})
 	}
@@ -2128,9 +2128,9 @@ func TestValuesLoader_parseValuesFromBytes_LimitPatterns(t *testing.T) {
 func TestValuesLoader_parseValuesFromBytes_RetryPatterns(t *testing.T) {
 	vl := &valuesLoader{embedFS: defaultsFS}
 
-	values, err := vl.parseValuesFromBytes([]byte("claude_retry_patterns = FYA_TRANSIENT_TIMEOUT, other marker"))
+	values, err := vl.parseValuesFromBytes([]byte("gemini_retry_patterns = FYA_TRANSIENT_TIMEOUT, other marker"))
 	require.NoError(t, err)
-	assert.Equal(t, []string{"FYA_TRANSIENT_TIMEOUT", "other marker"}, values.ClaudeRetryPatterns)
+	assert.Equal(t, []string{"FYA_TRANSIENT_TIMEOUT", "other marker"}, values.GeminiRetryPatterns)
 }
 
 func TestValuesLoader_parseValuesFromBytes_WaitOnLimit(t *testing.T) {
@@ -2470,39 +2470,39 @@ func TestValues_mergeFrom_IdleTimeout(t *testing.T) {
 
 func TestValues_mergeFrom_LimitPatterns(t *testing.T) {
 	t.Run("merge limit patterns when src has values", func(t *testing.T) {
-		dst := Values{ClaudeLimitPatterns: []string{"dst pattern"}, CodexLimitPatterns: []string{"dst codex"}}
-		src := Values{ClaudeLimitPatterns: []string{"src pattern 1", "src pattern 2"}, CodexLimitPatterns: []string{"src codex"}}
+		dst := Values{GeminiLimitPatterns: []string{"dst pattern"}, CodexLimitPatterns: []string{"dst codex"}}
+		src := Values{GeminiLimitPatterns: []string{"src pattern 1", "src pattern 2"}, CodexLimitPatterns: []string{"src codex"}}
 		dst.mergeFrom(&src)
 
-		assert.Equal(t, []string{"src pattern 1", "src pattern 2"}, dst.ClaudeLimitPatterns)
+		assert.Equal(t, []string{"src pattern 1", "src pattern 2"}, dst.GeminiLimitPatterns)
 		assert.Equal(t, []string{"src codex"}, dst.CodexLimitPatterns)
 	})
 
 	t.Run("preserve dst when src is empty", func(t *testing.T) {
-		dst := Values{ClaudeLimitPatterns: []string{"dst pattern"}, CodexLimitPatterns: []string{"dst codex"}}
-		src := Values{ClaudeLimitPatterns: nil, CodexLimitPatterns: nil}
+		dst := Values{GeminiLimitPatterns: []string{"dst pattern"}, CodexLimitPatterns: []string{"dst codex"}}
+		src := Values{GeminiLimitPatterns: nil, CodexLimitPatterns: nil}
 		dst.mergeFrom(&src)
 
-		assert.Equal(t, []string{"dst pattern"}, dst.ClaudeLimitPatterns)
+		assert.Equal(t, []string{"dst pattern"}, dst.GeminiLimitPatterns)
 		assert.Equal(t, []string{"dst codex"}, dst.CodexLimitPatterns)
 	})
 }
 
 func TestValues_mergeFrom_RetryPatterns(t *testing.T) {
 	t.Run("merge retry patterns when src has values", func(t *testing.T) {
-		dst := Values{ClaudeRetryPatterns: []string{"dst pattern"}}
-		src := Values{ClaudeRetryPatterns: []string{"src pattern 1", "src pattern 2"}}
+		dst := Values{GeminiRetryPatterns: []string{"dst pattern"}}
+		src := Values{GeminiRetryPatterns: []string{"src pattern 1", "src pattern 2"}}
 		dst.mergeFrom(&src)
 
-		assert.Equal(t, []string{"src pattern 1", "src pattern 2"}, dst.ClaudeRetryPatterns)
+		assert.Equal(t, []string{"src pattern 1", "src pattern 2"}, dst.GeminiRetryPatterns)
 	})
 
 	t.Run("preserve dst when src is empty", func(t *testing.T) {
-		dst := Values{ClaudeRetryPatterns: []string{"dst pattern"}}
-		src := Values{ClaudeRetryPatterns: nil}
+		dst := Values{GeminiRetryPatterns: []string{"dst pattern"}}
+		src := Values{GeminiRetryPatterns: nil}
 		dst.mergeFrom(&src)
 
-		assert.Equal(t, []string{"dst pattern"}, dst.ClaudeRetryPatterns)
+		assert.Equal(t, []string{"dst pattern"}, dst.GeminiRetryPatterns)
 	})
 }
 
@@ -2512,11 +2512,11 @@ func TestValuesLoader_Load_LimitPatternsOverride(t *testing.T) {
 	localConfig := filepath.Join(tmpDir, "local")
 
 	// global has one set of patterns
-	globalContent := `claude_limit_patterns = global pattern 1, global pattern 2`
+	globalContent := `gemini_limit_patterns = global pattern 1, global pattern 2`
 	require.NoError(t, os.WriteFile(globalConfig, []byte(globalContent), 0o600))
 
 	// local overrides with different patterns
-	localContent := `claude_limit_patterns = local pattern`
+	localContent := `gemini_limit_patterns = local pattern`
 	require.NoError(t, os.WriteFile(localConfig, []byte(localContent), 0o600))
 
 	loader := newValuesLoader(defaultsFS)
@@ -2524,7 +2524,7 @@ func TestValuesLoader_Load_LimitPatternsOverride(t *testing.T) {
 	require.NoError(t, err)
 
 	// local should override global completely (not merge)
-	assert.Equal(t, []string{"local pattern"}, values.ClaudeLimitPatterns)
+	assert.Equal(t, []string{"local pattern"}, values.GeminiLimitPatterns)
 }
 
 func TestValuesLoader_Load_PlanModel(t *testing.T) {
@@ -2569,12 +2569,12 @@ func TestValuesLoader_Load_TaskModel(t *testing.T) {
 	t.Run("full model ID accepted", func(t *testing.T) {
 		tmpDir := t.TempDir()
 		cfgPath := filepath.Join(tmpDir, "config")
-		require.NoError(t, os.WriteFile(cfgPath, []byte(`task_model = claude-sonnet-4-5-20250929`), 0o600))
+		require.NoError(t, os.WriteFile(cfgPath, []byte(`task_model = gemini-sonnet-4-5-20250929`), 0o600))
 
 		loader := newValuesLoader(defaultsFS)
 		values, err := loader.Load("", cfgPath)
 		require.NoError(t, err)
-		assert.Equal(t, "claude-sonnet-4-5-20250929", values.TaskModel)
+		assert.Equal(t, "gemini-sonnet-4-5-20250929", values.TaskModel)
 	})
 }
 

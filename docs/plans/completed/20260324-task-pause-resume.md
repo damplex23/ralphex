@@ -2,7 +2,7 @@
 
 ## Overview
 
-Extend existing Ctrl+\ (SIGQUIT) break signal from external review loop to task execution loop. When the user presses Ctrl+\ during a task iteration, the current Claude session is canceled, ralphex pauses with "press Enter to continue, Ctrl+C to abort", and on Enter the same task re-runs with a fresh session that re-reads the plan file. This lets users edit the plan mid-execution and have changes picked up reliably, without adding new dependencies or interactive stdin complexity.
+Extend existing Ctrl+\ (SIGQUIT) break signal from external review loop to task execution loop. When the user presses Ctrl+\ during a task iteration, the current Gemini session is canceled, ralphex pauses with "press Enter to continue, Ctrl+C to abort", and on Enter the same task re-runs with a fresh session that re-reads the plan file. This lets users edit the plan mid-execution and have changes picked up reliably, without adding new dependencies or interactive stdin complexity.
 
 Related: PR #246 review, issue #247 comment.
 
@@ -118,7 +118,7 @@ No new dependencies. ~100-150 lines of code changes.
 
 ### Task 5: Verify acceptance criteria
 
-- [x] verify Ctrl+\ during task iteration cancels claude session and pauses
+- [x] verify Ctrl+\ during task iteration cancels gemini session and pauses
 - [x] verify pressing Enter re-runs same task with fresh session
 - [x] verify plan file changes are picked up after pause+resume
 - [x] verify Ctrl+C during pause aborts cleanly
@@ -127,9 +127,9 @@ No new dependencies. ~100-150 lines of code changes.
 - [x] run full test suite: `go test ./...`
 - [x] run linter: `golangci-lint run --max-issues-per-linter=0 --max-same-issues=0`
 
-### Task 6: [Final] Update CLAUDE.md and llms.txt with pause+resume docs
+### Task 6: [Final] Update GEMINI.md and llms.txt with pause+resume docs
 
-- [x] update CLAUDE.md — add pause+resume to Key Patterns section
+- [x] update GEMINI.md — add pause+resume to Key Patterns section
 - [x] update llms.txt — add Ctrl+\ task pause to usage docs
 - [x] update README.md — add "steering mid-run" section (or add to existing tips/FAQ) explaining Ctrl+\ pause, plan editing, and resume workflow
 - [x] move this plan to `docs/plans/completed/`

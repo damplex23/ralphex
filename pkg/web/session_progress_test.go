@@ -435,8 +435,8 @@ Started: 2026-01-22 10:00:00
 [26-01-22 10:00:01] reviewing code
 --- Codex Review ---
 [26-01-22 10:00:02] codex analyzing
---- Claude Eval ---
-[26-01-22 10:00:03] claude evaluating
+--- Gemini Eval ---
+[26-01-22 10:00:03] gemini evaluating
 `
 		require.NoError(t, os.WriteFile(path, []byte(content), 0o600))
 
@@ -570,10 +570,10 @@ func TestPhaseFromSection(t *testing.T) {
 		{"codex external review", "codex external review", status.PhaseCodex},
 		{"custom review iteration", "custom review iteration 1", status.PhaseCodex},
 		{"custom iteration", "custom iteration 2", status.PhaseCodex},
-		{"claude review", "claude review 0: all findings", status.PhaseReview},
+		{"gemini review", "gemini review 0: all findings", status.PhaseReview},
 		{"review loop", "review iteration 1", status.PhaseReview},
-		{"claude eval", "claude-eval", status.PhaseClaudeEval},
-		{"claude eval space", "claude eval", status.PhaseClaudeEval},
+		{"gemini eval", "gemini-eval", status.PhaseGeminiEval},
+		{"gemini eval space", "gemini eval", status.PhaseGeminiEval},
 		{"unknown defaults to task", "unknown section", status.PhaseTask},
 	}
 

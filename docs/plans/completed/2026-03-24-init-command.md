@@ -52,6 +52,6 @@ Add --init flag that creates .ralphex/ directory in the current project with com
 
 ### Task 4: Update documentation
 
-- [x] update CLAUDE.md - add --init to CLI flags description and Local Project Config documentation
+- [x] update GEMINI.md - add --init to CLI flags description and Local Project Config documentation
 - [x] update llms.txt - add --init to Quick Usage section
 - [x] move this plan to docs/plans/completed/

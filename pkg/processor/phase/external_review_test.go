@@ -211,7 +211,7 @@ func TestExternalReviewPhaseRunPatternError(t *testing.T) {
 	assertLogContains(t, log, "detected")
 }
 
-func TestExternalReviewPhaseRunClaudeEvalError(t *testing.T) {
+func TestExternalReviewPhaseRunGeminiEvalError(t *testing.T) {
 	review := newTaskPhaseMockExecutor([]executor.Result{{Error: errors.New("eval failed")}})
 	external := newTaskPhaseMockExecutor([]executor.Result{{Output: "found issue"}})
 	phase, _ := externalReviewPhaseFromRunner(t, externalReviewPhaseTestOpts{
@@ -221,7 +221,7 @@ func TestExternalReviewPhaseRunClaudeEvalError(t *testing.T) {
 	_, err := phase.Run(t.Context())
 
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "claude execution")
+	assert.Contains(t, err.Error(), "gemini execution")
 }
 
 func explicitExternalToolConfig(t *testing.T, tool string, codexEnabled bool) Config {
@@ -333,7 +333,7 @@ func TestExternalReviewPhaseTimeoutSkipsStalemate(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Len(t, external.RunCalls(), 3)
-	assertLogContains(t, log, "claude eval session timed out")
+	assertLogContains(t, log, "gemini eval session timed out")
 	for _, call := range log.PrintCalls() {
 		assert.NotContains(t, call.Format, "stalemate detected")
 	}

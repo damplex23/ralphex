@@ -184,7 +184,7 @@ func TestPlanCreationPhase_Run_ContextCanceled(t *testing.T) {
 }
 
 func TestPlanCreationPhase_Run_ExecutionError(t *testing.T) {
-	exec := newTaskPhaseMockExecutor([]executor.Result{{Error: errors.New("claude error")}})
+	exec := newTaskPhaseMockExecutor([]executor.Result{{Error: errors.New("gemini error")}})
 	phase, runner, _ := planCreationPhaseFromRunner(t, planCreationPhaseTestOpts{
 		cfg:  Config{PlanDescription: "test", MaxIterations: 50},
 		exec: exec,
@@ -194,7 +194,7 @@ func TestPlanCreationPhase_Run_ExecutionError(t *testing.T) {
 	err := phase.Run(t.Context())
 
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "claude execution")
+	assert.Contains(t, err.Error(), "gemini execution")
 }
 
 func TestPlanCreationPhase_Run_InputCollectorError(t *testing.T) {
@@ -219,7 +219,7 @@ func TestPlanCreationPhase_Run_InputCollectorError(t *testing.T) {
 
 func TestPlanCreationPhase_Run_PatternMatchError(t *testing.T) {
 	exec := newTaskPhaseMockExecutor([]executor.Result{
-		{Output: "hit limit", Error: &executor.PatternMatchError{Pattern: "hit limit", HelpCmd: "claude /usage"}},
+		{Output: "hit limit", Error: &executor.PatternMatchError{Pattern: "hit limit", HelpCmd: "gemini /usage"}},
 	})
 	phase, runner, _ := planCreationPhaseFromRunner(t, planCreationPhaseTestOpts{
 		cfg:  Config{PlanDescription: "test", MaxIterations: 50},

@@ -15,16 +15,16 @@ import (
 // set in config. This allows distinguishing explicit false/0 from "not set", enabling
 // proper merge behavior where local config can override global config with zero values.
 type Values struct {
-	ClaudeCommand              string
-	ClaudeArgs                 string
+	GeminiCommand              string
+	GeminiArgs                 string
 	PlanModel                  string // model for plan creation (falls back to TaskModel if empty)
 	TaskModel                  string // model for task execution (e.g., "fable", "opus", "sonnet", "haiku")
 	ReviewModel                string // model for review phases (falls back to TaskModel if empty)
-	ClaudeErrorPatterns        []string
+	GeminiErrorPatterns        []string
 	CodexErrorPatterns         []string
-	ClaudeLimitPatterns        []string
+	GeminiLimitPatterns        []string
 	CodexLimitPatterns         []string
-	ClaudeRetryPatterns        []string
+	GeminiRetryPatterns        []string
 	CodexEnabled               bool
 	CodexEnabledSet            bool // tracks if codex_enabled was explicitly set
 	CodexCommand               string
@@ -55,12 +55,12 @@ type Values struct {
 	ReviewPatience             int  // terminate external review after N unchanged rounds (0 = disabled)
 	FinalizeEnabled            bool
 	FinalizeEnabledSet         bool // tracks if finalize_enabled was explicitly set
-	PreserveAnthropicAPIKey    bool
-	PreserveAnthropicAPIKeySet bool   // tracks if preserve_anthropic_api_key was explicitly set
-	Executor                   string // "" (= claude, default) or "codex"
+	PreserveGeminiAPIKey       bool
+	PreserveGeminiAPIKeySet    bool   // tracks if preserve_gemini_api_key was explicitly set
+	Executor                   string // "" (= gemini, default) or "codex"
 	ExecutorSet                bool   // tracks if executor was explicitly set
-	PassClaudeMd               bool
-	PassClaudeMdSet            bool // tracks if pass_claude_md was explicitly set
+	PassGeminiMd               bool
+	PassGeminiMdSet            bool // tracks if pass_gemini_md was explicitly set
 	MovePlanOnCompletion       bool
 	MovePlanOnCompletionSet    bool // tracks if move_plan_on_completion was explicitly set
 	WorktreeEnabled            bool
@@ -196,12 +196,12 @@ func (vl *valuesLoader) parseValuesFromBytes(data []byte) (Values, error) {
 	var values Values
 	section := cfg.Section("") // default section (no section header)
 
-	// claude settings
-	if key, err := section.GetKey("claude_command"); err == nil {
-		values.ClaudeCommand = key.String()
+	// gemini settings
+	if key, err := section.GetKey("gemini_command"); err == nil {
+		values.GeminiCommand = key.String()
 	}
-	if key, err := section.GetKey("claude_args"); err == nil {
-		values.ClaudeArgs = key.String()
+	if key, err := section.GetKey("gemini_args"); err == nil {
+		values.GeminiArgs = key.String()
 	}
 	if key, err := section.GetKey("plan_model"); err == nil {
 		values.PlanModel = key.String()
@@ -323,35 +323,35 @@ func (vl *valuesLoader) parseValuesFromBytes(data []byte) (Values, error) {
 		values.FinalizeEnabledSet = true
 	}
 
-	// preserve ANTHROPIC_API_KEY in claude child env (for users authenticating Claude Code via API key)
-	if key, err := section.GetKey("preserve_anthropic_api_key"); err == nil {
+	// preserve GEMINI_API_KEY in gemini child env (for users authenticating Gemini CLI via API key)
+	if key, err := section.GetKey("preserve_gemini_api_key"); err == nil {
 		val, boolErr := key.Bool()
 		if boolErr != nil {
-			return Values{}, fmt.Errorf("invalid preserve_anthropic_api_key: %w", boolErr)
+			return Values{}, fmt.Errorf("invalid preserve_gemini_api_key: %w", boolErr)
 		}
-		values.PreserveAnthropicAPIKey = val
-		values.PreserveAnthropicAPIKeySet = true
+		values.PreserveGeminiAPIKey = val
+		values.PreserveGeminiAPIKeySet = true
 	}
 
-	// executor selection: "" (= claude, default) or "codex"
+	// executor selection: "" (= gemini, default) or "codex"
 	if key, err := section.GetKey("executor"); err == nil {
 		v := strings.TrimSpace(key.String())
 		if v != "" && v != "codex" {
-			return Values{}, fmt.Errorf("invalid executor %q: must be \"\" (claude) or \"codex\"", v)
+			return Values{}, fmt.Errorf("invalid executor %q: must be \"\" (gemini) or \"codex\"", v)
 		}
 		values.Executor = v
 		values.ExecutorSet = true
 	}
 
-	// pass_claude_md: when true, codex enables project-level CLAUDE.md fallback
-	// (via project_doc_fallback_filenames) and a user-level CLAUDE.md hint
-	if key, err := section.GetKey("pass_claude_md"); err == nil {
+	// pass_gemini_md: when true, codex enables project-level GEMINI.md fallback
+	// (via project_doc_fallback_filenames) and a user-level GEMINI.md hint
+	if key, err := section.GetKey("pass_gemini_md"); err == nil {
 		val, boolErr := key.Bool()
 		if boolErr != nil {
-			return Values{}, fmt.Errorf("invalid pass_claude_md: %w", boolErr)
+			return Values{}, fmt.Errorf("invalid pass_gemini_md: %w", boolErr)
 		}
-		values.PassClaudeMd = val
-		values.PassClaudeMdSet = true
+		values.PassGeminiMd = val
+		values.PassGeminiMdSet = true
 	}
 
 	// move plan on completion
@@ -397,13 +397,13 @@ func (vl *valuesLoader) parseValuesFromBytes(data []byte) (Values, error) {
 	}
 
 	// error patterns (comma-separated)
-	values.ClaudeErrorPatterns = vl.parseCommaSeparated(section, "claude_error_patterns")
+	values.GeminiErrorPatterns = vl.parseCommaSeparated(section, "gemini_error_patterns")
 	values.CodexErrorPatterns = vl.parseCommaSeparated(section, "codex_error_patterns")
 
 	// limit and transient retry patterns (comma-separated, same format as error patterns)
-	values.ClaudeLimitPatterns = vl.parseCommaSeparated(section, "claude_limit_patterns")
+	values.GeminiLimitPatterns = vl.parseCommaSeparated(section, "gemini_limit_patterns")
 	values.CodexLimitPatterns = vl.parseCommaSeparated(section, "codex_limit_patterns")
-	values.ClaudeRetryPatterns = vl.parseCommaSeparated(section, "claude_retry_patterns")
+	values.GeminiRetryPatterns = vl.parseCommaSeparated(section, "gemini_retry_patterns")
 
 	// wait_on_limit duration
 	if d, ok, err := vl.parseDurationKey(section, "wait_on_limit"); err != nil {
@@ -455,11 +455,11 @@ func (vl *valuesLoader) parseDurationKey(section *ini.Section, key string) (time
 
 // mergeFrom merges non-empty values from src into dst.
 func (dst *Values) mergeFrom(src *Values) {
-	if src.ClaudeCommand != "" {
-		dst.ClaudeCommand = src.ClaudeCommand
+	if src.GeminiCommand != "" {
+		dst.GeminiCommand = src.GeminiCommand
 	}
-	if src.ClaudeArgs != "" {
-		dst.ClaudeArgs = src.ClaudeArgs
+	if src.GeminiArgs != "" {
+		dst.GeminiArgs = src.GeminiArgs
 	}
 	if src.PlanModel != "" {
 		dst.PlanModel = src.PlanModel
@@ -543,17 +543,17 @@ func (dst *Values) mergeExtraFrom(src *Values) {
 		dst.FinalizeEnabled = src.FinalizeEnabled
 		dst.FinalizeEnabledSet = true
 	}
-	if src.PreserveAnthropicAPIKeySet {
-		dst.PreserveAnthropicAPIKey = src.PreserveAnthropicAPIKey
-		dst.PreserveAnthropicAPIKeySet = true
+	if src.PreserveGeminiAPIKeySet {
+		dst.PreserveGeminiAPIKey = src.PreserveGeminiAPIKey
+		dst.PreserveGeminiAPIKeySet = true
 	}
 	if src.ExecutorSet {
 		dst.Executor = src.Executor
 		dst.ExecutorSet = true
 	}
-	if src.PassClaudeMdSet {
-		dst.PassClaudeMd = src.PassClaudeMd
-		dst.PassClaudeMdSet = true
+	if src.PassGeminiMdSet {
+		dst.PassGeminiMd = src.PassGeminiMd
+		dst.PassGeminiMdSet = true
 	}
 	if src.MovePlanOnCompletionSet {
 		dst.MovePlanOnCompletion = src.MovePlanOnCompletion
@@ -578,20 +578,20 @@ func (dst *Values) mergeExtraFrom(src *Values) {
 	if len(src.WatchDirs) > 0 {
 		dst.WatchDirs = src.WatchDirs
 	}
-	if len(src.ClaudeErrorPatterns) > 0 {
-		dst.ClaudeErrorPatterns = src.ClaudeErrorPatterns
+	if len(src.GeminiErrorPatterns) > 0 {
+		dst.GeminiErrorPatterns = src.GeminiErrorPatterns
 	}
 	if len(src.CodexErrorPatterns) > 0 {
 		dst.CodexErrorPatterns = src.CodexErrorPatterns
 	}
-	if len(src.ClaudeLimitPatterns) > 0 {
-		dst.ClaudeLimitPatterns = src.ClaudeLimitPatterns
+	if len(src.GeminiLimitPatterns) > 0 {
+		dst.GeminiLimitPatterns = src.GeminiLimitPatterns
 	}
 	if len(src.CodexLimitPatterns) > 0 {
 		dst.CodexLimitPatterns = src.CodexLimitPatterns
 	}
-	if len(src.ClaudeRetryPatterns) > 0 {
-		dst.ClaudeRetryPatterns = src.ClaudeRetryPatterns
+	if len(src.GeminiRetryPatterns) > 0 {
+		dst.GeminiRetryPatterns = src.GeminiRetryPatterns
 	}
 	if src.WaitOnLimitSet {
 		dst.WaitOnLimit = src.WaitOnLimit

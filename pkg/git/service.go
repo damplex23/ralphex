@@ -102,7 +102,7 @@ func (s *Service) HeadHash() (string, error) {
 }
 
 // DiffFingerprint returns a hash of the current working tree state (tracked diffs + untracked file content).
-// used for stalemate detection - if the fingerprint changes between rounds, Claude made edits.
+// used for stalemate detection - if the fingerprint changes between rounds, Gemini made edits.
 func (s *Service) DiffFingerprint() (string, error) {
 	return s.repo.diffFingerprint()
 }

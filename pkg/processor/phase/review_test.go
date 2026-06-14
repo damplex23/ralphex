@@ -71,7 +71,7 @@ func TestReviewPhase_Loop_PatternMatchError(t *testing.T) {
 
 func TestWrapExecutorError(t *testing.T) {
 	t.Run("nil error returns nil", func(t *testing.T) {
-		assert.NoError(t, wrapExecutorError(newScriptedTestPolicy(newMockLogger("")), nil, "claude"))
+		assert.NoError(t, wrapExecutorError(newScriptedTestPolicy(newMockLogger("")), nil, "gemini"))
 	})
 
 	t.Run("pattern match wraps as pattern handling", func(t *testing.T) {
@@ -84,9 +84,9 @@ func TestWrapExecutorError(t *testing.T) {
 	})
 
 	t.Run("plain error wraps as execution", func(t *testing.T) {
-		err := wrapExecutorError(newScriptedTestPolicy(newMockLogger("")), errors.New("boom"), "claude")
+		err := wrapExecutorError(newScriptedTestPolicy(newMockLogger("")), errors.New("boom"), "gemini")
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "claude execution:")
+		assert.Contains(t, err.Error(), "gemini execution:")
 		assert.Contains(t, err.Error(), "boom")
 	})
 }

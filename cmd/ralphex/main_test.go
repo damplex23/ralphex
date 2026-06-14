@@ -76,7 +76,7 @@ func testColors() *progress.Colors {
 		Task:       "0,255,0",
 		Review:     "0,255,255",
 		Codex:      "255,0,255",
-		ClaudeEval: "100,200,255",
+		GeminiEval: "100,200,255",
 		Warn:       "255,255,0",
 		Error:      "255,0,0",
 		Signal:     "255,100,100",
@@ -85,20 +85,20 @@ func testColors() *progress.Colors {
 	})
 }
 
-// skipIfClaudeNotAvailable loads config (read-only) and skips test if configured claude command is not in PATH.
+// skipIfGeminiNotAvailable loads config (read-only) and skips test if configured gemini command is not in PATH.
 // uses LoadReadOnly to avoid installing defaults to real user config directory during tests.
-func skipIfClaudeNotAvailable(t *testing.T) {
+func skipIfGeminiNotAvailable(t *testing.T) {
 	t.Helper()
 	cfg, err := config.LoadReadOnly("")
 	if err != nil {
 		t.Skipf("failed to load config: %v", err)
 	}
-	claudeCmd := cfg.ClaudeCommand
-	if claudeCmd == "" {
-		claudeCmd = "claude"
+	geminiCmd := cfg.GeminiCommand
+	if geminiCmd == "" {
+		geminiCmd = "gemini"
 	}
-	if _, err := exec.LookPath(claudeCmd); err != nil {
-		t.Skipf("%s not installed", claudeCmd)
+	if _, err := exec.LookPath(geminiCmd); err != nil {
+		t.Skipf("%s not installed", geminiCmd)
 	}
 }
 
@@ -243,8 +243,8 @@ func TestPlanFlagConflict(t *testing.T) {
 
 func TestPlanModeIntegration(t *testing.T) {
 	t.Run("plan_mode_requires_git_repo", func(t *testing.T) {
-		// skip if configured claude command is not installed
-		skipIfClaudeNotAvailable(t)
+		// skip if configured gemini command is not installed
+		skipIfGeminiNotAvailable(t)
 
 		// run from a non-git directory
 		tmpDir := t.TempDir()
@@ -269,7 +269,7 @@ func TestPlanModeIntegration(t *testing.T) {
 		require.NoError(t, err)
 		t.Cleanup(func() { _ = os.Chdir(origDir) })
 
-		// run in plan mode - will fail at claude execution but should pass validation and setup
+		// run in plan mode - will fail at gemini execution but should pass validation and setup
 		ctx, cancel := context.WithCancel(t.Context())
 		cancel() // cancel immediately to stop execution
 
@@ -283,8 +283,8 @@ func TestPlanModeIntegration(t *testing.T) {
 	})
 
 	t.Run("plan_mode_progress_file_naming", func(t *testing.T) {
-		// skip if configured claude command is not installed
-		skipIfClaudeNotAvailable(t)
+		// skip if configured gemini command is not installed
+		skipIfGeminiNotAvailable(t)
 
 		// test that progress filename is generated correctly for plan mode
 		// the actual file creation is tested by the integration test with real runner
@@ -318,8 +318,8 @@ func TestPlanModeIntegration(t *testing.T) {
 
 func TestAutoPlanModeDetection(t *testing.T) {
 	t.Run("feature_branch_with_no_plans_still_errors", func(t *testing.T) {
-		// skip if configured claude command is not installed
-		skipIfClaudeNotAvailable(t)
+		// skip if configured gemini command is not installed
+		skipIfGeminiNotAvailable(t)
 
 		dir := setupTestRepo(t)
 		origDir, err := os.Getwd()
@@ -345,8 +345,8 @@ func TestAutoPlanModeDetection(t *testing.T) {
 	})
 
 	t.Run("review_mode_skips_auto_plan_mode", func(t *testing.T) {
-		// skip if configured claude command is not installed
-		skipIfClaudeNotAvailable(t)
+		// skip if configured gemini command is not installed
+		skipIfGeminiNotAvailable(t)
 
 		dir := setupTestRepo(t)
 		origDir, err := os.Getwd()
@@ -372,8 +372,8 @@ func TestAutoPlanModeDetection(t *testing.T) {
 	})
 
 	t.Run("codex_only_mode_skips_auto_plan_mode", func(t *testing.T) {
-		// skip if configured claude command is not installed
-		skipIfClaudeNotAvailable(t)
+		// skip if configured gemini command is not installed
+		skipIfGeminiNotAvailable(t)
 
 		dir := setupTestRepo(t)
 		origDir, err := os.Getwd()
@@ -399,8 +399,8 @@ func TestAutoPlanModeDetection(t *testing.T) {
 	})
 
 	t.Run("external_only_mode_skips_auto_plan_mode", func(t *testing.T) {
-		// skip if configured claude command is not installed
-		skipIfClaudeNotAvailable(t)
+		// skip if configured gemini command is not installed
+		skipIfGeminiNotAvailable(t)
 
 		dir := setupTestRepo(t)
 		origDir, err := os.Getwd()
@@ -426,21 +426,21 @@ func TestAutoPlanModeDetection(t *testing.T) {
 	})
 }
 
-func TestCheckClaudeDep(t *testing.T) {
+func TestCheckGeminiDep(t *testing.T) {
 	t.Run("uses_configured_command", func(t *testing.T) {
-		cfg := &config.Config{ClaudeCommand: "nonexistent-command-12345"}
-		err := checkClaudeDep(cfg)
+		cfg := &config.Config{GeminiCommand: "nonexistent-command-12345"}
+		err := checkGeminiDep(cfg)
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "nonexistent-command-12345")
 	})
 
-	t.Run("falls_back_to_claude_when_empty", func(t *testing.T) {
+	t.Run("falls_back_to_gemini_when_empty", func(t *testing.T) {
 		// force PATH lookup to fail deterministically so the assertion runs on dev machines too
 		t.Setenv("PATH", "")
-		cfg := &config.Config{ClaudeCommand: ""}
-		err := checkClaudeDep(cfg)
+		cfg := &config.Config{GeminiCommand: ""}
+		err := checkGeminiDep(cfg)
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "claude")
+		assert.Contains(t, err.Error(), "gemini")
 	})
 }
 
@@ -640,62 +640,62 @@ func TestSkipFinalizeFlag(t *testing.T) {
 	})
 }
 
-func TestPreserveAnthropicAPIKeyFlag(t *testing.T) {
+func TestPreserveGeminiAPIKeyFlag(t *testing.T) {
 	t.Run("flag enables when config disabled", func(t *testing.T) {
-		cfg := &config.Config{PreserveAnthropicAPIKey: false}
-		o := parseTestOpts(t, "--preserve-anthropic-api-key")
+		cfg := &config.Config{PreserveGeminiAPIKey: false}
+		o := parseTestOpts(t, "--preserve-gemini-api-key")
 
 		require.NoError(t, applyCLIOverrides(o, cfg))
 
-		assert.True(t, cfg.PreserveAnthropicAPIKey, "CLI flag should enable preserve in config")
+		assert.True(t, cfg.PreserveGeminiAPIKey, "CLI flag should enable preserve in config")
 	})
 
 	t.Run("absent flag preserves config true", func(t *testing.T) {
-		cfg := &config.Config{PreserveAnthropicAPIKey: true}
+		cfg := &config.Config{PreserveGeminiAPIKey: true}
 		o := parseTestOpts(t)
 
 		require.NoError(t, applyCLIOverrides(o, cfg))
 
-		assert.True(t, cfg.PreserveAnthropicAPIKey, "config-set true should be preserved when flag absent")
+		assert.True(t, cfg.PreserveGeminiAPIKey, "config-set true should be preserved when flag absent")
 	})
 
 	t.Run("absent flag preserves config false", func(t *testing.T) {
-		cfg := &config.Config{PreserveAnthropicAPIKey: false}
+		cfg := &config.Config{PreserveGeminiAPIKey: false}
 		o := parseTestOpts(t)
 
 		require.NoError(t, applyCLIOverrides(o, cfg))
 
-		assert.False(t, cfg.PreserveAnthropicAPIKey)
+		assert.False(t, cfg.PreserveGeminiAPIKey)
 	})
 }
 
 func TestProviderOverrideFlags(t *testing.T) {
-	t.Run("claude_command_overrides_config", func(t *testing.T) {
-		cfg := &config.Config{ClaudeCommand: "configured-claude"}
-		o := parseTestOpts(t, "--claude-command", "/tmp/run-claude")
+	t.Run("gemini_command_overrides_config", func(t *testing.T) {
+		cfg := &config.Config{GeminiCommand: "configured-gemini"}
+		o := parseTestOpts(t, "--gemini-command", "/tmp/run-gemini")
 
 		require.NoError(t, applyCLIOverrides(o, cfg))
 
-		assert.Equal(t, "/tmp/run-claude", cfg.ClaudeCommand)
+		assert.Equal(t, "/tmp/run-gemini", cfg.GeminiCommand)
 	})
 
-	t.Run("claude_args_overrides_config", func(t *testing.T) {
-		cfg := &config.Config{ClaudeArgs: "--configured"}
-		o := parseTestOpts(t, "--claude-args=--wrapper --stream")
+	t.Run("gemini_args_overrides_config", func(t *testing.T) {
+		cfg := &config.Config{GeminiArgs: "--configured"}
+		o := parseTestOpts(t, "--gemini-args=--wrapper --stream")
 
 		require.NoError(t, applyCLIOverrides(o, cfg))
 
-		assert.Equal(t, "--wrapper --stream", cfg.ClaudeArgs)
+		assert.Equal(t, "--wrapper --stream", cfg.GeminiArgs)
 	})
 
-	t.Run("empty_claude_args_clears_config", func(t *testing.T) {
-		cfg := &config.Config{ClaudeArgs: "--configured --args"}
-		o := parseTestOpts(t, "--claude-args=")
+	t.Run("empty_gemini_args_clears_config", func(t *testing.T) {
+		cfg := &config.Config{GeminiArgs: "--configured --args"}
+		o := parseTestOpts(t, "--gemini-args=")
 
 		require.NoError(t, applyCLIOverrides(o, cfg))
 
-		assert.Empty(t, cfg.ClaudeArgs)
-		assert.True(t, cfg.ClaudeArgsSet)
+		assert.Empty(t, cfg.GeminiArgs)
+		assert.True(t, cfg.GeminiArgsSet)
 	})
 
 	t.Run("external_review_tool_overrides_config", func(t *testing.T) {
@@ -745,17 +745,17 @@ func TestProviderOverrideFlags(t *testing.T) {
 	})
 }
 
-func TestRunAppliesClaudeCommandOverrideBeforeDependencyCheck(t *testing.T) {
+func TestRunAppliesGeminiCommandOverrideBeforeDependencyCheck(t *testing.T) {
 	tmpDir := t.TempDir()
 	cfgDir := filepath.Join(tmpDir, "config")
 	require.NoError(t, os.MkdirAll(cfgDir, 0o750))
 
-	missingCommand := "missing-ralphex-claude-command"
-	configData := []byte("claude_command = " + missingCommand + "\n")
+	missingCommand := "missing-ralphex-gemini-command"
+	configData := []byte("gemini_command = " + missingCommand + "\n")
 	require.NoError(t, os.WriteFile(filepath.Join(cfgDir, "config"), configData, 0o600))
 
-	fakeClaude := filepath.Join(tmpDir, "fake-claude")
-	writeExecutable(t, fakeClaude, "#!/bin/sh\nexit 0\n")
+	fakeGemini := filepath.Join(tmpDir, "fake-gemini")
+	writeExecutable(t, fakeGemini, "#!/bin/sh\nexit 0\n")
 
 	workDir := filepath.Join(tmpDir, "work")
 	require.NoError(t, os.MkdirAll(workDir, 0o750))
@@ -764,7 +764,7 @@ func TestRunAppliesClaudeCommandOverrideBeforeDependencyCheck(t *testing.T) {
 	require.NoError(t, os.Chdir(workDir))
 	t.Cleanup(func() { _ = os.Chdir(origDir) })
 
-	o := parseTestOpts(t, "--config-dir", cfgDir, "--claude-command", fakeClaude)
+	o := parseTestOpts(t, "--config-dir", cfgDir, "--gemini-command", fakeGemini)
 
 	err = run(t.Context(), o)
 
@@ -934,13 +934,13 @@ func TestValidateFlags(t *testing.T) {
 		{name: "positive_idle_timeout_is_valid", opts: opts{IdleTimeout: 5 * time.Minute}, wantErr: false},
 		{name: "zero_idle_timeout_is_valid", opts: opts{IdleTimeout: 0}, wantErr: false},
 		{name: "codex_alone_is_valid", opts: opts{Codex: true}, wantErr: false},
-		{name: "codex_with_pass_claude_md_is_valid", opts: opts{Codex: true, PassClaudeMd: true}, wantErr: false},
-		// the --codex / --external-only / --codex-only / --external-review-tool / --pass-claude-md
+		{name: "codex_with_pass_gemini_md_is_valid", opts: opts{Codex: true, PassGeminiMd: true}, wantErr: false},
+		// the --codex / --external-only / --codex-only / --external-review-tool / --pass-gemini-md
 		// mutex checks moved to applyCodexOverrides so config-file executor=codex is also enforced;
 		// validateFlags accepts those combos at CLI parse time and the post-merge gate rejects them.
 		{name: "codex_with_external_only_accepted_at_cli_stage", opts: opts{Codex: true, ExternalOnly: true}, wantErr: false},
 		{name: "codex_with_codex_only_accepted_at_cli_stage", opts: opts{Codex: true, CodexOnly: true}, wantErr: false},
-		{name: "pass_claude_md_without_codex_is_valid_at_cli_stage", opts: opts{PassClaudeMd: true}, wantErr: false},
+		{name: "pass_gemini_md_without_codex_is_valid_at_cli_stage", opts: opts{PassGeminiMd: true}, wantErr: false},
 	}
 
 	for _, tc := range tests {
@@ -957,7 +957,7 @@ func TestValidateFlags(t *testing.T) {
 }
 
 func TestApplyCodexOverrides_PostMergeMutexChecks(t *testing.T) {
-	// the --codex / --external-only / --codex-only / --external-review-tool / --pass-claude-md
+	// the --codex / --external-only / --codex-only / --external-review-tool / --pass-gemini-md
 	// mutex gate runs in applyCodexOverrides after config merge, so the same CLI flag
 	// is rejected whether the codex executor comes from --codex on the CLI or from
 	// executor=codex in the config file.
@@ -1053,13 +1053,13 @@ func TestCodexFlag_ApplyCLIOverrides(t *testing.T) {
 		assert.Equal(t, "none", cfg.ExternalReviewTool)
 	})
 
-	t.Run("pass_claude_md_flag_sets_pass_claude_md", func(t *testing.T) {
+	t.Run("pass_gemini_md_flag_sets_pass_gemini_md", func(t *testing.T) {
 		cfg := &config.Config{}
-		o := parseTestOpts(t, "--codex", "--pass-claude-md")
+		o := parseTestOpts(t, "--codex", "--pass-gemini-md")
 
 		require.NoError(t, applyCLIOverrides(o, cfg))
 
-		assert.True(t, cfg.PassClaudeMd)
+		assert.True(t, cfg.PassGeminiMd)
 	})
 
 	t.Run("absent_codex_flag_does_not_touch_executor", func(t *testing.T) {
@@ -1125,42 +1125,42 @@ func TestCodexFlag_ApplyCLIOverrides(t *testing.T) {
 		assert.Empty(t, warnBuf.String())
 	})
 
-	t.Run("config_executor_codex_plus_cli_pass_claude_md_succeeds", func(t *testing.T) {
-		// post-merge gate: --pass-claude-md is acceptable when executor=codex
+	t.Run("config_executor_codex_plus_cli_pass_gemini_md_succeeds", func(t *testing.T) {
+		// post-merge gate: --pass-gemini-md is acceptable when executor=codex
 		// comes from config file, even without --codex on the CLI.
 		cfg := &config.Config{Executor: config.ExecutorCodex, ExternalReviewTool: "none"}
-		o := parseTestOpts(t, "--pass-claude-md")
+		o := parseTestOpts(t, "--pass-gemini-md")
 		var warnBuf bytes.Buffer
 
 		require.NoError(t, applyCodexOverrides(o, cfg, &warnBuf))
 
-		assert.True(t, cfg.PassClaudeMd)
+		assert.True(t, cfg.PassGeminiMd)
 		assert.Equal(t, config.ExecutorCodex, cfg.Executor)
 		assert.Empty(t, warnBuf.String())
 	})
 
-	t.Run("cli_pass_claude_md_without_any_codex_fails_post_merge", func(t *testing.T) {
-		// post-merge gate: --pass-claude-md without codex executor (neither CLI nor config)
+	t.Run("cli_pass_gemini_md_without_any_codex_fails_post_merge", func(t *testing.T) {
+		// post-merge gate: --pass-gemini-md without codex executor (neither CLI nor config)
 		// is rejected with a clear error message.
 		cfg := &config.Config{Executor: "", ExternalReviewTool: "none"}
-		o := parseTestOpts(t, "--pass-claude-md")
+		o := parseTestOpts(t, "--pass-gemini-md")
 		var warnBuf bytes.Buffer
 
 		err := applyCodexOverrides(o, cfg, &warnBuf)
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "--pass-claude-md requires --codex")
+		assert.Contains(t, err.Error(), "--pass-gemini-md requires --codex")
 		assert.Contains(t, err.Error(), "executor = codex in config")
 	})
 
-	t.Run("cli_codex_plus_pass_claude_md_succeeds_post_merge", func(t *testing.T) {
+	t.Run("cli_codex_plus_pass_gemini_md_succeeds_post_merge", func(t *testing.T) {
 		// redundant but valid: both flags on CLI.
 		cfg := &config.Config{Executor: "", ExternalReviewTool: "none"}
-		o := parseTestOpts(t, "--codex", "--pass-claude-md")
+		o := parseTestOpts(t, "--codex", "--pass-gemini-md")
 		var warnBuf bytes.Buffer
 
 		require.NoError(t, applyCodexOverrides(o, cfg, &warnBuf))
 
-		assert.True(t, cfg.PassClaudeMd)
+		assert.True(t, cfg.PassGeminiMd)
 		assert.Equal(t, config.ExecutorCodex, cfg.Executor)
 	})
 }
@@ -1419,12 +1419,12 @@ func TestPrintStartupInfo(t *testing.T) {
 			Mode:                    processor.ModeFull,
 			MaxIterations:           50,
 			ProgressPath:            "progress.txt",
-			PreserveAnthropicAPIKey: true,
+			PreserveGeminiAPIKey: true,
 		}
 		out := captureStdout(t, func() {
 			printStartupInfo(info, colors)
 		})
-		assert.Contains(t, out, "ANTHROPIC_API_KEY passthrough enabled",
+		assert.Contains(t, out, "GEMINI_API_KEY passthrough enabled",
 			"banner must surface API key passthrough so users notice wrong-context runs")
 	})
 
@@ -1435,7 +1435,7 @@ func TestPrintStartupInfo(t *testing.T) {
 			Mode:                    processor.ModeFull,
 			MaxIterations:           50,
 			ProgressPath:            "progress.txt",
-			PreserveAnthropicAPIKey: false,
+			PreserveGeminiAPIKey: false,
 		}
 		out := captureStdout(t, func() {
 			printStartupInfo(info, colors)
@@ -1453,12 +1453,12 @@ func TestPrintStartupInfo(t *testing.T) {
 			Mode:                    processor.ModePlan,
 			MaxIterations:           50,
 			ProgressPath:            "progress.txt",
-			PreserveAnthropicAPIKey: true,
+			PreserveGeminiAPIKey: true,
 		}
 		out := captureStdout(t, func() {
 			printStartupInfo(info, colors)
 		})
-		assert.Contains(t, out, "ANTHROPIC_API_KEY passthrough enabled",
+		assert.Contains(t, out, "GEMINI_API_KEY passthrough enabled",
 			"plan mode banner must surface API key passthrough")
 	})
 
@@ -1477,7 +1477,7 @@ func TestPrintStartupInfo(t *testing.T) {
 		assert.Contains(t, out, "executor: codex (external review skipped)")
 	})
 
-	t.Run("shows claude md passthrough line when enabled", func(t *testing.T) {
+	t.Run("shows gemini md passthrough line when enabled", func(t *testing.T) {
 		info := startupInfo{
 			PlanFile:      "/path/to/plan.md",
 			Branch:        "feature-branch",
@@ -1485,15 +1485,15 @@ func TestPrintStartupInfo(t *testing.T) {
 			MaxIterations: 50,
 			ProgressPath:  "progress.txt",
 			Executor:      config.ExecutorCodex,
-			PassClaudeMd:  true,
+			PassGeminiMd:  true,
 		}
 		out := captureStdout(t, func() {
 			printStartupInfo(info, colors)
 		})
-		assert.Contains(t, out, "claude.md: project CLAUDE.md passthrough enabled")
+		assert.Contains(t, out, "gemini.md: project GEMINI.md passthrough enabled")
 	})
 
-	t.Run("hides executor line for default claude", func(t *testing.T) {
+	t.Run("hides executor line for default gemini", func(t *testing.T) {
 		info := startupInfo{
 			PlanFile:      "/path/to/plan.md",
 			Branch:        "feature-branch",
@@ -1749,7 +1749,7 @@ func TestEnsureRepoHasCommits(t *testing.T) {
 
 func TestTasksOnlyModeBranchCreation(t *testing.T) {
 	t.Run("tasks_only_creates_branch_for_plan", func(t *testing.T) {
-		skipIfClaudeNotAvailable(t)
+		skipIfGeminiNotAvailable(t)
 		configDir := t.TempDir() // isolate from global config
 
 		dir := setupTestRepo(t)
@@ -1794,7 +1794,7 @@ func TestTasksOnlyModeBranchCreation(t *testing.T) {
 	})
 
 	t.Run("review_mode_does_not_create_branch", func(t *testing.T) {
-		skipIfClaudeNotAvailable(t)
+		skipIfGeminiNotAvailable(t)
 		configDir := t.TempDir() // isolate from global config
 
 		dir := setupTestRepo(t)
@@ -1827,7 +1827,7 @@ func TestTasksOnlyModeBranchCreation(t *testing.T) {
 	})
 
 	t.Run("codex_only_mode_does_not_create_branch", func(t *testing.T) {
-		skipIfClaudeNotAvailable(t)
+		skipIfGeminiNotAvailable(t)
 		configDir := t.TempDir() // isolate from global config
 
 		dir := setupTestRepo(t)
@@ -1860,7 +1860,7 @@ func TestTasksOnlyModeBranchCreation(t *testing.T) {
 	})
 
 	t.Run("external_only_mode_does_not_create_branch", func(t *testing.T) {
-		skipIfClaudeNotAvailable(t)
+		skipIfGeminiNotAvailable(t)
 		configDir := t.TempDir() // isolate from global config
 
 		dir := setupTestRepo(t)
@@ -2149,7 +2149,7 @@ func TestDumpDefaults(t *testing.T) {
 
 		data, err := os.ReadFile(filepath.Join(tmpDir, "config")) //nolint:gosec // test
 		require.NoError(t, err)
-		assert.Contains(t, string(data), "claude_command")
+		assert.Contains(t, string(data), "gemini_command")
 		// raw content should have uncommented lines
 		hasUncommented := false
 		for line := range strings.SplitSeq(string(data), "\n") {
@@ -2405,7 +2405,7 @@ func TestResolveVersion(t *testing.T) {
 
 func TestRunWithWorktree(t *testing.T) {
 	t.Run("creates_worktree_and_restores_cwd", func(t *testing.T) {
-		skipIfClaudeNotAvailable(t)
+		skipIfGeminiNotAvailable(t)
 
 		dir := setupTestRepo(t)
 		origDir, err := os.Getwd()
@@ -2456,7 +2456,7 @@ func TestRunWithWorktree(t *testing.T) {
 	})
 
 	t.Run("populates_worktree_cleanup_ptr", func(t *testing.T) {
-		skipIfClaudeNotAvailable(t)
+		skipIfGeminiNotAvailable(t)
 
 		dir := setupTestRepo(t)
 		origDir, err := os.Getwd()
@@ -2493,7 +2493,7 @@ func TestRunWithWorktree(t *testing.T) {
 	})
 
 	t.Run("worktree_creates_branch", func(t *testing.T) {
-		skipIfClaudeNotAvailable(t)
+		skipIfGeminiNotAvailable(t)
 
 		dir := setupTestRepo(t)
 		origDir, err := os.Getwd()
@@ -2535,7 +2535,7 @@ func TestWorktreeMode_SkippedForNonBranchModes(t *testing.T) {
 	// here we verify the guard condition explicitly.
 
 	t.Run("worktree_skipped_for_review_mode", func(t *testing.T) {
-		skipIfClaudeNotAvailable(t)
+		skipIfGeminiNotAvailable(t)
 
 		dir := setupTestRepo(t)
 		origDir, err := os.Getwd()
@@ -2569,7 +2569,7 @@ func TestWorktreeMode_SkippedForNonBranchModes(t *testing.T) {
 }
 
 func TestRunWithWorktree_UntrackedPlan(t *testing.T) {
-	skipIfClaudeNotAvailable(t)
+	skipIfGeminiNotAvailable(t)
 
 	dir := setupTestRepo(t)
 	origDir, err := os.Getwd()

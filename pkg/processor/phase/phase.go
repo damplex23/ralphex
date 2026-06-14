@@ -45,7 +45,7 @@ func (c Config) executorName() string {
 	if c.isCodexExecutor() {
 		return "codex"
 	}
-	return "claude"
+	return "gemini"
 }
 
 // wrapExecutorError wraps a phase executor error, routing through pattern-match handling first.
@@ -152,9 +152,9 @@ type ReviewPrompts interface {
 
 // ExternalReviewPrompts renders external review and evaluation prompts.
 type ExternalReviewPrompts interface {
-	CodexReviewPrompt(isFirst bool, claudeResponse string) string
+	CodexReviewPrompt(isFirst bool, geminiResponse string) string
 	CodexEvaluationPrompt(codexOutput string) string
-	CustomReviewPrompt(isFirst bool, claudeResponse string) string
+	CustomReviewPrompt(isFirst bool, geminiResponse string) string
 	CustomEvaluationPrompt(customOutput string) string
 }
 

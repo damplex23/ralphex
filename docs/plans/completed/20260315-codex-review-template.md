@@ -12,7 +12,7 @@
 - `buildCodexPrompt` in `runner.go:767-817` constructs the prompt inline with `fmt.Sprintf`
 - `buildCustomReviewPrompt` in `prompts.go:200-217` uses a template file but hardcodes the `PREVIOUS REVIEW CONTEXT` block
 - The existing prompt loading pattern: constant → `Prompts` struct field → `Config` field → embedded default file
-- Naming note: `codex_review.txt` (sent to codex) pairs with `codex.txt` (Claude evaluates codex output). This differs from the custom pattern (`custom_review.txt`/`custom_eval.txt`) but renaming `codex.txt` → `codex_eval.txt` would break existing user configs. Both files get clear header comments documenting their purpose.
+- Naming note: `codex_review.txt` (sent to codex) pairs with `codex.txt` (Gemini evaluates codex output). This differs from the custom pattern (`custom_review.txt`/`custom_eval.txt`) but renaming `codex.txt` → `codex_eval.txt` would break existing user configs. Both files get clear header comments documenting their purpose.
 
 ## Solution Overview
 - Create `codex_review.txt` template with all variables (`{{DIFF_INSTRUCTION}}`, `{{PROGRESS_FILE}}`, `{{PLAN_FILE}}`, `{{PREVIOUS_REVIEW_CONTEXT}}`)
@@ -22,19 +22,19 @@
 - Add `{{PREVIOUS_REVIEW_CONTEXT}}` to `custom_review.txt` default template
 
 ## Technical Details
-- `{{PREVIOUS_REVIEW_CONTEXT}}` is built by `buildPreviousContext(claudeResponse)` method as either empty string or the full block:
+- `{{PREVIOUS_REVIEW_CONTEXT}}` is built by `buildPreviousContext(geminiResponse)` method as either empty string or the full block:
   ```
   ---
   PREVIOUS REVIEW CONTEXT:
-  Claude (previous reviewer) responded to your findings:
+  Gemini (previous reviewer) responded to your findings:
 
-  <claude response>
+  <gemini response>
 
-  Re-evaluate considering Claude's arguments. If Claude's fixes are correct, acknowledge them.
-  If Claude's arguments are invalid, explain why the issues still exist.
+  Re-evaluate considering Gemini's arguments. If Gemini's fixes are correct, acknowledge them.
+  If Gemini's arguments are invalid, explain why the issues still exist.
   ```
 - `{{DIFF_INSTRUCTION}}` already exists and handles first vs subsequent iteration diff commands
-- Extend `replaceVariablesWithIteration` to also accept `claudeResponse` and handle `{{PREVIOUS_REVIEW_CONTEXT}}` substitution, so both `buildCodexPrompt` and `buildCustomReviewPrompt` use the same expansion path
+- Extend `replaceVariablesWithIteration` to also accept `geminiResponse` and handle `{{PREVIOUS_REVIEW_CONTEXT}}` substitution, so both `buildCodexPrompt` and `buildCustomReviewPrompt` use the same expansion path
 
 ## Development Approach
 - **testing approach**: regular (code first, then tests)
@@ -78,8 +78,8 @@
 - Modify: `pkg/processor/runner_test.go`
 - Modify: `pkg/processor/export_test.go`
 
-- [x] add `buildPreviousContext(claudeResponse string) string` method to Runner that returns empty string or the formatted PREVIOUS REVIEW CONTEXT block
-- [x] extend `replaceVariablesWithIteration` to accept `claudeResponse` parameter and replace `{{PREVIOUS_REVIEW_CONTEXT}}` with the output of `buildPreviousContext`
+- [x] add `buildPreviousContext(geminiResponse string) string` method to Runner that returns empty string or the formatted PREVIOUS REVIEW CONTEXT block
+- [x] extend `replaceVariablesWithIteration` to accept `geminiResponse` parameter and replace `{{PREVIOUS_REVIEW_CONTEXT}}` with the output of `buildPreviousContext`
 - [x] replace `buildCodexPrompt` inline construction with template-based approach using `r.cfg.AppConfig.CodexReviewPrompt` and `replaceVariablesWithIteration`
 - [x] write tests for `buildPreviousContext` - empty on first call, populated with response on subsequent
 - [x] write tests for `buildCodexPrompt` with the new template - verify all variables are expanded correctly
@@ -95,7 +95,7 @@
 - Modify: `pkg/processor/prompts_test.go`
 
 - [x] add `{{PREVIOUS_REVIEW_CONTEXT}}` to `custom_review.txt` template, replacing the hardcoded block in Go
-- [x] refactor `buildCustomReviewPrompt` to use `replaceVariablesWithIteration` (with claudeResponse) instead of appending the block in Go code
+- [x] refactor `buildCustomReviewPrompt` to use `replaceVariablesWithIteration` (with geminiResponse) instead of appending the block in Go code
 - [x] write tests for `buildCustomReviewPrompt` with `{{PREVIOUS_REVIEW_CONTEXT}}` expansion (both empty and populated)
 - [x] run `go test ./pkg/processor/...` - must pass before next task
 
@@ -109,7 +109,7 @@
 - [x] verify test coverage meets 80%+
 
 ### Task 5: [Final] Update documentation
-- [x] update CLAUDE.md with new template file and `{{PREVIOUS_REVIEW_CONTEXT}}` variable
+- [x] update GEMINI.md with new template file and `{{PREVIOUS_REVIEW_CONTEXT}}` variable
 - [x] update `llms.txt` with new prompt file and template variable documentation
 - [x] update README.md customization section if needed
 - [x] move this plan to `docs/plans/completed/`

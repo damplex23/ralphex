@@ -6,7 +6,7 @@ Tracking issue: umputun/ralphex#341
 
 When a plan file is renamed (not just moved) during execution, ralphex's task phase enters an infinite warning loop until `MaxIterations` is reached.
 
-Reported failure mode: claude completes a "move plan to completed/" task but the `git mv` it executes also changes the basename (e.g. `2026-05-12-extract-env-variable.md` → `20260512-extract-env-variable.md`). The runtime's frozen `r.cfg.PlanFile` no longer resolves: `resolvePlanFilePath` only tries the original path and `<dir>/completed/<original-basename>`. Both miss. `hasUncompletedTasks` then sees a parse error, returns `true` (assume incomplete), rejects every subsequent `ALL_TASKS_DONE` signal, and the loop spins emitting:
+Reported failure mode: gemini completes a "move plan to completed/" task but the `git mv` it executes also changes the basename (e.g. `2026-05-12-extract-env-variable.md` → `20260512-extract-env-variable.md`). The runtime's frozen `r.cfg.PlanFile` no longer resolves: `resolvePlanFilePath` only tries the original path and `<dir>/completed/<original-basename>`. Both miss. `hasUncompletedTasks` then sees a parse error, returns `true` (assume incomplete), rejects every subsequent `ALL_TASKS_DONE` signal, and the loop spins emitting:
 
 ```
 [WARN] failed to parse plan file for completion check: ... no such file or directory
@@ -50,7 +50,7 @@ Together they cover the observed failure and make the loop fundamentally unable 
 
 - **unit tests**: extend `TestRunner_resolvePlanFilePath` in `pkg/processor/prompts_test.go` with rename-aware cases. Extend `pkg/processor/runner_test.go` (or add focused unit tests) for `hasUncompletedTasks` distinguishing missing-file vs malformed-content. Extend `pkg/git/service_test.go` for the rename-aware `MovePlanToCompleted` behavior. Add a small assertion verifying the embedded `make_plan.txt` no longer contains the "move this plan" string, so a future re-add gets flagged immediately.
 - **e2e tests**: none — no UI changes
-- run the toy-project e2e flow per `CLAUDE.md` after Task 4 to confirm real end-to-end behavior is unaffected
+- run the toy-project e2e flow per `GEMINI.md` after Task 4 to confirm real end-to-end behavior is unaffected
 
 ## Progress Tracking
 
@@ -156,15 +156,15 @@ The new helper lives in the processor package because that's the package with th
 - [x] run full test suite: `make test`
 - [x] run linter: `make lint`
 - [x] verify coverage on `pkg/config`, `pkg/processor`, and `pkg/git` did not regress (config 89.7%, processor 92.0%, git 80.3%)
-- [x] **manual sign-off** — end-to-end toy-project verification per `CLAUDE.md` section "End-to-End Testing": run `./scripts/internal/prep-toy-test.sh`, then `cd /tmp/ralphex-test && .bin/ralphex docs/plans/fix-issues.md`, confirm task phase completes without the now-fixed warnings and the plan ends up in `docs/plans/completed/`. Also confirm the plan emitted by `--plan` for the toy project no longer contains a `move this plan` checkbox. (Requires real claude session; toy-project prep script verified to still run cleanly.)
+- [x] **manual sign-off** — end-to-end toy-project verification per `GEMINI.md` section "End-to-End Testing": run `./scripts/internal/prep-toy-test.sh`, then `cd /tmp/ralphex-test && .bin/ralphex docs/plans/fix-issues.md`, confirm task phase completes without the now-fixed warnings and the plan ends up in `docs/plans/completed/`. Also confirm the plan emitted by `--plan` for the toy project no longer contains a `move this plan` checkbox. (Requires real gemini session; toy-project prep script verified to still run cleanly.)
 - [x] **manual sign-off** — reproduce the original failure mode synthetically: rerun the toy project but, in a second terminal during execution, perform `git mv docs/plans/<dashed>.md docs/plans/<compact>.md` (changing only the date prefix). Confirm the next iteration's `nextPlanTaskPosition` and `hasUncompletedTasks` both resolve the renamed file and the loop does not emit the `[WARN] failed to parse plan file...` warnings. (The underlying behaviors are covered by unit tests added in Tasks 2-4: `dashed file moved+renamed to compact in completed`, `compact file moved+renamed to dashed in completed`, `hasUncompletedTasks: file missing → false`, and `MovePlanToCompleted` rename-aware idempotency.)
 
 ### Task 6: [Final] Update documentation
 
 **Files:**
-- Modify: `CLAUDE.md`
+- Modify: `GEMINI.md`
 
-- [x] add a one-paragraph note under "Key Patterns" describing both layers: (a) `make_plan.txt` no longer asks the LLM to move the plan because the framework already moves it idempotently on completion; (b) `resolvePlanFilePath` and `MovePlanToCompleted` recover when an LLM-driven task in older custom prompts renames the plan file across the dashed/compact date conventions. Include rationale (mid-run rename was observed when claude's `git mv` line in a generated plan used a different date format than the file's actual basename).
+- [x] add a one-paragraph note under "Key Patterns" describing both layers: (a) `make_plan.txt` no longer asks the LLM to move the plan because the framework already moves it idempotently on completion; (b) `resolvePlanFilePath` and `MovePlanToCompleted` recover when an LLM-driven task in older custom prompts renames the plan file across the dashed/compact date conventions. Include rationale (mid-run rename was observed when gemini's `git mv` line in a generated plan used a different date format than the file's actual basename).
 
 ## Post-Completion
 

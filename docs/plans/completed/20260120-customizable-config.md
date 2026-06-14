@@ -5,11 +5,11 @@ Make ralphex fully customizable via configuration files with sensible defaults.
 - Directory-based config structure at `~/.config/ralphex/`
 - Embedded defaults installed on first run
 - Single config location `~/.config/ralphex/`
-- Supports prompts, claude/codex settings, timing, paths, and custom review agents
+- Supports prompts, gemini/codex settings, timing, paths, and custom review agents
 
 ## Context (from discovery)
 - Files involved: `cmd/ralphex/main.go`, `pkg/processor/prompts.go`, `pkg/processor/runner.go`, `pkg/executor/executor.go`, `pkg/executor/codex.go`
-- Config values found: 4 prompts, claude command/args, codex model/timeout/sandbox, iteration_delay, task_retry_count, plans_dir, custom agents
+- Config values found: 4 prompts, gemini command/args, codex model/timeout/sandbox, iteration_delay, task_retry_count, plans_dir, custom agents
 - Dependencies: embed.FS for defaults, gopkg.in/ini.v1 for config parsing
 
 ## Development Approach
@@ -43,9 +43,9 @@ Uses `gopkg.in/ini.v1` - supports `#` and `;` comments.
 # ralphex configuration
 ; comments can use # or ;
 
-# claude executor
-claude_command = claude
-claude_args = --dangerously-skip-permissions --output-format stream-json --verbose
+# gemini executor
+gemini_command = gemini
+gemini_args = --dangerously-skip-permissions --output-format stream-json --verbose
 
 # codex executor
 codex_enabled = true
@@ -120,7 +120,7 @@ plans_dir = docs/plans
 - [x] run `go test ./pkg/processor` - must pass before task 8
 
 ### Task 8: Update executors to use config
-- [x] modify ClaudeExecutor to use claude_command, claude_args from config
+- [x] modify GeminiExecutor to use gemini_command, gemini_args from config
 - [x] modify CodexExecutor to use codex_* settings from config
 - [x] add codex_enabled check to skip codex phase
 - [x] update executor tests
@@ -153,7 +153,7 @@ plans_dir = docs/plans
 
 ### Task 12: [Final] Update documentation
 - [x] update README.md with configuration section
-- [x] update CLAUDE.md with config patterns
+- [x] update GEMINI.md with config patterns
 - [x] move this plan to `docs/plans/completed/`
 
 ## Technical Details
@@ -161,9 +161,9 @@ plans_dir = docs/plans
 ### Config struct
 ```go
 type Config struct {
-    // claude
-    ClaudeCommand string
-    ClaudeArgs    string
+    // gemini
+    GeminiCommand string
+    GeminiArgs    string
 
     // codex
     CodexEnabled         bool

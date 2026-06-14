@@ -66,12 +66,12 @@ The watcher (`pkg/web/watcher.go`) already recurses into subdirs via `DiscoverRe
 
 **Files:**
 - Modify: `.gitignore`
-- Modify: `CLAUDE.md`
+- Modify: `GEMINI.md`
 - Modify: `README.md`
 
 - [x] replace `progress*.txt` with `.ralphex/progress/` in `.gitignore`
 - [x] keep e2e testdata exceptions (`!e2e/testdata/progress-*.txt`)
-- [x] update CLAUDE.md references to progress file location
+- [x] update GEMINI.md references to progress file location
 - [x] update README.md if it mentions progress file location
 - [x] update any `tail -f progress-*.txt` examples in docs to use `.ralphex/progress/`
 

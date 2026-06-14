@@ -75,29 +75,29 @@ func (b *promptBuilder) getDiffInstruction(isFirstIteration bool) string {
 
 // buildPreviousContext returns the PREVIOUS REVIEW CONTEXT block for external review prompts.
 // returns empty string on first iteration (no prior response), formatted context block on subsequent iterations.
-func (b *promptBuilder) buildPreviousContext(claudeResponse string) string {
-	if claudeResponse == "" {
+func (b *promptBuilder) buildPreviousContext(geminiResponse string) string {
+	if geminiResponse == "" {
 		return ""
 	}
 	return fmt.Sprintf(`---
 PREVIOUS REVIEW CONTEXT:
-Claude (previous reviewer) responded to your findings:
+Gemini (previous reviewer) responded to your findings:
 
 %s
 
-Re-evaluate considering Claude's arguments. If Claude's fixes are correct, acknowledge them.
-If Claude's arguments are invalid, explain why the issues still exist.`, claudeResponse)
+Re-evaluate considering Gemini's arguments. If Gemini's fixes are correct, acknowledge them.
+If Gemini's arguments are invalid, explain why the issues still exist.`, geminiResponse)
 }
 
 // replaceVariablesWithIteration replaces all template variables including iteration-aware ones.
 // supported: {{PLAN_FILE}}, {{PROGRESS_FILE}}, {{GOAL}}, {{DEFAULT_BRANCH}}, {{PLANS_DIR}},
 // {{DIFF_INSTRUCTION}}, {{PREVIOUS_REVIEW_CONTEXT}}, {{agent:name}}
 // this variant is used when iteration context is needed (e.g., external review prompts).
-func (b *promptBuilder) replaceVariablesWithIteration(prompt string, isFirstIteration bool, claudeResponse string) string {
+func (b *promptBuilder) replaceVariablesWithIteration(prompt string, isFirstIteration bool, geminiResponse string) string {
 	result := b.replaceBaseVariables(prompt)
 	result = strings.ReplaceAll(result, "{{DIFF_INSTRUCTION}}", b.getDiffInstruction(isFirstIteration))
 	result = b.expandAgentReferences(result) // expand agents before inserting external content
-	result = strings.ReplaceAll(result, "{{PREVIOUS_REVIEW_CONTEXT}}", b.buildPreviousContext(claudeResponse))
+	result = strings.ReplaceAll(result, "{{PREVIOUS_REVIEW_CONTEXT}}", b.buildPreviousContext(geminiResponse))
 	return b.appendCommitTrailerInstruction(result)
 }
 
@@ -112,32 +112,27 @@ func (b *promptBuilder) reviewContextInstruction() string {
 }
 
 // formatAgentExpansion creates the agent invocation block for an agent, respecting frontmatter overrides.
-// claude executor produces a Task tool instruction; codex executor produces a spawn_agent block.
+// gemini executor produces a invoke_agent tool instruction; codex executor produces a spawn_agent block.
 // the review-context lead-in is prepended so the spawned agent knows which diff to review.
 func (b *promptBuilder) formatAgentExpansion(prompt string, opts config.Options) string {
 	prompt = b.reviewContextInstruction() + prompt
 	if b.cfg.isCodexExecutor() {
 		return b.formatAgentExpansionCodex(prompt)
 	}
-	return b.formatAgentExpansionClaude(prompt, opts)
+	return b.formatAgentExpansionGemini(prompt, opts)
 }
 
-// formatAgentExpansionClaude builds the Task-tool prose used by claude executor.
-func (b *promptBuilder) formatAgentExpansionClaude(prompt string, opts config.Options) string {
-	subagent := "general-purpose"
+// formatAgentExpansionGemini builds the invoke_agent tool instruction used by gemini executor.
+func (b *promptBuilder) formatAgentExpansionGemini(prompt string, opts config.Options) string {
+	subagent := "generalist"
 	if opts.AgentType != "" {
 		subagent = opts.AgentType
 	}
 
-	var modelClause string
-	if opts.Model != "" {
-		modelClause = " with model=" + opts.Model
-	}
-
-	return fmt.Sprintf(`Use the Task tool%s to launch a %s agent with this prompt:
+	return fmt.Sprintf(`Use the invoke_agent tool to launch a %s agent with this prompt:
 "%s"
 
-Report findings only - no positive observations.`, modelClause, subagent, prompt)
+Report findings only - no positive observations.`, subagent, prompt)
 }
 
 // formatAgentExpansionCodex builds the spawn_agent block used by codex executor.
@@ -252,7 +247,7 @@ func (b *promptBuilder) escapeCodexSingleQuoted(s string) string {
 	return s
 }
 
-// expandAgentReferences replaces {{agent:name}} patterns with Task tool instructions.
+// expandAgentReferences replaces {{agent:name}} patterns with invoke_agent tool instructions.
 // returns prompt unchanged if AppConfig is nil or no agents are configured.
 // missing agents log a warning and leave the reference as-is for visibility.
 func (b *promptBuilder) expandAgentReferences(prompt string) string {

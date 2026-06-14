@@ -4,11 +4,11 @@ Related to: #176
 
 ## Overview
 
-When the external review tool (codex/custom) and Claude can't agree on findings, the loop has no way to resolve the dispute. The external tool flags something that may not even be real and proposes a complete redesign as a fix, Claude correctly rejects the findings without making changes, the external tool insists next round. This is rare but when it happens the waste is significant - the loop only stops when `max_external_iterations` is hit, burning tokens and time.
+When the external review tool (codex/custom) and Gemini can't agree on findings, the loop has no way to resolve the dispute. The external tool flags something that may not even be real and proposes a complete redesign as a fix, Gemini correctly rejects the findings without making changes, the external tool insists next round. This is rare but when it happens the waste is significant - the loop only stops when `max_external_iterations` is hit, burning tokens and time.
 
 Two changes:
 
-1. **Stalemate detection (`review_patience`)**: track consecutive iterations where Claude's evaluation produces no commits. When the counter reaches the configured threshold, terminate the loop early - Claude wins.
+1. **Stalemate detection (`review_patience`)**: track consecutive iterations where Gemini's evaluation produces no commits. When the counter reaches the configured threshold, terminate the loop early - Gemini wins.
 
 2. **Manual break**: typing `break` + Enter during the external review loop terminates it early. The break signal is injected into the processor via a channel from `cmd/ralphex/`, keeping the processor package free of stdin/TTY dependencies. Break cancels the current executor run immediately via context cancellation.
 
@@ -77,8 +77,8 @@ Line numbers are approximate and may shift during implementation.
 - Modify: `pkg/processor/runner_test.go`
 
 - [x] in `runExternalReviewLoop()`, before the for loop: initialize `unchangedRounds := 0`
-- [x] after external tool runs but before Claude evaluation: capture `headBefore` via `r.git.HeadHash()`; if git is nil or HeadHash errors, skip stalemate check (graceful degradation)
-- [x] after Claude evaluation: capture `headAfter` via `r.git.HeadHash()`
+- [x] after external tool runs but before Gemini evaluation: capture `headBefore` via `r.git.HeadHash()`; if git is nil or HeadHash errors, skip stalemate check (graceful degradation)
+- [x] after Gemini evaluation: capture `headAfter` via `r.git.HeadHash()`
 - [x] if `r.cfg.ReviewPatience > 0`: compare heads; if unchanged → increment `unchangedRounds`; if changed → reset to 0
 - [x] if `unchangedRounds >= r.cfg.ReviewPatience`: log `"stalemate detected after %d unchanged rounds, external review terminated early"`, break loop
 - [x] write test: mock git returning same hash (2 * ReviewPatience calls), verify loop breaks after N unchanged rounds
@@ -103,14 +103,14 @@ Line numbers are approximate and may shift during implementation.
 - [x] write test: nil break channel, verify loop runs normally
 - [x] run `go test ./pkg/processor/...` — must pass before task 5
 
-### Task 5: Update documentation and CLAUDE.md
+### Task 5: Update documentation and GEMINI.md
 
 **Files:**
-- Modify: `CLAUDE.md` — add review_patience to config documentation
+- Modify: `GEMINI.md` — add review_patience to config documentation
 - Modify: `llms.txt` — add review_patience to customization section
 - Modify: `README.md` — add review_patience option and break command to usage docs
 
-- [x] add `review_patience` to CLAUDE.md config section and key patterns
+- [x] add `review_patience` to GEMINI.md config section and key patterns
 - [x] add `review_patience` and `break` command to llms.txt customization section
 - [x] add to README.md: config option description, CLI flag, break command
 - [x] run full test suite: `go test ./...`

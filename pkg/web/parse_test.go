@@ -154,7 +154,7 @@ func TestParseProgressLine_TableDriven(t *testing.T) {
 		{"task section", "--- task iteration 3 ---", false, ParsedLineSection, false, "task iteration 3", "task iteration 3", EventTypeOutput, ""},
 		{"review section", "--- Review ---", false, ParsedLineSection, false, "Review", "Review", EventTypeOutput, ""},
 		{"codex section", "--- Codex Analysis ---", false, ParsedLineSection, false, "Codex Analysis", "Codex Analysis", EventTypeOutput, ""},
-		{"claude-eval section", "--- Claude-Eval ---", false, ParsedLineSection, false, "Claude-Eval", "Claude-Eval", EventTypeOutput, ""},
+		{"gemini-eval section", "--- Gemini-Eval ---", false, ParsedLineSection, false, "Gemini-Eval", "Gemini-Eval", EventTypeOutput, ""},
 		{"plain text", "hello world", false, ParsedLinePlain, false, "hello world", "", EventTypeOutput, ""},
 		{"header separator", "------------------------------------------------------------", true, ParsedLineSkip, false, "", "", EventTypeOutput, ""},
 		{"header line", "Branch: main", true, ParsedLineSkip, true, "", "", EventTypeOutput, ""},
@@ -203,7 +203,7 @@ Started: 2026-01-22 10:00:00
 --- Codex Review ---
 [26-01-22 10:00:07] codex analysis in progress
 [26-01-22 10:00:08] <<<RALPHEX:CODEX_REVIEW_DONE>>>
---- Claude-Eval ---
+--- Gemini-Eval ---
 [26-01-22 10:00:09] evaluating results
 [26-01-22 10:00:10] <<<RALPHEX:ALL_TASKS_DONE>>>
 `

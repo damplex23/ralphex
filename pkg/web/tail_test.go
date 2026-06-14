@@ -126,8 +126,8 @@ func TestTailer_PhaseFromSection(t *testing.T) {
 		{"task section", "task iteration 1", status.PhaseTask},
 		{"review section", "review iteration 2", status.PhaseReview},
 		{"codex section", "codex analysis", status.PhaseCodex},
-		{"claude-eval section", "claude-eval phase", status.PhaseClaudeEval},
-		{"claude eval section", "claude eval phase", status.PhaseClaudeEval},
+		{"gemini-eval section", "gemini-eval phase", status.PhaseGeminiEval},
+		{"gemini eval section", "gemini eval phase", status.PhaseGeminiEval},
 		{"uppercase task", "TASK Phase", status.PhaseTask},
 	}
 

@@ -193,7 +193,7 @@ func TestServer_StaticFiles(t *testing.T) {
 }
 
 func TestServer_SSE_LateJoiningClient(t *testing.T) {
-	// note: actual SSE streaming with go-sse is tested via E2E tests (see CLAUDE.md).
+	// note: actual SSE streaming with go-sse is tested via E2E tests (see GEMINI.md).
 	// unit tests verify the Session correctly stores events for replay.
 	session := NewSession("test", "/tmp/test.txt")
 	defer session.Close()
@@ -497,7 +497,7 @@ func TestServer_HandleEvents_WithSession(t *testing.T) {
 	})
 
 	t.Run("session has SSE server configured", func(t *testing.T) {
-		// note: actual SSE streaming with go-sse is tested via E2E tests (see CLAUDE.md).
+		// note: actual SSE streaming with go-sse is tested via E2E tests (see GEMINI.md).
 		// unit tests verify the session SSE server is properly configured.
 		tmpDir := t.TempDir()
 

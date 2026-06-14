@@ -2,7 +2,7 @@
 
 ## Overview
 
-Add `--plan "description"` flag to ralphex that enables interactive plan creation through a dialogue with Claude. The loop pattern mirrors task execution: Claude explores the codebase, asks clarifying questions via structured signals, user answers via fzf-style terminal picker, and the loop continues until the plan is finalized.
+Add `--plan "description"` flag to ralphex that enables interactive plan creation through a dialogue with Gemini. The loop pattern mirrors task execution: Gemini explores the codebase, asks clarifying questions via structured signals, user answers via fzf-style terminal picker, and the loop continues until the plan is finalized.
 
 ## Context
 
@@ -28,16 +28,16 @@ ralphex --plan "implement caching"
 │  Plan Creation Loop (in Runner)                     │
 │                                                     │
 │  iteration 1:                                       │
-│    - run claude with make_plan.txt prompt           │
-│    - claude explores codebase                       │
-│    - claude emits QUESTION signal with JSON         │
+│    - run gemini with make_plan.txt prompt           │
+│    - gemini explores codebase                       │
+│    - gemini emits QUESTION signal with JSON         │
 │    - loop pauses, shows fzf picker                  │
 │    - user selects answer                            │
 │    - answer written to progress-plan-<name>.txt     │
 │                                                     │
 │  iteration 2:                                       │
-│    - run claude with make_plan.txt prompt           │
-│    - claude reads progress file, sees Q&A history   │
+│    - run gemini with make_plan.txt prompt           │
+│    - gemini reads progress file, sees Q&A history   │
 │    - continues planning or asks next question       │
 │                                                     │
 │  ...until PLAN_READY signal                         │
@@ -152,7 +152,7 @@ Started: 2026-01-25 10:30:00
 - [x] add `runPlanCreation(ctx context.Context) error` method
 - [x] implement loop:
   - build prompt with `{{PLAN_DESCRIPTION}}` and `{{PROGRESS_FILE}}`
-  - run claude executor
+  - run gemini executor
   - check for QUESTION signal → call input collector → log answer
   - check for PLAN_READY signal → exit loop
   - continue until max iterations or completion
@@ -202,7 +202,7 @@ Started: 2026-01-25 10:30:00
 ### Task 9: Update documentation
 
 - [x] update README.md with `--plan` flag usage
-- [x] update CLAUDE.md with plan mode details
+- [x] update GEMINI.md with plan mode details
 - [x] add example plan creation workflow
 - [x] move this plan to `docs/plans/completed/`
 

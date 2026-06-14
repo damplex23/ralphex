@@ -25,7 +25,7 @@ python3 scripts/ralphex-dk.sh [wrapper-flags] [ralphex-args]
 - `--update-script` - update this wrapper script and exit
 - `--test` - run unit tests and exit
 - `-h, --help` - show help
-- `--claude-provider PROVIDER` - claude provider: `default` or `bedrock`
+- `--gemini-provider PROVIDER` - gemini provider: `default` or `bedrock`
 
 ### Docker socket support
 

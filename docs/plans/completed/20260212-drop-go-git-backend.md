@@ -148,10 +148,10 @@ main_test.go has its own `setupTestRepo()` (line 860) using `gogit.PlainInit`, p
 ### Task 9: Update documentation
 
 **Files:**
-- Modify: `CLAUDE.md`
+- Modify: `GEMINI.md`
 - Modify: `llms.txt`
 
-- [x] update CLAUDE.md — remove go-git references, remove `git_backend` config docs, simplify git package description
+- [x] update GEMINI.md — remove go-git references, remove `git_backend` config docs, simplify git package description
 - [x] update `llms.txt` — remove `git_backend` config option and go-git references
 - [x] move this plan to `docs/plans/completed/`
 

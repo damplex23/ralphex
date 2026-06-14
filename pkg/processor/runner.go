@@ -51,7 +51,7 @@ type Config struct {
 
 // isCodexExecutor reports whether the configured task/review executor is codex
 // (the --codex first-class mode). returns false when AppConfig is nil or the
-// executor is anything else (claude is the default).
+// executor is anything else (gemini is the default).
 func (c Config) isCodexExecutor() bool {
 	return c.AppConfig != nil && c.AppConfig.Executor == config.ExecutorCodex
 }
@@ -340,6 +340,9 @@ func (r *Runner) runFull(ctx context.Context) error {
 
 // runReviewOnly executes only the review pipeline: review → external review → review.
 func (r *Runner) runReviewOnly(ctx context.Context) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	// phase 1: first review
 	if err := r.phases.review.First(ctx); err != nil {
 		return fmt.Errorf("first review: %w", err)
@@ -361,6 +364,9 @@ func (r *Runner) runReviewOnly(ctx context.Context) error {
 
 // runCodexOnly executes only the external-review pipeline: external review → review → finalize.
 func (r *Runner) runCodexOnly(ctx context.Context) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	if err := r.runExternalAndPostReview(ctx); err != nil {
 		return err
 	}
@@ -390,7 +396,7 @@ func (r *Runner) runExternalAndPostReview(ctx context.Context) error {
 	}
 
 	if !outcome.HadFindings {
-		r.log.Print("external review found no issues, skipping post-%s claude review", tool)
+		r.log.Print("external review found no issues, skipping post-%s gemini review", tool)
 		if err := r.phases.finalize.Run(ctx); err != nil {
 			return fmt.Errorf("finalize phase: %w", err)
 		}
@@ -416,6 +422,9 @@ func (r *Runner) runExternalAndPostReview(ctx context.Context) error {
 
 // runTasksOnly executes only task phase, skipping all reviews.
 func (r *Runner) runTasksOnly(ctx context.Context) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	if r.cfg.PlanFile == "" {
 		return errors.New("plan file required for tasks-only mode")
 	}

@@ -88,7 +88,7 @@ Note: `HasCommits()` already exists - prompting logic stays in main.go
 - [x] Inline `setupGitForExecution` into `executePlan`
 - [x] Inline `handlePostExecution` into `executePlan`
 - [x] Inline `getCurrentBranch` where used (use direct call with fallback)
-- [x] Combine `checkDependencies` and `checkClaudeDep` into single function
+- [x] Combine `checkDependencies` and `checkGeminiDep` into single function
 - [x] Combine `printStartupInfo` and `printPlanModeInfo` into one function
 - [x] Remove dead code (moved functions, unused structs)
 - [x] Update/fix tests in main_test.go

@@ -1,6 +1,6 @@
 # plan creation prompt
 # this prompt is used for interactive plan creation mode
-# claude explores the codebase, asks clarifying questions, and creates a plan
+# gemini explores the codebase, asks clarifying questions, and creates a plan
 #
 # available variables:
 #   {{PLAN_DESCRIPTION}} - user's original request for what to implement
@@ -152,7 +152,7 @@ Write the accepted plan to disk:
 ### Task N+1: Update documentation
 
 - [ ] update README.md if user-facing changes
-- [ ] update CLAUDE.md if internal patterns changed
+- [ ] update GEMINI.md if internal patterns changed
 ---
 
 ## Step 4.5: Validate Plan Before Draft

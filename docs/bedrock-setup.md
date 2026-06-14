@@ -1,11 +1,11 @@
 # AWS Bedrock Setup Guide
 
-This guide explains how to use ralphex with Claude models hosted on AWS Bedrock.
+This guide explains how to use ralphex with Gemini models hosted on AWS Bedrock.
 
 ## Overview
 
-AWS Bedrock provides access to Claude models through your AWS account. This allows organizations to:
-- Use Claude without a direct Anthropic API subscription
+AWS Bedrock provides access to Gemini models through your AWS account. This allows organizations to:
+- Use Gemini without a direct Gemini API subscription
 - Keep data within their AWS environment
 - Leverage existing AWS IAM for access control
 
@@ -25,9 +25,9 @@ AWS Bedrock provides access to Claude models through your AWS account. This allo
 
 ## Minimal IAM Policy
 
-Create an IAM policy with only the permissions required for Claude via Bedrock.
+Create an IAM policy with only the permissions required for Gemini via Bedrock.
 
-**Standard policy (all Claude models in all regions):**
+**Standard policy (all Gemini models in all regions):**
 
 ```json
 {
@@ -41,7 +41,7 @@ Create an IAM policy with only the permissions required for Claude via Bedrock.
                 "bedrock:InvokeModelWithResponseStream"
             ],
             "Resource": [
-                "arn:aws:bedrock:*::foundation-model/anthropic.claude-*"
+                "arn:aws:bedrock:*::foundation-model/gemini.gemini-*"
             ]
         },
         {
@@ -52,7 +52,7 @@ Create an IAM policy with only the permissions required for Claude via Bedrock.
                 "bedrock:InvokeModelWithResponseStream"
             ],
             "Resource": [
-                "arn:aws:bedrock:*:*:inference-profile/*anthropic.claude*"
+                "arn:aws:bedrock:*:*:inference-profile/*gemini.gemini*"
             ]
         }
     ]
@@ -66,34 +66,34 @@ Create an IAM policy with only the permissions required for Claude via Bedrock.
     "Version": "2012-10-17",
     "Statement": [
         {
-            "Sid": "BedrockInvokeClaudeFoundationModels",
+            "Sid": "BedrockInvokeGeminiFoundationModels",
             "Effect": "Allow",
             "Action": [
                 "bedrock:InvokeModel",
                 "bedrock:InvokeModelWithResponseStream"
             ],
             "Resource": [
-                "arn:aws:bedrock:us-east-1::foundation-model/anthropic.claude-sonnet-4-20250514-v1:0",
-                "arn:aws:bedrock:us-east-1::foundation-model/anthropic.claude-haiku-4-20250514-v1:0"
+                "arn:aws:bedrock:us-east-1::foundation-model/gemini.gemini-sonnet-4-20250514-v1:0",
+                "arn:aws:bedrock:us-east-1::foundation-model/gemini.gemini-haiku-4-20250514-v1:0"
             ]
         },
         {
-            "Sid": "BedrockInvokeClaudeInferenceProfiles",
+            "Sid": "BedrockInvokeGeminiInferenceProfiles",
             "Effect": "Allow",
             "Action": [
                 "bedrock:InvokeModel",
                 "bedrock:InvokeModelWithResponseStream"
             ],
             "Resource": [
-                "arn:aws:bedrock:us-east-1:*:inference-profile/us.anthropic.claude-sonnet-4-20250514-v1:0",
-                "arn:aws:bedrock:us-east-1:*:inference-profile/us.anthropic.claude-haiku-4-20250514-v1:0"
+                "arn:aws:bedrock:us-east-1:*:inference-profile/us.gemini.gemini-sonnet-4-20250514-v1:0",
+                "arn:aws:bedrock:us-east-1:*:inference-profile/us.gemini.gemini-haiku-4-20250514-v1:0"
             ]
         }
     ]
 }
 ```
 
-Note: Inference profiles use cross-region prefixes (e.g., `us.anthropic.claude-*` for US regions). Check your Bedrock console for exact inference profile IDs available in your account.
+Note: Inference profiles use cross-region prefixes (e.g., `us.gemini.gemini-*` for US regions). Check your Bedrock console for exact inference profile IDs available in your account.
 
 ## Setup Instructions
 
@@ -121,7 +121,7 @@ aws sso login --profile=ralphex-bedrock
 export AWS_PROFILE=ralphex-bedrock
 export AWS_REGION=us-east-1
 
-ralphex --claude-provider bedrock docs/plans/feature.md
+ralphex --gemini-provider bedrock docs/plans/feature.md
 ```
 
 ### Option 2: IAM User with Access Keys
@@ -143,7 +143,7 @@ aws configure --profile ralphex-bedrock
 export AWS_PROFILE=ralphex-bedrock
 export AWS_REGION=us-east-1
 
-ralphex --claude-provider bedrock docs/plans/feature.md
+ralphex --gemini-provider bedrock docs/plans/feature.md
 ```
 
 ### Option 3: Explicit Credentials
@@ -156,7 +156,7 @@ export AWS_ACCESS_KEY_ID=AKIA...
 export AWS_SECRET_ACCESS_KEY=...
 # Optional: export AWS_SESSION_TOKEN=... (for temporary credentials)
 
-ralphex --claude-provider bedrock docs/plans/feature.md
+ralphex --gemini-provider bedrock docs/plans/feature.md
 ```
 
 ## Environment Variables
@@ -167,7 +167,7 @@ ralphex --claude-provider bedrock docs/plans/feature.md
 |----------|-------------|
 | `AWS_REGION` | AWS region where Bedrock is enabled (e.g., `us-east-1`) |
 
-Note: `CLAUDE_CODE_USE_BEDROCK=1` is automatically set when using `--claude-provider bedrock` or `RALPHEX_CLAUDE_PROVIDER=bedrock`.
+Note: `GEMINI_CODE_USE_BEDROCK=1` is automatically set when using `--gemini-provider bedrock` or `RALPHEX_GEMINI_PROVIDER=bedrock`.
 
 ### Authentication (one of these is required)
 
@@ -180,13 +180,13 @@ Note: `CLAUDE_CODE_USE_BEDROCK=1` is automatically set when using `--claude-prov
 
 | Variable | Description |
 |----------|-------------|
-| `RALPHEX_CLAUDE_PROVIDER` | Set to `bedrock` to enable Bedrock mode (alternative to `--claude-provider` flag) |
+| `RALPHEX_GEMINI_PROVIDER` | Set to `bedrock` to enable Bedrock mode (alternative to `--gemini-provider` flag) |
 
 ### Optional Bedrock Configuration
 
 | Variable | Description |
 |----------|-------------|
-| `ANTHROPIC_MODEL` | Override default Claude model |
+| `ANTHROPIC_MODEL` | Override default Gemini model |
 | `ANTHROPIC_SMALL_FAST_MODEL` | Model for fast operations |
 | `ANTHROPIC_DEFAULT_OPUS_MODEL` | Custom Opus model ARN |
 | `ANTHROPIC_DEFAULT_SONNET_MODEL` | Custom Sonnet model ARN |
@@ -194,7 +194,7 @@ Note: `CLAUDE_CODE_USE_BEDROCK=1` is automatically set when using `--claude-prov
 | `ANTHROPIC_SMALL_FAST_MODEL_AWS_REGION` | AWS region for small/fast model |
 | `ANTHROPIC_BEDROCK_BASE_URL` | Custom Bedrock endpoint |
 | `AWS_BEARER_TOKEN_BEDROCK` | Bearer token for Bedrock API key auth |
-| `CLAUDE_CODE_SKIP_BEDROCK_AUTH` | Skip Bedrock authentication (for testing) |
+| `GEMINI_CODE_SKIP_BEDROCK_AUTH` | Skip Bedrock authentication (for testing) |
 | `DISABLE_PROMPT_CACHING` | Set to disable prompt caching |
 
 ## Example Usage
@@ -210,7 +210,7 @@ export AWS_REGION=us-east-1
 aws sso login --profile=ralphex-bedrock
 
 # Run with Bedrock provider
-ralphex --claude-provider bedrock docs/plans/feature.md
+ralphex --gemini-provider bedrock docs/plans/feature.md
 ```
 
 ### Session-wide Bedrock mode
@@ -218,7 +218,7 @@ ralphex --claude-provider bedrock docs/plans/feature.md
 ```bash
 export AWS_PROFILE=ralphex-bedrock
 export AWS_REGION=us-east-1
-export RALPHEX_CLAUDE_PROVIDER=bedrock
+export RALPHEX_GEMINI_PROVIDER=bedrock
 
 # All ralphex commands now use Bedrock
 ralphex docs/plans/feature.md
@@ -230,10 +230,10 @@ ralphex --review
 ```bash
 export AWS_PROFILE=ralphex-bedrock
 export AWS_REGION=us-east-1
-export CLAUDE_CODE_MAX_OUTPUT_TOKENS=32000
+export GEMINI_CODE_MAX_OUTPUT_TOKENS=32000
 
 # Pass extra env vars to container
-ralphex --claude-provider bedrock -E CLAUDE_CODE_MAX_OUTPUT_TOKENS docs/plans/feature.md
+ralphex --gemini-provider bedrock -E GEMINI_CODE_MAX_OUTPUT_TOKENS docs/plans/feature.md
 ```
 
 ## Startup Output
@@ -243,17 +243,17 @@ When using Bedrock mode, ralphex shows the provider configuration:
 **With profile-based credentials:**
 ```
 using image: ghcr.io/umputun/ralphex-go:latest
-claude provider: bedrock (keychain skipped)
+gemini provider: bedrock (keychain skipped)
   exporting credentials from profile: my-sso-profile
-  passing: AWS_REGION, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_SESSION_TOKEN, CLAUDE_CODE_USE_BEDROCK
+  passing: AWS_REGION, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_SESSION_TOKEN, GEMINI_CODE_USE_BEDROCK
 ```
 
 **With explicit credentials:**
 ```
 using image: ghcr.io/umputun/ralphex-go:latest
-claude provider: bedrock (keychain skipped)
+gemini provider: bedrock (keychain skipped)
   using explicit credentials
-  passing: AWS_REGION, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, CLAUDE_CODE_USE_BEDROCK
+  passing: AWS_REGION, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, GEMINI_CODE_USE_BEDROCK
 ```
 
 ## Troubleshooting
@@ -276,7 +276,7 @@ Your IAM policy is missing required permissions. Verify:
 ### "ResourceNotFoundException" or model not found
 
 The specified model isn't available in your region or account:
-1. Check that Claude models are enabled in your Bedrock console
+1. Check that Gemini models are enabled in your Bedrock console
 2. Verify your `AWS_REGION` matches where models are enabled
 3. For inference profiles, check the exact ARN in your Bedrock console
 
@@ -287,9 +287,9 @@ ralphex couldn't export credentials from your profile:
 2. Check that you're logged in (for SSO profiles)
 3. Try using explicit credentials as a workaround
 
-### No `~/.claude` directory error on Linux
+### No `~/.gemini` directory error on Linux
 
-When using Bedrock mode, ralphex skips the Claude configuration directory check. If you see this error, ensure you're using `--claude-provider bedrock` flag.
+When using Bedrock mode, ralphex skips the Gemini configuration directory check. If you see this error, ensure you're using `--gemini-provider bedrock` flag.
 
 ### "aws CLI not found" warning
 

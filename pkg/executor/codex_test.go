@@ -47,37 +47,37 @@ func mockWaitError(err error) func() error {
 func TestExecCodexRunner_childEnv(t *testing.T) {
 	tests := []struct {
 		name              string
-		stripAnthropicKey bool
+		stripGeminiKey bool
 		env               []string
 		want              []string
 	}{
 		{
-			name:              "first-class --codex strips ANTHROPIC_API_KEY and CLAUDECODE",
-			stripAnthropicKey: true,
-			env:               []string{"PATH=/usr/bin", "CLAUDECODE=1", "ANTHROPIC_API_KEY=secret", "HOME=/home/user"},
+			name:              "first-class --codex strips GEMINI_API_KEY and GEMINICODE",
+			stripGeminiKey: true,
+			env:               []string{"PATH=/usr/bin", "GEMINICODE=1", "GEMINI_API_KEY=secret", "HOME=/home/user"},
 			want:              []string{"PATH=/usr/bin", "HOME=/home/user"},
 		},
 		{
-			name:              "external codex review (claude mode) preserves ANTHROPIC_API_KEY",
-			stripAnthropicKey: false,
-			env:               []string{"PATH=/usr/bin", "CLAUDECODE=1", "ANTHROPIC_API_KEY=secret", "HOME=/home/user"},
-			want:              []string{"PATH=/usr/bin", "ANTHROPIC_API_KEY=secret", "HOME=/home/user"},
+			name:              "external codex review (gemini mode) preserves GEMINI_API_KEY",
+			stripGeminiKey: false,
+			env:               []string{"PATH=/usr/bin", "GEMINICODE=1", "GEMINI_API_KEY=secret", "HOME=/home/user"},
+			want:              []string{"PATH=/usr/bin", "GEMINI_API_KEY=secret", "HOME=/home/user"},
 		},
 		{
-			name:              "CLAUDECODE always stripped regardless of mode",
-			stripAnthropicKey: false,
-			env:               []string{"PATH=/usr/bin", "CLAUDECODE=1", "HOME=/home/user"},
+			name:              "GEMINICODE always stripped regardless of mode",
+			stripGeminiKey: false,
+			env:               []string{"PATH=/usr/bin", "GEMINICODE=1", "HOME=/home/user"},
 			want:              []string{"PATH=/usr/bin", "HOME=/home/user"},
 		},
 		{
-			name:              "does not match partial keys like ANTHROPIC_API_KEY_OLD when stripping",
-			stripAnthropicKey: true,
-			env:               []string{"ANTHROPIC_API_KEY_OLD=old", "ANTHROPIC_API_KEY=new", "CLAUDECODE=1"},
-			want:              []string{"ANTHROPIC_API_KEY_OLD=old"},
+			name:              "does not match partial keys like GEMINI_API_KEY_OLD when stripping",
+			stripGeminiKey: true,
+			env:               []string{"GEMINI_API_KEY_OLD=old", "GEMINI_API_KEY=new", "GEMINICODE=1"},
+			want:              []string{"GEMINI_API_KEY_OLD=old"},
 		},
 		{
 			name:              "passes through other keys unchanged",
-			stripAnthropicKey: true,
+			stripGeminiKey: true,
 			env:               []string{"OPENAI_API_KEY=ok", "FOO=bar"},
 			want:              []string{"OPENAI_API_KEY=ok", "FOO=bar"},
 		},
@@ -85,7 +85,7 @@ func TestExecCodexRunner_childEnv(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			r := &execCodexRunner{stripAnthropicKey: tc.stripAnthropicKey}
+			r := &execCodexRunner{stripGeminiKey: tc.stripGeminiKey}
 			got := r.childEnv(tc.env)
 			assert.Equal(t, tc.want, got)
 		})
@@ -113,7 +113,7 @@ func TestCodexExecutor_Run_Success(t *testing.T) {
 
 func TestCodexExecutor_Run_StreamsStderr(t *testing.T) {
 	// header block (workdir/model/sandbox/session-id) is now suppressed to
-	// match the claude executor; only bold summaries flow through stderr.
+	// match the gemini executor; only bold summaries flow through stderr.
 	// session id is still captured internally for the rollout tailer (covered
 	// by TestCodexExecutor_processStderr_emitsSessionID).
 	stderr := `--------
@@ -312,10 +312,10 @@ func TestCodexExecutor_Run_DangerFullAccessBypassesSandbox(t *testing.T) {
 		assert.Contains(t, argsStr, "--sandbox danger-full-access")
 	})
 
-	t.Run("external codex review (claude mode) omits bypass flag in danger-full-access", func(t *testing.T) {
+	t.Run("external codex review (gemini mode) omits bypass flag in danger-full-access", func(t *testing.T) {
 		// MultiAgent=false signals external codex review (built by buildExternalCodexExecutor).
 		// Master never emitted --dangerously-bypass-approvals-and-sandbox; gating it on MultiAgent
-		// preserves master semantics for default-claude users (esp. Docker mode where the sandbox
+		// preserves master semantics for default-gemini users (esp. Docker mode where the sandbox
 		// is forced to danger-full-access).
 		var capturedArgs []string
 		mock := &mockCodexRunner{
@@ -382,7 +382,7 @@ func TestCodexExecutor_Run_CustomSettings(t *testing.T) {
 
 func TestCodexExecutor_shouldDisplay_headerBlock(t *testing.T) {
 	// the startup banner (separators + workdir/model/session-id lines) is
-	// intentionally suppressed to match claude executor and avoid repeating
+	// intentionally suppressed to match gemini executor and avoid repeating
 	// the same config block per task/review iteration. only bold summaries
 	// outside the header block flow through to OutputHandler.
 	e := &CodexExecutor{}
@@ -1488,7 +1488,7 @@ func TestIsCodexErrorLine(t *testing.T) {
 
 func TestCodexExecutor_configOverrides(t *testing.T) {
 	reviewerDesc := fmt.Sprintf("agents.%s.description=%q", CodexReviewerAgentName, codexReviewerDescription)
-	const fallbackArg = `project_doc_fallback_filenames=["CLAUDE.md"]`
+	const fallbackArg = `project_doc_fallback_filenames=["GEMINI.md"]`
 
 	tests := []struct {
 		name string
@@ -1506,13 +1506,13 @@ func TestCodexExecutor_configOverrides(t *testing.T) {
 			want: []string{"-c", "features.multi_agent=true", "-c", reviewerDesc},
 		},
 		{
-			name: "PassClaudeMd only adds project_doc_fallback_filenames",
-			exec: &CodexExecutor{PassClaudeMd: true},
+			name: "PassGeminiMd only adds project_doc_fallback_filenames",
+			exec: &CodexExecutor{PassGeminiMd: true},
 			want: []string{"-c", fallbackArg},
 		},
 		{
 			name: "both flags emit all overrides with multi-agent first",
-			exec: &CodexExecutor{MultiAgent: true, PassClaudeMd: true},
+			exec: &CodexExecutor{MultiAgent: true, PassGeminiMd: true},
 			want: []string{"-c", "features.multi_agent=true", "-c", reviewerDesc, "-c", fallbackArg},
 		},
 	}
@@ -1526,8 +1526,8 @@ func TestCodexExecutor_configOverrides(t *testing.T) {
 
 func TestCodexExecutor_configOverrides_reviewerPairsWithMultiAgent(t *testing.T) {
 	// agent registration is meaningless without features.multi_agent=true,
-	// so PassClaudeMd alone must NOT emit any agents.reviewer override.
-	e := CodexExecutor{PassClaudeMd: true}
+	// so PassGeminiMd alone must NOT emit any agents.reviewer override.
+	e := CodexExecutor{PassGeminiMd: true}
 	args := e.configOverrides()
 	joined := strings.Join(args, " ")
 	assert.NotContains(t, joined, "agents.reviewer", "reviewer agent must only be registered alongside multi_agent")
@@ -1571,13 +1571,13 @@ func TestCodexExecutor_Run_SplicesFallbackArgs(t *testing.T) {
 			return mockStreams("", "result"), mockWait(), nil
 		},
 	}
-	e := &CodexExecutor{runner: mock, PassClaudeMd: true}
+	e := &CodexExecutor{runner: mock, PassGeminiMd: true}
 
 	result := e.Run(context.Background(), "test prompt")
 	require.NoError(t, result.Error)
 
 	argsStr := strings.Join(capturedArgs, " ")
-	assert.Contains(t, argsStr, `project_doc_fallback_filenames=["CLAUDE.md"]`)
+	assert.Contains(t, argsStr, `project_doc_fallback_filenames=["GEMINI.md"]`)
 	assert.NotContains(t, argsStr, "features.multi_agent", "no multi_agent flag when only fallback is set")
 }
 

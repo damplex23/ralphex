@@ -1,15 +1,15 @@
 # Add session_timeout Config Option
 
 ## Overview
-Add a per-claude-session timeout as a safety net for hanging sessions. When the agent runs a blocking
+Add a per-gemini-session timeout as a safety net for hanging sessions. When the agent runs a blocking
 operation (e.g., starts a server in tests that never terminates), the session currently hangs
 indefinitely. A configurable timeout kills the session and lets ralphex move to the next iteration.
 
 Related: #224
 
 ## Context
-- `ClaudeExecutor.Run()` in `pkg/executor/executor.go` accepts a context but no timeout is applied
-- All claude calls go through `runWithLimitRetry()` in `pkg/processor/runner.go`
+- `GeminiExecutor.Run()` in `pkg/executor/executor.go` accepts a context but no timeout is applied
+- All gemini calls go through `runWithLimitRetry()` in `pkg/processor/runner.go`
 - Codex has `codex_timeout_ms` but it's passed as a CLI arg to the codex binary, not a Go context timeout
 - The `wait_on_limit` config uses duration strings (e.g., "1h", "30m") - same pattern for `session_timeout`
 - Config uses `*Set` flags to distinguish explicit zero from "not set" in merge logic
@@ -18,20 +18,20 @@ Related: #224
 ## Solution Overview
 - Add `session_timeout` config option (duration string, default "" = disabled)
 - Apply timeout in the **runner layer** (not inside executor): `runWithLimitRetry` creates a child
-  context with `context.WithTimeout` before each `claude.Run()` call
+  context with `context.WithTimeout` before each `gemini.Run()` call
 - On timeout: check if parent context is still alive (same pattern as `isManualBreak`). If parent is
   alive but child timed out, it's a session timeout, not a cancellation
 - Process group is killed via existing `newProcessGroupCleanup`, session moves to next iteration
 - Log a warning to progress file so the next iteration's agent can adjust
 - Use `time.Duration` consistently throughout (follow `WaitOnLimit` pattern, not `CodexTimeoutMs`)
-- Claude-only; codex and custom executors are not affected
+- Gemini-only; codex and custom executors are not affected
 
 ### Timeout behavior per phase
 - **Task phase**: session timeout counts as a failed iteration, task loop continues to next iteration
   (counts against `max_iterations`). No special retry logic needed
-- **Review phases** (first/second claude review): session timeout is treated as a non-completing review,
+- **Review phases** (first/second gemini review): session timeout is treated as a non-completing review,
   review loop continues to next iteration
-- **External review eval** (claude evaluating codex findings): session timeout, eval loop continues
+- **External review eval** (gemini evaluating codex findings): session timeout, eval loop continues
 - **Plan creation**: session timeout, plan creation loop continues
 - **Finalize**: session timeout is logged but finalize is best-effort anyway, not retried
 
@@ -92,7 +92,7 @@ Related: #224
 ### Task 4: Verify acceptance criteria
 
 - [x] verify timeout=0 (default) does not change behavior (backward compat)
-- [x] verify timeout > 0 kills hanging claude session after deadline
+- [x] verify timeout > 0 kills hanging gemini session after deadline
 - [x] verify session timeout in task phase continues to next iteration (not abort)
 - [x] verify session timeout in review phase continues review loop (not abort)
 - [x] verify `runWithLimitRetry` does not retry on session timeout (only on LimitPatternError)
@@ -102,8 +102,8 @@ Related: #224
 
 ### Task 5: Update documentation
 
-- [x] update CLAUDE.md with `session_timeout` config option description
+- [x] update GEMINI.md with `session_timeout` config option description
 - [x] update README.md usage section if config options are documented there
 - [x] update `llms.txt` with `session_timeout` in customization section
-- [x] update `docs/custom-providers.md` line 331 (currently says "ralphex doesn't impose a timeout on claude sessions")
+- [x] update `docs/custom-providers.md` line 331 (currently says "ralphex doesn't impose a timeout on gemini sessions")
 - [x] move this plan to `docs/plans/completed/`

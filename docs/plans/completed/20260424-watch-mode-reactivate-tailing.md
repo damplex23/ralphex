@@ -30,7 +30,7 @@ Fix issue #283: the watch-mode dashboard (`ralphex -s -w /path` running as a sep
 
 ## Development Approach
 
-- **testing approach:** TDD for Task 0 (failing reproduction test to prove the bug exists), then Regular for Tasks 1-5 (implement + tests per task). This satisfies the user's CLAUDE.md rule "For bug fixes: Use TDD approach - write failing test first"
+- **testing approach:** TDD for Task 0 (failing reproduction test to prove the bug exists), then Regular for Tasks 1-5 (implement + tests per task). This satisfies the user's GEMINI.md rule "For bug fixes: Use TDD approach - write failing test first"
 - complete each task fully before moving to the next
 - make small, focused changes
 - **CRITICAL: every task MUST include new/updated tests** for code changes in that task
@@ -287,9 +287,9 @@ The feedEvents goroutine acquires its own `RLock` once running — no deadlock b
 ### Task 8: [Final] Update documentation
 
 **Files:**
-- Modify: `CLAUDE.md` (only if an existing section describes watcher/session-state behavior)
+- Modify: `GEMINI.md` (only if an existing section describes watcher/session-state behavior)
 
-- [x] `grep -n "watch" CLAUDE.md` and `grep -n "RefreshStates\|session" CLAUDE.md`; if an existing section describes the affected behavior, append a one-line note about reactivation-on-write. Do NOT add a new section speculatively
+- [x] `grep -n "watch" GEMINI.md` and `grep -n "RefreshStates\|session" GEMINI.md`; if an existing section describes the affected behavior, append a one-line note about reactivation-on-write. Do NOT add a new section speculatively
 - [x] `grep -rn "watch mode\|RefreshStates\|flock" docs/` — if any existing doc describes the flock-based detection, update to mention the recovery path
 - [x] update this plan file: mark all tasks `[x]`
 - [x] move plan: `mkdir -p docs/plans/completed && git mv docs/plans/20260424-watch-mode-reactivate-tailing.md docs/plans/completed/`

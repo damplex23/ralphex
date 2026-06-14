@@ -43,11 +43,11 @@ When a progress file already has a "Completed:" footer (written by `Close()`), i
 
 - [x] run full test suite: `go test ./...`
 - [x] run linter: `golangci-lint run`
-- [x] run formatter: `~/.claude/format.sh`
+- [x] run formatter: `~/.gemini/format.sh`
 
 ### Task 3: Update documentation
 
-- [x] update CLAUDE.md if needed (progress file behavior description)
+- [x] update GEMINI.md if needed (progress file behavior description)
 - [x] move this plan to `docs/plans/completed/`
 
 ## Technical Details

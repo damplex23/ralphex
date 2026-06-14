@@ -2,7 +2,7 @@ site_name: RALPHEX Documentation
 site_url: https://ralphex.com/docs/
 site_author: Umputun
 site_description: >-
-  Autonomous plan execution with Claude Code
+  Autonomous plan execution with Gemini CLI
 
 docs_dir: docs-src
 site_dir: site/docs

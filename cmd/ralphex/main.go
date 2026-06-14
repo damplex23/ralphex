@@ -1,4 +1,4 @@
-// Package main provides ralphex - autonomous plan execution with Claude Code.
+// Package main provides ralphex - autonomous plan execution with Gemini Code.
 package main
 
 import (
@@ -37,8 +37,8 @@ type opts struct {
 	PlanModel               string        `long:"plan-model" description:"model for plan creation as model[:effort] (falls back to --task-model)"`
 	TaskModel               string        `long:"task-model" description:"model for task execution as model[:effort] (e.g., opus, opus:high, :medium)"`
 	ReviewModel             string        `long:"review-model" description:"model for review phases as model[:effort] (falls back to --task-model)"`
-	ClaudeCommand           string        `long:"claude-command" description:"override claude-compatible command for this run"`
-	ClaudeArgs              string        `long:"claude-args" description:"override claude-compatible command args for this run"`
+	GeminiCommand           string        `long:"gemini-command" description:"override gemini-compatible command for this run"`
+	GeminiArgs              string        `long:"gemini-args" description:"override gemini-compatible command args for this run"`
 	ExternalReviewTool      string        `long:"external-review-tool" choice:"codex" choice:"custom" choice:"none" description:"override external review tool for this run"`
 	CustomReviewScript      string        `long:"custom-review-script" description:"override custom external review script for this run"`
 	Review                  bool          `short:"r" long:"review" description:"skip task execution, run full review pipeline"`
@@ -47,12 +47,12 @@ type opts struct {
 	TasksOnly               bool          `short:"t" long:"tasks-only" description:"run only task phase, skip all reviews"`
 	BaseRef                 string        `short:"b" long:"base-ref" description:"override default branch for review diffs (branch name or commit hash)"`
 	Wait                    time.Duration `long:"wait" description:"wait duration on rate limit before retry (e.g. 1h, 30m)"`
-	SessionTimeout          time.Duration `long:"session-timeout" description:"per-session timeout for task/review executor (e.g. 30m, 1h); external review in Claude mode excluded"`
-	IdleTimeout             time.Duration `long:"idle-timeout" description:"kill claude/codex executor session after no output for this duration (e.g. 5m, 10m)"`
+	SessionTimeout          time.Duration `long:"session-timeout" description:"per-session timeout for task/review executor (e.g. 30m, 1h); external review in Gemini mode excluded"`
+	IdleTimeout             time.Duration `long:"idle-timeout" description:"kill gemini/codex executor session after no output for this duration (e.g. 5m, 10m)"`
 	SkipFinalize            bool          `long:"skip-finalize" description:"skip finalize step even if enabled in config"`
-	PreserveAnthropicAPIKey bool          `long:"preserve-anthropic-api-key" description:"pass ANTHROPIC_API_KEY through to claude (for users authenticating Claude Code via API key rather than OAuth/keychain)"`
+	PreserveGeminiAPIKey    bool          `long:"preserve-gemini-api-key" description:"pass GEMINI_API_KEY through to gemini (for users authenticating Gemini CLI via API key rather than OAuth/keychain)"`
 	Codex                   bool          `long:"codex" description:"use codex CLI as the executor for task, review, and finalize phases (skips external review)"`
-	PassClaudeMd            bool          `long:"pass-claude-md" description:"pass project CLAUDE.md to codex via project_doc_fallback_filenames; user-level ~/.claude/CLAUDE.md is NOT auto-passed but a one-time setup hint is shown (codex executor only)"`
+	PassGeminiMd            bool          `long:"pass-gemini-md" description:"pass project GEMINI.md to codex via project_doc_fallback_filenames; user-level ~/.gemini/GEMINI.md is NOT auto-passed but a one-time setup hint is shown (codex executor only)"`
 	Worktree                bool          `long:"worktree" description:"run in isolated git worktree"`
 	Branch                  string        `long:"branch" description:"override branch name for worktree/branch creation (default: derived from plan filename)"`
 	PlanDescription         string        `long:"plan" description:"create plan interactively (enter plan description)"`
@@ -75,8 +75,8 @@ type opts struct {
 	sessionTimeoutSet bool
 	idleTimeoutSet    bool
 
-	claudeCommandSet      bool
-	claudeArgsSet         bool
+	geminiCommandSet      bool
+	geminiArgsSet         bool
 	externalReviewToolSet bool
 	customReviewScriptSet bool
 }
@@ -90,8 +90,8 @@ func (o *opts) markFlagsSet(parser *flags.Parser) {
 	o.waitSet = isFlagSet(parser, "wait")
 	o.sessionTimeoutSet = isFlagSet(parser, "session-timeout")
 	o.idleTimeoutSet = isFlagSet(parser, "idle-timeout")
-	o.claudeCommandSet = isFlagSet(parser, "claude-command")
-	o.claudeArgsSet = isFlagSet(parser, "claude-args")
+	o.geminiCommandSet = isFlagSet(parser, "gemini-command")
+	o.geminiArgsSet = isFlagSet(parser, "gemini-args")
 	o.externalReviewToolSet = isFlagSet(parser, "external-review-tool")
 	o.customReviewScriptSet = isFlagSet(parser, "custom-review-script")
 }
@@ -131,20 +131,20 @@ func (stderrLog) Print(format string, args ...any) {
 
 // startupInfo holds parameters for printing startup information.
 type startupInfo struct {
-	PlanFile                string
-	PlanDescription         string // used for plan mode instead of PlanFile
-	Branch                  string
-	Mode                    processor.Mode
-	MaxIterations           int
-	ProgressPath            string
-	Executor                string
-	PassClaudeMd            bool
-	PreserveAnthropicAPIKey bool   // when true, surfaced in the banner so users can spot wrong-context runs before claude bills the wrong account
-	CodexModel              string // resolved model for codex plan/task phase; "" means codex picks from ~/.codex/config.toml
-	CodexEffort             string // resolved reasoning effort for codex plan/task phase; "" means codex default
-	CodexReviewModel        string // resolved model for codex review phase; shown only when it differs from CodexModel
-	CodexReviewEffort       string // resolved reasoning effort for codex review phase; shown only when it differs from CodexEffort
-	CodexSandbox            string // resolved sandbox for codex executor; always non-empty when Executor == codex
+	PlanFile             string
+	PlanDescription      string // used for plan mode instead of PlanFile
+	Branch               string
+	Mode                 processor.Mode
+	MaxIterations        int
+	ProgressPath         string
+	Executor             string
+	PassGeminiMd         bool
+	PreserveGeminiAPIKey bool   // when true, surfaced in the banner so users can spot wrong-context runs before gemini bills the wrong account
+	CodexModel           string // resolved model for codex plan/task phase; "" means codex picks from ~/.codex/config.toml
+	CodexEffort          string // resolved reasoning effort for codex plan/task phase; "" means codex default
+	CodexReviewModel     string // resolved model for codex review phase; shown only when it differs from CodexModel
+	CodexReviewEffort    string // resolved reasoning effort for codex review phase; shown only when it differs from CodexEffort
+	CodexSandbox         string // resolved sandbox for codex executor; always non-empty when Executor == codex
 }
 
 // executePlanRequest holds parameters for plan execution.
@@ -278,11 +278,11 @@ func run(ctx context.Context, o opts) error {
 		return runWatchOnly(ctx, o, cfg, colors)
 	}
 
-	// check dependencies using configured command (or default "claude").
-	// when executor=codex, claude is not used for any phase, so its absence is fine;
+	// check dependencies using configured command (or default "gemini").
+	// when executor=codex, gemini is not used for any phase, so its absence is fine;
 	// codex itself is checked here so absence is reported up-front rather than
 	// as a cryptic exec failure on the first task.
-	depCheck := checkClaudeDep
+	depCheck := checkGeminiDep
 	if cfg.Executor == config.ExecutorCodex {
 		depCheck = checkCodexDep
 	}
@@ -577,9 +577,9 @@ func executePlan(ctx context.Context, o opts, req executePlanRequest) error {
 	// resolve effective codex model/effort for the banner so it reflects what
 	// the codex task and review executors actually receive (--task-model /
 	// --review-model resolved against codex_model / codex_reasoning_effort).
-	// only under the codex executor — in claude mode the banner codex lines are
+	// only under the codex executor — in gemini mode the banner codex lines are
 	// not shown and the max-effort warning would be a false positive (max is a
-	// valid claude effort).
+	// valid gemini effort).
 	var codex codexBannerInfo
 	if req.Config.Executor == config.ExecutorCodex {
 		codex = codexModelBanner(o, req.Config)
@@ -587,19 +587,19 @@ func executePlan(ctx context.Context, o opts, req executePlanRequest) error {
 
 	// print startup info
 	printStartupInfo(startupInfo{
-		PlanFile:                req.PlanFile,
-		Branch:                  branch,
-		Mode:                    req.Mode,
-		MaxIterations:           resolveMaxIterations(o.MaxIterations, req.Config),
-		ProgressPath:            plr.baseLog.Path(),
-		Executor:                req.Config.Executor,
-		PassClaudeMd:            req.Config.PassClaudeMd,
-		PreserveAnthropicAPIKey: req.Config.PreserveAnthropicAPIKey,
-		CodexModel:              codex.taskModel,
-		CodexEffort:             codex.taskEffort,
-		CodexReviewModel:        codex.reviewModel,
-		CodexReviewEffort:       codex.reviewEffort,
-		CodexSandbox:            req.Config.CodexExecutorSandbox(),
+		PlanFile:             req.PlanFile,
+		Branch:               branch,
+		Mode:                 req.Mode,
+		MaxIterations:        resolveMaxIterations(o.MaxIterations, req.Config),
+		ProgressPath:         plr.baseLog.Path(),
+		Executor:             req.Config.Executor,
+		PassGeminiMd:         req.Config.PassGeminiMd,
+		PreserveGeminiAPIKey: req.Config.PreserveGeminiAPIKey,
+		CodexModel:           codex.taskModel,
+		CodexEffort:          codex.taskEffort,
+		CodexReviewModel:     codex.reviewModel,
+		CodexReviewEffort:    codex.reviewEffort,
+		CodexSandbox:         req.Config.CodexExecutorSandbox(),
 	}, req.Colors)
 	if codex.maxDropped {
 		req.Colors.Warn().Printf("codex does not support 'max' reasoning effort; ignoring (valid: low, medium, high, xhigh)\n")
@@ -760,7 +760,7 @@ func runWithWorktree(ctx context.Context, o opts, req executePlanRequest) (err e
 	}
 	wtGitSvc.SetCommitTrailer(req.Config.CommitTrailer)
 
-	// resolve plan file path inside the worktree so Claude operates on the local copy,
+	// resolve plan file path inside the worktree so Gemini operates on the local copy,
 	// not the original in the main repo. the plan was copied by CreateWorktreeForPlan.
 	wtPlanFile := resolveWorktreePlanFile(req.PlanFile, req.GitSvc.Root())
 
@@ -820,14 +820,14 @@ func openGitService(colors *progress.Colors, vcsCmd string) (*git.Service, error
 	return svc, nil
 }
 
-// checkClaudeDep checks that the claude command is available in PATH.
-func checkClaudeDep(cfg *config.Config) error {
-	claudeCmd := cfg.ClaudeCommand
-	if claudeCmd == "" {
-		claudeCmd = "claude"
+// checkGeminiDep checks that the gemini command is available in PATH.
+func checkGeminiDep(cfg *config.Config) error {
+	geminiCmd := cfg.GeminiCommand
+	if geminiCmd == "" {
+		geminiCmd = "gemini"
 	}
-	if _, err := exec.LookPath(claudeCmd); err != nil {
-		return fmt.Errorf("%s not found in PATH", claudeCmd)
+	if _, err := exec.LookPath(geminiCmd); err != nil {
+		return fmt.Errorf("%s not found in PATH", geminiCmd)
 	}
 	return nil
 }
@@ -932,7 +932,7 @@ func validateFlags(o opts) error {
 	if o.IdleTimeout < 0 {
 		return fmt.Errorf("--idle-timeout must be non-negative, got %s", o.IdleTimeout)
 	}
-	// --codex / --pass-claude-md / --external-only / --codex-only / --external-review-tool
+	// --codex / --pass-gemini-md / --external-only / --codex-only / --external-review-tool
 	// mutual-exclusion checks are deferred to applyCodexOverrides, which runs after the
 	// config-file merge so that executor=codex coming from config is also enforced.
 	return nil
@@ -989,8 +989,8 @@ func printStartupInfo(info startupInfo, colors *progress.Colors) {
 		colors.Info().Printf("branch: %s (max %d iterations)\n", info.Branch, info.MaxIterations)
 		colors.Info().Printf("progress log: %s\n", toRelPath(info.ProgressPath))
 		printExecutorInfo(info, colors)
-		if info.PreserveAnthropicAPIKey {
-			colors.Warn().Printf("auth: ANTHROPIC_API_KEY passthrough enabled\n")
+		if info.PreserveGeminiAPIKey {
+			colors.Warn().Printf("auth: GEMINI_API_KEY passthrough enabled\n")
 		}
 		colors.Info().Printf("\n")
 		return
@@ -1003,8 +1003,8 @@ func printStartupInfo(info startupInfo, colors *progress.Colors) {
 	colors.Info().Printf("starting ralphex loop (max %d iterations)%s\n", info.MaxIterations, modeStr)
 	displayMeta(colors, 0, info.PlanFile, info.Branch, info.ProgressPath)
 	printExecutorInfo(info, colors)
-	if info.PreserveAnthropicAPIKey {
-		colors.Warn().Printf("auth: ANTHROPIC_API_KEY passthrough enabled\n")
+	if info.PreserveGeminiAPIKey {
+		colors.Warn().Printf("auth: GEMINI_API_KEY passthrough enabled\n")
 	}
 	colors.Info().Printf("\n")
 }
@@ -1037,8 +1037,8 @@ func printExecutorInfo(info startupInfo, colors *progress.Colors) {
 	if info.CodexReviewEffort != info.CodexEffort {
 		colors.Info().Printf("  review reasoning effort: %s\n", codexBannerValue(info.CodexReviewEffort))
 	}
-	if info.PassClaudeMd {
-		colors.Info().Printf("claude.md: project CLAUDE.md passthrough enabled\n")
+	if info.PassGeminiMd {
+		colors.Info().Printf("gemini.md: project GEMINI.md passthrough enabled\n")
 	}
 }
 
@@ -1057,7 +1057,7 @@ func codexBannerValue(v string) string {
 type codexBannerInfo struct {
 	taskModel, taskEffort     string
 	reviewModel, reviewEffort string
-	maxDropped                bool // a claude-only "max" effort was requested and dropped
+	maxDropped                bool // a gemini-only "max" effort was requested and dropped
 }
 
 func resolveSpec(cliVal, cfgVal string) string {
@@ -1178,7 +1178,7 @@ func runPlanMode(ctx context.Context, o opts, req executePlanRequest, selector *
 
 	// resolve effective codex model/effort so the plan-mode banner reflects what
 	// the codex executor receives. codex executor only, so the max-effort warning
-	// is not a false positive in claude mode.
+	// is not a false positive in gemini mode.
 	var codex codexBannerInfo
 	if req.Config.Executor == config.ExecutorCodex {
 		codex = codexPlanBanner(o, req.Config)
@@ -1186,19 +1186,19 @@ func runPlanMode(ctx context.Context, o opts, req executePlanRequest, selector *
 
 	// print startup info for plan mode
 	printStartupInfo(startupInfo{
-		PlanDescription:         o.PlanDescription,
-		Branch:                  branch,
-		Mode:                    processor.ModePlan,
-		MaxIterations:           maxIter,
-		ProgressPath:            baseLog.Path(),
-		Executor:                req.Config.Executor,
-		PassClaudeMd:            req.Config.PassClaudeMd,
-		PreserveAnthropicAPIKey: req.Config.PreserveAnthropicAPIKey,
-		CodexModel:              codex.taskModel,
-		CodexEffort:             codex.taskEffort,
-		CodexReviewModel:        codex.reviewModel,
-		CodexReviewEffort:       codex.reviewEffort,
-		CodexSandbox:            req.Config.CodexExecutorSandbox(),
+		PlanDescription:      o.PlanDescription,
+		Branch:               branch,
+		Mode:                 processor.ModePlan,
+		MaxIterations:        maxIter,
+		ProgressPath:         baseLog.Path(),
+		Executor:             req.Config.Executor,
+		PassGeminiMd:         req.Config.PassGeminiMd,
+		PreserveGeminiAPIKey: req.Config.PreserveGeminiAPIKey,
+		CodexModel:           codex.taskModel,
+		CodexEffort:          codex.taskEffort,
+		CodexReviewModel:     codex.reviewModel,
+		CodexReviewEffort:    codex.reviewEffort,
+		CodexSandbox:         req.Config.CodexExecutorSandbox(),
 	}, req.Colors)
 	if codex.maxDropped {
 		req.Colors.Warn().Printf("codex does not support 'max' reasoning effort; ignoring (valid: low, medium, high, xhigh)\n")
@@ -1465,14 +1465,14 @@ func startInterruptWatcher(ctx context.Context, cleanup func()) func() {
 // applyCLIOverrides applies CLI flag overrides to config.
 // uses opts.*Set bools (populated by markFlagsSet) to detect explicitly-set zero values
 // so that e.g. --idle-timeout 0 can disable a non-zero config value.
-// returns an error if a post-merge validation fails (e.g. --pass-claude-md requires
+// returns an error if a post-merge validation fails (e.g. --pass-gemini-md requires
 // codex executor, which may come from config file rather than CLI).
 func applyCLIOverrides(o opts, cfg *config.Config) error {
 	if o.SkipFinalize {
 		cfg.FinalizeEnabled = false
 	}
-	if o.PreserveAnthropicAPIKey {
-		cfg.PreserveAnthropicAPIKey = true
+	if o.PreserveGeminiAPIKey {
+		cfg.PreserveGeminiAPIKey = true
 	}
 	if o.Worktree {
 		cfg.WorktreeEnabled = true
@@ -1489,12 +1489,12 @@ func applyCLIOverrides(o opts, cfg *config.Config) error {
 		cfg.IdleTimeout = o.IdleTimeout
 		cfg.IdleTimeoutSet = true
 	}
-	if o.claudeCommandSet {
-		cfg.ClaudeCommand = o.ClaudeCommand
+	if o.geminiCommandSet {
+		cfg.GeminiCommand = o.GeminiCommand
 	}
-	if o.claudeArgsSet {
-		cfg.ClaudeArgs = o.ClaudeArgs
-		cfg.ClaudeArgsSet = true
+	if o.geminiArgsSet {
+		cfg.GeminiArgs = o.GeminiArgs
+		cfg.GeminiArgsSet = true
 	}
 	if o.externalReviewToolSet {
 		cfg.ExternalReviewTool = o.ExternalReviewTool
@@ -1505,23 +1505,23 @@ func applyCLIOverrides(o opts, cfg *config.Config) error {
 	return applyCodexOverrides(o, cfg, os.Stderr)
 }
 
-// applyCodexOverrides applies --codex / --pass-claude-md CLI flags and resolves config-file precedence.
+// applyCodexOverrides applies --codex / --pass-gemini-md CLI flags and resolves config-file precedence.
 // when executor is codex (CLI flag or config), force external review off.
 // CLI-flag conflicts with the codex executor (--external-only, --codex-only,
 // --external-review-tool=<non-none>) are hard-errored here post-merge so the
 // config-only case (executor=codex in config + CLI external-review request) is
 // also caught. config-file conflict (executor=codex + external_review_tool=<not-none>
 // without a CLI override) is silently resolved with a warning written to warnW.
-// returns an error when --pass-claude-md is set without a codex executor (from CLI or config).
+// returns an error when --pass-gemini-md is set without a codex executor (from CLI or config).
 func applyCodexOverrides(o opts, cfg *config.Config, warnW io.Writer) error {
 	if o.Codex {
 		cfg.Executor = config.ExecutorCodex
 	}
-	if o.PassClaudeMd {
-		cfg.PassClaudeMd = true
+	if o.PassGeminiMd {
+		cfg.PassGeminiMd = true
 	}
-	if cfg.PassClaudeMd && cfg.Executor != config.ExecutorCodex {
-		return errors.New("--pass-claude-md requires --codex (or executor = codex in config)")
+	if cfg.PassGeminiMd && cfg.Executor != config.ExecutorCodex {
+		return errors.New("--pass-gemini-md requires --codex (or executor = codex in config)")
 	}
 	if cfg.Executor != config.ExecutorCodex {
 		return nil

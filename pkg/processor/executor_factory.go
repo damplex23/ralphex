@@ -17,14 +17,14 @@ func (f *executorFactory) Build(cfg Config, log Logger) (Config, Executors) {
 	customExec := cfg.buildCustomExecutor(log)
 
 	if cfg.isCodexExecutor() {
-		if cfg.AppConfig.PassClaudeMd {
-			maybeEmitClaudeMdSetupHint(log)
+		if cfg.AppConfig.PassGeminiMd {
+			maybeEmitGeminiMdSetupHint(log)
 		}
 		codexTask, codexReview := cfg.buildCodexExecutors(log)
 		return cfg, Executors{Task: codexTask, Review: codexReview, Custom: customExec}
 	}
 
-	claudeExec, reviewExec := cfg.buildClaudeExecutors(log)
+	geminiExec, reviewExec := cfg.buildGeminiExecutors(log)
 	codexExec := cfg.buildExternalCodexExecutor(log)
 
 	if cfg.CodexEnabled && f.needsCodexBinary(cfg.AppConfig) {
@@ -38,23 +38,23 @@ func (f *executorFactory) Build(cfg Config, log Logger) (Config, Executors) {
 		}
 	}
 
-	return cfg, Executors{Task: claudeExec, Review: reviewExec, External: codexExec, Custom: customExec}
+	return cfg, Executors{Task: geminiExec, Review: reviewExec, External: codexExec, Custom: customExec}
 }
 
-// buildClaudeExecutors constructs the claude executors for task and review phases.
+// buildGeminiExecutors constructs the gemini executors for task and review phases.
 // returns a single executor in the Review slot only when review_model differs from
 // the task executor model — otherwise the task executor handles both roles.
-func (cfg Config) buildClaudeExecutors(log Logger) (*executor.ClaudeExecutor, Executor) {
-	claudeExec := &executor.ClaudeExecutor{
+func (cfg Config) buildGeminiExecutors(log Logger) (*executor.GeminiExecutor, Executor) {
+	geminiExec := &executor.GeminiExecutor{
 		OutputHandler: func(text string) {
 			log.PrintAligned(text)
 		},
 		Debug: cfg.Debug,
 	}
-	cfg.applyClaudeAppConfig(claudeExec)
+	cfg.applyGeminiAppConfig(geminiExec)
 
 	taskModel, taskEffort := parseModelEffort(cfg.TaskModel)
-	claudeExec.Model, claudeExec.Effort = taskModel, taskEffort
+	geminiExec.Model, geminiExec.Effort = taskModel, taskEffort
 
 	reviewSpec := cfg.ReviewModel
 	if reviewSpec == "" {
@@ -62,38 +62,38 @@ func (cfg Config) buildClaudeExecutors(log Logger) (*executor.ClaudeExecutor, Ex
 	}
 	reviewModel, reviewEffort := parseModelEffort(reviewSpec)
 	if reviewModel == taskModel && reviewEffort == taskEffort {
-		return claudeExec, nil
+		return geminiExec, nil
 	}
 
-	reviewExec := &executor.ClaudeExecutor{
-		OutputHandler: claudeExec.OutputHandler,
+	reviewExec := &executor.GeminiExecutor{
+		OutputHandler: geminiExec.OutputHandler,
 		Debug:         cfg.Debug,
 		Model:         reviewModel,
 		Effort:        reviewEffort,
 	}
-	cfg.applyClaudeAppConfig(reviewExec)
-	return claudeExec, reviewExec
+	cfg.applyGeminiAppConfig(reviewExec)
+	return geminiExec, reviewExec
 }
 
-// applyClaudeAppConfig copies AppConfig-sourced fields onto a claude executor.
+// applyGeminiAppConfig copies AppConfig-sourced fields onto a gemini executor.
 // no-op when AppConfig is nil.
-func (cfg Config) applyClaudeAppConfig(e *executor.ClaudeExecutor) {
+func (cfg Config) applyGeminiAppConfig(e *executor.GeminiExecutor) {
 	if cfg.AppConfig == nil {
 		return
 	}
-	e.Command = cfg.AppConfig.ClaudeCommand
-	e.Args = cfg.AppConfig.ClaudeArgs
-	e.ArgsSet = cfg.AppConfig.ClaudeArgsSet
-	e.ErrorPatterns = cfg.AppConfig.ClaudeErrorPatterns
-	e.LimitPatterns = cfg.AppConfig.ClaudeLimitPatterns
-	e.RetryPatterns = cfg.AppConfig.ClaudeRetryPatterns
+	e.Command = cfg.AppConfig.GeminiCommand
+	e.Args = cfg.AppConfig.GeminiArgs
+	e.ArgsSet = cfg.AppConfig.GeminiArgsSet
+	e.ErrorPatterns = cfg.AppConfig.GeminiErrorPatterns
+	e.LimitPatterns = cfg.AppConfig.GeminiLimitPatterns
+	e.RetryPatterns = cfg.AppConfig.GeminiRetryPatterns
 	e.IdleTimeout = cfg.AppConfig.IdleTimeout
-	e.PreserveAPIKey = cfg.AppConfig.PreserveAnthropicAPIKey
+	e.PreserveAPIKey = cfg.AppConfig.PreserveGeminiAPIKey
 }
 
 // buildExternalCodexExecutor builds the codex executor used for the external review
-// phase in claude mode. MultiAgent stays off (the external review prompt does not use
-// spawn_agent) and PassClaudeMd stays off (rejected for claude mode by applyCodexOverrides).
+// phase in gemini mode. MultiAgent stays off (the external review prompt does not use
+// spawn_agent) and PassGeminiMd stays off (rejected for gemini mode by applyCodexOverrides).
 func (cfg Config) buildExternalCodexExecutor(log Logger) *executor.CodexExecutor {
 	e := cfg.newBaseCodexExecutor(log)
 	if cfg.AppConfig != nil {
@@ -104,15 +104,15 @@ func (cfg Config) buildExternalCodexExecutor(log Logger) *executor.CodexExecutor
 
 // buildCodexExecutor builds the codex executor used for first-class --codex mode.
 // MultiAgent is always enabled so any phase (task, review, finalize) can spawn sub-agents,
-// and PassClaudeMd is sourced from config. IdleTimeout is wired here (and only here)
+// and PassGeminiMd is sourced from config. IdleTimeout is wired here (and only here)
 // because the user explicitly opted into --codex; the external-review codex used in
-// claude mode keeps master semantics with no idle timeout.
+// gemini mode keeps master semantics with no idle timeout.
 func (cfg Config) buildCodexExecutor(log Logger) *executor.CodexExecutor {
 	e := cfg.newBaseCodexExecutor(log)
 	e.MultiAgent = true
 	if cfg.AppConfig != nil {
 		e.Sandbox = cfg.AppConfig.CodexExecutorSandbox()
-		e.PassClaudeMd = cfg.AppConfig.PassClaudeMd
+		e.PassGeminiMd = cfg.AppConfig.PassGeminiMd
 		e.IdleTimeout = cfg.AppConfig.IdleTimeout
 	}
 	return e
@@ -147,11 +147,11 @@ func (cfg Config) buildCodexExecutors(log Logger) (*executor.CodexExecutor, Exec
 
 // newBaseCodexExecutor returns a CodexExecutor populated with the fields shared
 // between the external-review and first-class --codex builders. Callers layer on
-// Sandbox, MultiAgent, PassClaudeMd, and IdleTimeout as appropriate for their
+// Sandbox, MultiAgent, PassGeminiMd, and IdleTimeout as appropriate for their
 // role — see buildCodexExecutor (first-class) and buildExternalCodexExecutor
-// (claude mode). IdleTimeout is intentionally NOT set here: applying it to the
+// (gemini mode). IdleTimeout is intentionally NOT set here: applying it to the
 // external codex review path silently shortened previously-idle-tolerant
-// review sessions for default-claude users, so it is wired only by
+// review sessions for default-gemini users, so it is wired only by
 // buildCodexExecutor where the user opted into --codex.
 func (cfg Config) newBaseCodexExecutor(log Logger) *executor.CodexExecutor {
 	e := &executor.CodexExecutor{
@@ -186,31 +186,31 @@ func (cfg Config) buildCustomExecutor(log Logger) *executor.CustomExecutor {
 	}
 }
 
-// claudeMdHintOnce ensures the user-level CLAUDE.md setup hint emits at most once
+// geminiMdHintOnce ensures the user-level GEMINI.md setup hint emits at most once
 // per process, regardless of how many runners or phases are constructed.
-var claudeMdHintOnce sync.Once
+var geminiMdHintOnce sync.Once
 
-// maybeEmitClaudeMdSetupHint prints a one-time hint when ~/.claude/CLAUDE.md exists
+// maybeEmitGeminiMdSetupHint prints a one-time hint when ~/.gemini/GEMINI.md exists
 // but ~/.codex/AGENTS.md does not. ralphex never creates the symlink itself; the
 // user owns ~/.codex/. probing errors are swallowed so a missing or unreadable
 // home directory simply suppresses the hint.
-func maybeEmitClaudeMdSetupHint(log Logger) {
-	claudeMdHintOnce.Do(func() {
+func maybeEmitGeminiMdSetupHint(log Logger) {
+	geminiMdHintOnce.Do(func() {
 		home, err := os.UserHomeDir()
 		if err != nil || home == "" {
 			return
 		}
-		claudeMd := filepath.Join(home, ".claude", "CLAUDE.md")
+		geminiMd := filepath.Join(home, ".gemini", "GEMINI.md")
 		codexAgents := filepath.Join(home, ".codex", "AGENTS.md")
-		if !fileExists(claudeMd) {
+		if !fileExists(geminiMd) {
 			return
 		}
 		if fileExists(codexAgents) {
 			return
 		}
-		log.Print("hint: ~/.claude/CLAUDE.md exists but ~/.codex/AGENTS.md does not. " +
-			"to get user-level CLAUDE.md content into codex, link it: " +
-			"ln -s ~/.claude/CLAUDE.md ~/.codex/AGENTS.md")
+		log.Print("hint: ~/.gemini/GEMINI.md exists but ~/.codex/AGENTS.md does not. " +
+			"to get user-level GEMINI.md content into codex, link it: " +
+			"ln -s ~/.gemini/GEMINI.md ~/.codex/AGENTS.md")
 	})
 }
 
@@ -244,7 +244,7 @@ func parseModelEffort(s string) (model, effort string) {
 
 // ResolveCodexModelEffort resolves a "model[:effort]" spec against codex default
 // model and effort. an empty spec returns the defaults unchanged. each populated
-// half of the spec overrides its default. the claude-only "max" effort is not valid
+// half of the spec overrides its default. the gemini-only "max" effort is not valid
 // for codex: maxDropped reports that the spec requested it (the caller surfaces the
 // warning) and the default effort is kept.
 func ResolveCodexModelEffort(spec, defModel, defEffort string) (model, effort string, maxDropped bool) {

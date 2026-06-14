@@ -33,7 +33,7 @@ func TestDefaultsInstaller_Install_CreatesConfigDir(t *testing.T) {
 
 	data, err := os.ReadFile(filepath.Join(configDir, "config")) //nolint:gosec // test
 	require.NoError(t, err)
-	assert.Contains(t, string(data), "claude_command")
+	assert.Contains(t, string(data), "gemini_command")
 	assert.Contains(t, string(data), "codex_enabled")
 }
 
@@ -56,7 +56,7 @@ func TestDefaultsInstaller_Install_ExistingConfigFile(t *testing.T) {
 	require.NoError(t, os.MkdirAll(filepath.Join(configDir, "prompts"), 0o700))
 	require.NoError(t, os.MkdirAll(filepath.Join(configDir, "agents"), 0o700))
 
-	existingContent := "# my custom config\nclaude_command = custom"
+	existingContent := "# my custom config\ngemini_command = custom"
 	require.NoError(t, os.WriteFile(filepath.Join(configDir, "config"), []byte(existingContent), 0o600))
 
 	installer := newDefaultsInstaller(defaultsFS)
@@ -99,7 +99,7 @@ func TestDefaultsInstaller_Install_SkipsWhenAllPathsExist(t *testing.T) {
 	require.NoError(t, os.MkdirAll(filepath.Join(configDir, "prompts"), 0o700))
 	require.NoError(t, os.MkdirAll(filepath.Join(configDir, "agents"), 0o700))
 
-	customContent := "# custom\nclaude_command = my-claude"
+	customContent := "# custom\ngemini_command = my-gemini"
 	require.NoError(t, os.WriteFile(filepath.Join(configDir, "config"), []byte(customContent), 0o600))
 
 	installer := newDefaultsInstaller(defaultsFS)
@@ -415,7 +415,7 @@ func TestReset_CreatesConfigDirIfMissing(t *testing.T) {
 	configPath := filepath.Join(configDir, "config")
 	data, err := os.ReadFile(configPath) //nolint:gosec // test
 	require.NoError(t, err)
-	assert.Contains(t, string(data), "claude_command = claude")
+	assert.Contains(t, string(data), "gemini_command = gemini")
 }
 
 func TestReset_ResetsConfigFile(t *testing.T) {
@@ -428,7 +428,7 @@ func TestReset_ResetsConfigFile(t *testing.T) {
 
 	// modify config file
 	configPath := filepath.Join(configDir, "config")
-	require.NoError(t, os.WriteFile(configPath, []byte("# modified config\nclaude_command = custom"), 0o600))
+	require.NoError(t, os.WriteFile(configPath, []byte("# modified config\ngemini_command = custom"), 0o600))
 
 	// verify it's modified
 	data, err := os.ReadFile(configPath) //nolint:gosec // test
@@ -448,8 +448,8 @@ func TestReset_ResetsConfigFile(t *testing.T) {
 	// verify config was reset to default
 	data, err = os.ReadFile(configPath) //nolint:gosec // test
 	require.NoError(t, err)
-	assert.Contains(t, string(data), "claude_command = claude")
-	assert.NotContains(t, string(data), "claude_command = custom")
+	assert.Contains(t, string(data), "gemini_command = gemini")
+	assert.NotContains(t, string(data), "gemini_command = custom")
 }
 
 func TestReset_ResetsPromptsDirectory(t *testing.T) {
@@ -572,7 +572,7 @@ func TestReset_ResetsAllComponents(t *testing.T) {
 	require.NoError(t, installer.Install(configDir))
 
 	// modify everything with actual content (not just comments)
-	require.NoError(t, os.WriteFile(filepath.Join(configDir, "config"), []byte("claude_command = custom"), 0o600))
+	require.NoError(t, os.WriteFile(filepath.Join(configDir, "config"), []byte("gemini_command = custom"), 0o600))
 	require.NoError(t, os.WriteFile(filepath.Join(configDir, "prompts", "task.txt"), []byte("modified prompt"), 0o600))
 	require.NoError(t, os.WriteFile(filepath.Join(configDir, "agents", "quality.txt"), []byte("modified agent"), 0o600))
 
@@ -873,7 +873,7 @@ func TestDumpDefaults(t *testing.T) {
 		// verify config exists and is raw (not all-commented)
 		data, err := os.ReadFile(filepath.Join(tmpDir, "config")) //nolint:gosec // test
 		require.NoError(t, err)
-		assert.Contains(t, string(data), "claude_command")
+		assert.Contains(t, string(data), "gemini_command")
 		stripped := stripComments(string(data))
 		assert.NotEmpty(t, strings.TrimSpace(stripped), "config should have raw (uncommented) content")
 
@@ -1025,7 +1025,7 @@ func Test_shouldOverwrite(t *testing.T) {
 	t.Run("single_uncommented_line", func(t *testing.T) {
 		tmpDir := t.TempDir()
 		singleFile := filepath.Join(tmpDir, "single.txt")
-		content := "claude_command = custom"
+		content := "gemini_command = custom"
 		require.NoError(t, os.WriteFile(singleFile, []byte(content), 0o600))
 		assert.False(t, shouldOverwrite(singleFile))
 	})
@@ -1053,7 +1053,7 @@ func TestDefaultsInstaller_Install_WritesCommentedConfig(t *testing.T) {
 	}
 
 	// should contain expected settings (commented)
-	assert.Contains(t, content, "# claude_command")
+	assert.Contains(t, content, "# gemini_command")
 	assert.Contains(t, content, "# codex_enabled")
 }
 
@@ -1078,7 +1078,7 @@ func TestDefaultsInstaller_Install_OverwritesCommentedConfig(t *testing.T) {
 
 	// should have new content (not old)
 	assert.NotEqual(t, existingContent, content)
-	assert.Contains(t, content, "# claude_command")
+	assert.Contains(t, content, "# gemini_command")
 }
 
 func TestDefaultsInstaller_Install_PreservesCustomConfig(t *testing.T) {
@@ -1089,7 +1089,7 @@ func TestDefaultsInstaller_Install_PreservesCustomConfig(t *testing.T) {
 	require.NoError(t, os.MkdirAll(filepath.Join(configDir, "agents"), 0o700))
 
 	// create config with actual content (should NOT be overwritten)
-	existingContent := "# my custom config\nclaude_command = my-custom-claude\n"
+	existingContent := "# my custom config\ngemini_command = my-custom-gemini\n"
 	require.NoError(t, os.WriteFile(filepath.Join(configDir, "config"), []byte(existingContent), 0o600))
 
 	installer := newDefaultsInstaller(defaultsFS)
@@ -1313,7 +1313,7 @@ func TestInitLocal(t *testing.T) {
 		require.NoError(t, InitLocal(localDir))
 
 		// customize config file
-		customContent := "# my config\nclaude_command = custom-claude"
+		customContent := "# my config\ngemini_command = custom-gemini"
 		require.NoError(t, os.WriteFile(filepath.Join(localDir, "config"), []byte(customContent), 0o600))
 
 		// second call should preserve customized config

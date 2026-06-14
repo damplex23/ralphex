@@ -117,7 +117,7 @@ func (p *ReviewPhase) section(iteration int, suffix string) status.Section {
 	if p.cfg.isCodexExecutor() {
 		return status.NewInternalReviewSection(iteration, suffix)
 	}
-	return status.NewClaudeReviewSection(iteration, suffix)
+	return status.NewGeminiReviewSection(iteration, suffix)
 }
 
 func (p *ReviewPhase) run(ctx context.Context, prompt, phaseLabel string) error {
