@@ -894,8 +894,9 @@ func TestService_EnsureLocalGitignore(t *testing.T) {
 
 		err = svc.EnsureLocalGitignore()
 		require.NoError(t, err)
-		assert.Len(t, log.logs, 1)
+		assert.Len(t, log.logs, 2)
 		assert.Contains(t, log.logs[0], ".ralphex/.gitignore")
+		assert.Contains(t, log.logs[1], ".geminiignore")
 
 		gitignorePath := filepath.Join(dir, ".ralphex", ".gitignore")
 		content, err := os.ReadFile(gitignorePath) //nolint:gosec // test file
@@ -913,6 +914,9 @@ func TestService_EnsureLocalGitignore(t *testing.T) {
 		require.NoError(t, os.WriteFile(
 			filepath.Join(dir, ".ralphex", ".gitignore"),
 			[]byte(".gitignore\nprogress/\nworktrees/\n"), 0o600))
+		require.NoError(t, os.WriteFile(
+			filepath.Join(dir, ".geminiignore"),
+			[]byte("!.ralphex/progress/\n"), 0o600))
 
 		err = svc.EnsureLocalGitignore()
 		require.NoError(t, err)
@@ -932,7 +936,7 @@ func TestService_EnsureLocalGitignore(t *testing.T) {
 
 		err = svc.EnsureLocalGitignore()
 		require.NoError(t, err)
-		assert.Len(t, log.logs, 1)
+		assert.Len(t, log.logs, 2)
 
 		content, err := os.ReadFile(filepath.Join(dir, ".ralphex", ".gitignore")) //nolint:gosec // test file
 		require.NoError(t, err)

@@ -224,22 +224,13 @@ func filterEnv(env []string, keysToRemove ...string) []string {
 
 // streamEvent represents a JSON event from gemini CLI stream output.
 type streamEvent struct {
-	Type    string `json:"type"`
-	Message struct {
-		Content []struct {
-			Type string `json:"type"`
-			Text string `json:"text"`
-		} `json:"content"`
-	} `json:"message"`
-	ContentBlock struct {
-		Type string `json:"type"`
-		Text string `json:"text"`
-	} `json:"content_block"`
-	Delta struct {
-		Type string `json:"type"`
-		Text string `json:"text"`
-	} `json:"delta"`
-	Result json.RawMessage `json:"result"` // can be string or object with "output" field
+	Type         string          `json:"type"`
+	Role         string          `json:"role"`    // "assistant" or "user"
+	Message      json.RawMessage `json:"message"` // can be object with content array
+	Content      json.RawMessage `json:"content"` // can be string or array
+	ContentBlock json.RawMessage `json:"content_block"`
+	Delta        json.RawMessage `json:"delta"`  // can be bool or object
+	Result       json.RawMessage `json:"result"` // can be string or object with "output" field
 }
 
 // GeminiExecutor runs gemini CLI commands with streaming JSON parsing.
@@ -415,20 +406,34 @@ func (e *GeminiExecutor) parseStream(ctx context.Context, r io.Reader, idleTouch
 			return
 		}
 
-		text := e.extractText(&event)
+		text, role := e.extractText(&event)
+		if text == "" && event.Type == "" {
+			// handle mixed format: strip Gemini metadata suffix from raw LLM JSON
+			text = strings.TrimSuffix(line, `,"delta":true}`)
+			text = strings.TrimSuffix(text, `,"delta":false}`)
+			// assume assistant for mixed format raw output
+			role = "assistant"
+		}
+
+		// skip terminal output and signal detection for non-assistant messages
+		// (e.g. user prompt echoes)
+		if role != "assistant" && role != "" {
+			return
+		}
+
 		if text != "" {
 			output.WriteString(text)
-			// pass only clean text to the handler for beautiful display
+			// pass only clean assistant text to the handler for beautiful display
 			if e.OutputHandler != nil {
 				e.OutputHandler(text)
 			}
 
-			// track clean text chunks for pattern matching and signal reconstruction.
+			// track clean assistant chunks for pattern matching and signal reconstruction.
 			// very important: do NOT store the raw JSON 'line' here.
 			recentBlocks[blockIdx%recentBlockCount] = text
 			blockIdx++
 
-			// check for signals in this specific chunk
+			// check for signals in this specific assistant chunk
 			if sig := detectSignal(text); sig != "" {
 				signal = sig
 			}
@@ -461,58 +466,80 @@ func (e *GeminiExecutor) parseStream(ctx context.Context, r io.Reader, idleTouch
 	return Result{Output: output.String(), RecentText: recentText, Signal: signal}
 }
 
-// extractText extracts text content from various event types.
-func (e *GeminiExecutor) extractText(event *streamEvent) string {
-	switch event.Type {
-	case "assistant", "message":
-		// assistant and message events contain message.content array with text blocks
-		var texts []string
-		for _, c := range event.Message.Content {
-			if c.Type == "text" && c.Text != "" {
-				texts = append(texts, c.Text)
+// extractText extracts text content and role from various event types.
+func (e *GeminiExecutor) extractText(event *streamEvent) (string, string) {
+	role := event.Role
+
+	// 0. try top-level "content" as string (common when delta=true)
+	if len(event.Content) > 0 {
+		var contentStr string
+		if err := json.Unmarshal(event.Content, &contentStr); err == nil {
+			return contentStr, role
+		}
+	}
+
+	// 1. try "message.content" (Gemini standard)
+	if len(event.Message) > 0 {
+		var msg struct {
+			Role    string `json:"role"`
+			Content []struct {
+				Type string `json:"type"`
+				Text string `json:"text"`
+			} `json:"content"`
+		}
+		if err := json.Unmarshal(event.Message, &msg); err == nil {
+			if msg.Role != "" {
+				role = msg.Role
+			}
+			var texts []string
+			for _, c := range msg.Content {
+				if c.Type == "text" && c.Text != "" {
+					texts = append(texts, c.Text)
+				}
+			}
+			if len(texts) > 0 {
+				return strings.Join(texts, ""), role
 			}
 		}
-		if len(texts) > 0 {
-			return strings.Join(texts, "")
+	}
+
+	// 2. try "content_block" (some versions)
+	if len(event.ContentBlock) > 0 {
+		var cb struct {
+			Type string `json:"type"`
+			Text string `json:"text"`
 		}
-		// some message events might have a top-level content field if simplified
-		if event.Type == "message" && event.ContentBlock.Type == "text" {
-			return event.ContentBlock.Text
-		}
-		if event.Type == "message" && event.Delta.Type == "text" {
-			return event.Delta.Text
-		}
-		return ""
-	case "content_block_delta":
-		if event.Delta.Type == "text_delta" {
-			return event.Delta.Text
-		}
-	case "message_stop":
-		// check final message content
-		for _, c := range event.Message.Content {
-			if c.Type == "text" {
-				return c.Text
+		if err := json.Unmarshal(event.ContentBlock, &cb); err == nil {
+			if cb.Type == "text" {
+				return cb.Text, role
 			}
 		}
-	case "result":
-		// result can be a string or object with "output" field
-		if len(event.Result) == 0 {
-			return ""
+	}
+
+	// 3. try "delta" as object with text
+	if len(event.Delta) > 0 {
+		var deltaObj struct {
+			Type string `json:"type"`
+			Text string `json:"text"`
 		}
-		// try as string first (session summary format)
-		var resultStr string
-		if err := json.Unmarshal(event.Result, &resultStr); err == nil {
-			return "" // skip session summary - content already streamed
+		if err := json.Unmarshal(event.Delta, &deltaObj); err == nil {
+			if deltaObj.Type == "text" || deltaObj.Type == "text_delta" {
+				return deltaObj.Text, role
+			}
 		}
-		// try as object with output field
+	}
+
+	// 4. try "result" (final event)
+	if event.Type == "result" && len(event.Result) > 0 {
 		var resultObj struct {
 			Output string `json:"output"`
 		}
 		if err := json.Unmarshal(event.Result, &resultObj); err == nil {
-			return resultObj.Output
+			return resultObj.Output, "assistant"
 		}
 	}
-	return ""
+
+	return "", role
 }
 
 // detectSignal checks text for completion status.
