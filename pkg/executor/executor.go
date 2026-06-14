@@ -400,23 +400,24 @@ func (e *GeminiExecutor) parseStream(ctx context.Context, r io.Reader, idleTouch
 
 		var event streamEvent
 		if jsonErr := json.Unmarshal([]byte(line), &event); jsonErr != nil {
-			// print non-JSON lines as-is
+			// skip non-JSON lines for cleaner output unless debug is on
 			if e.Debug {
 				log.Printf("[debug] non-JSON line: %s", line)
+				if e.OutputHandler != nil {
+					e.OutputHandler(line + "\n")
+				}
 			}
 			output.WriteString(line)
 			output.WriteString("\n")
 			recentBlocks[blockIdx%recentBlockCount] = line
 			blockIdx++
-			if e.OutputHandler != nil {
-				e.OutputHandler(line + "\n")
-			}
 			return
 		}
 
 		text := e.extractText(&event)
 		if text != "" {
 			output.WriteString(text)
+			// pass only clean text to the handler for beautiful display
 			if e.OutputHandler != nil {
 				e.OutputHandler(text)
 			}
@@ -425,22 +426,27 @@ func (e *GeminiExecutor) parseStream(ctx context.Context, r io.Reader, idleTouch
 			recentBlocks[blockIdx%recentBlockCount] = text
 			blockIdx++
 
-			// check for signals in text
+			// check for signals in text. some events might contain the full signal,
+			// or it might be reconstructed from recent blocks.
 			if sig := detectSignal(text); sig != "" {
 				signal = sig
 			}
 		}
 	})
 
-	// join recent blocks in chronological order for pattern matching.
-	// iterate from the oldest slot forward to preserve order after wrap-around.
+	// join recent blocks in chronological order for signal/pattern matching.
 	var recent strings.Builder
 	start := blockIdx % recentBlockCount
 	for i := range recentBlockCount {
 		b := recentBlocks[(start+i)%recentBlockCount]
 		if b != "" {
 			recent.WriteString(b)
-			recent.WriteString("\n")
+		}
+	}
+	// check if signal is present in reconstructed text (in case it was split across events)
+	if signal == "" {
+		if sig := detectSignal(recent.String()); sig != "" {
+			signal = sig
 		}
 	}
 
