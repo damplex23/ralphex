@@ -289,6 +289,12 @@ func (e *externalBackend) hasChangesOtherThan(path string) ([]string, error) {
 		if strings.EqualFold(filePath, rel) {
 			continue
 		}
+
+		// ignore ralphex-managed files to avoid blocking execution after initialization
+		if filePath == ".geminiignore" || strings.HasPrefix(filePath, ".ralphex/") {
+			continue
+		}
+
 		dirty = append(dirty, filePath)
 	}
 	return dirty, nil
