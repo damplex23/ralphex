@@ -104,7 +104,7 @@ Use the absolute path printed by `command -v fya` in ralphex config. On Apple Si
 ```ini
 # in ~/.config/ralphex/config or .ralphex/config
 gemini_command = /opt/homebrew/bin/fya
-gemini_args = --dangerously-skip-permissions --output-format stream-json --verbose
+gemini_args = --yolo --output-format stream-json --prompt ""
 ```
 
 On Intel Homebrew the path is normally `/usr/local/bin/fya`. If `command -v fya` prints another path, use that exact path instead.
@@ -870,6 +870,41 @@ Agents to launch:
 3. go-smells-expert - "Review for code smells"
 ```
 
+## Alternative Providers
+
+ralphex is designed to be provider-agnostic. While it defaults to the **Gemini CLI**, it can drive any tool that produces compatible output.
+
+### Antigravity (agy)
+
+Antigravity (`agy`) is Google's next-generation CLI agent and the successor to the Gemini CLI. ralphex includes a first-class adapter for it.
+
+To use Antigravity:
+1. Ensure `agy` is installed and authenticated (`agy auth login`).
+2. Point ralphex to the adapter:
+
+```bash
+# one-off run
+ralphex --gemini-command=scripts/agy-as-gemini/agy-as-gemini.sh docs/plans/feature.md
+
+# or set in config
+gemini_command = /path/to/ralphex/scripts/agy-as-gemini/agy-as-gemini.sh
+gemini_args = 
+```
+
+### Gemini CLI Integration (Skills)
+
+ralphex provides a set of **slash commands** for the Gemini CLI to bridge the gap between interactive chat and autonomous execution. These skills guide you through plan creation and launch ralphex without leaving your chat session.
+
+- `/ralphex-plan`: Interactive plan creation with guided context gathering.
+- `/ralphex`: Launch and monitor execution of a plan file.
+- `/ralphex-adopt`: Convert external issue checklists into ralphex plans.
+
+Install via the marketplace:
+```bash
+/plugin marketplace add umputun/ralphex
+/plugin install ralphex@ralphex
+```
+
 ## Requirements
 
 - `gemini` - Gemini CLI CLI
@@ -932,7 +967,7 @@ Provider-related CLI flags (`--gemini-command`, `--gemini-args`, `--external-rev
 | Option | Description | Default |
 |--------|-------------|---------|
 | `gemini_command` | Gemini CLI command | `gemini` |
-| `gemini_args` | Gemini CLI arguments | `--dangerously-skip-permissions --output-format stream-json --verbose` |
+| `gemini_args` | Gemini CLI arguments | `--yolo --output-format stream-json --prompt ""` |
 | `executor` | Executor for plan creation, task, review, and finalize phases. `""` (default) uses Gemini CLI; `codex` routes the full pipeline through the codex CLI and skips the external review phase. CLI flag `--codex` takes precedence | empty |
 | `pass_gemini.md` | When `executor = codex`, pass project `GEMINI.md` to codex as `AGENTS.md` via `-c project_doc_fallback_filenames=["GEMINI.md"]`. CLI flag `--pass-gemini.md` takes precedence | `false` |
 | `plan_model` | Model for plan creation as `model[:effort]` (e.g., `opus`, `opus:high`, `:medium`). Falls back to `task_model` if empty. Same syntax and wrapper behavior as `task_model`. Under `--codex`, selects the codex plan-creation model/effort instead (see *Model selection under `--codex`*) | empty |
@@ -1087,7 +1122,7 @@ Working examples are included:
 - [`scripts/codex-as-gemini/codex-as-gemini.sh`](https://github.com/umputun/ralphex/blob/master/scripts/codex-as-gemini/codex-as-gemini.sh) wraps codex to produce Gemini-compatible events
 - [`scripts/copilot-as-gemini/copilot-as-gemini.sh`](https://github.com/umputun/ralphex/blob/master/scripts/copilot-as-gemini/copilot-as-gemini.sh) wraps GitHub Copilot CLI and translates its native JSONL stream into Gemini-compatible events
 - [`scripts/gemini-as-gemini/gemini-as-gemini.sh`](https://github.com/umputun/ralphex/blob/master/scripts/gemini-as-gemini/gemini-as-gemini.sh) wraps Gemini CLI for the implementation slot
-- [`scripts/agy-as-gemini/agy-as-gemini.sh`](https://github.com/umputun/ralphex/blob/master/scripts/agy-as-gemini/agy-as-gemini.sh) wraps the Antigravity (`agy`) CLI — Google's successor to Gemini CLI — for the implementation slot
+- [`scripts/agy-as-gemini/agy-as-gemini.sh`](https://github.com/umputun/ralphex/blob/master/scripts/agy-as-gemini/agy-as-gemini.sh) wraps the Antigravity (`agy`) CLI — Google's next-generation coding agent — for the implementation slot
 - [`scripts/opencode/opencode-as-gemini.sh`](https://github.com/umputun/ralphex/blob/master/scripts/opencode/opencode-as-gemini.sh) wraps OpenCode CLI for the implementation slot, and `scripts/opencode/opencode-review.sh` is shipped alongside as a turn-key custom review script
 
 To use the included Copilot wrapper:

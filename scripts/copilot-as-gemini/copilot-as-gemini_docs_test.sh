@@ -139,19 +139,19 @@ assert_contains \
 assert_contains \
     "$REPO_ROOT/GEMINI.md" \
     "scripts/copilot-as-gemini/ # GitHub Copilot CLI wrapper for Gemini-compatible output" \
-    "CLAUDE inventory includes Copilot wrapper directory"
+    "GEMINI inventory includes Copilot wrapper directory"
 assert_contains \
     "$REPO_ROOT/GEMINI.md" \
     "scripts/copilot-as-gemini/copilot-as-gemini.sh" \
-    "CLAUDE alternative provider docs mention Copilot wrapper path"
+    "GEMINI alternative provider docs mention Copilot wrapper path"
 assert_contains \
     "$REPO_ROOT/GEMINI.md" \
     "native autopilot mode" \
-    "CLAUDE alternative provider docs mention Copilot autopilot mode"
+    "GEMINI alternative provider docs mention Copilot autopilot mode"
 assert_contains \
     "$REPO_ROOT/GEMINI.md" \
     "--autopilot --allow-all" \
-    "CLAUDE alternative provider docs mention Copilot plan-mode behavior"
+    "GEMINI alternative provider docs mention Copilot plan-mode behavior"
 assert_contains \
     "$REPO_ROOT/README.md" \
     "wraps GitHub Copilot CLI" \
@@ -163,7 +163,7 @@ assert_contains \
 assert_contains \
     "$REPO_ROOT/GEMINI.md" \
     "GitHub Copilot CLI wrapper for Gemini-compatible output" \
-    "CLAUDE inventory uses final Copilot wrapper naming"
+    "GEMINI inventory uses final Copilot wrapper naming"
 
 echo ""
 echo "summary: $passed passed, $failed failed, $total total"
