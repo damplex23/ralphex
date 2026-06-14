@@ -870,6 +870,26 @@ Agents to launch:
 3. go-smells-expert - "Review for code smells"
 ```
 
+## Provider Compatibility: Gemini CLI & Antigravity (agy)
+
+ralphex is built to be a bridge between current and next-generation AI coding tools. It offers **dual compatibility** out of the box:
+
+- **Gemini CLI (`gemini`)**: The stable, battle-tested foundation. ralphex uses it by default for all autonomous tasks and multi-agent reviews.
+- **Antigravity (`agy`)**: Google's next-generation CLI agent. ralphex includes a dedicated high-performance adapter (`scripts/agy-as-gemini/agy-as-gemini.sh`) that allows you to use the latest AI capabilities while maintaining the ralphex autonomous loop.
+
+### How it works:
+ralphex uses a provider-agnostic execution engine. You can switch between providers at any time using the `--gemini-command` flag or your configuration file. All internal logic, such as signal detection (`<<<RALPHEX:...>>>`) and multi-agent orchestration, is automatically translated to work with your chosen tool.
+
+```bash
+# Default: use Gemini CLI
+ralphex docs/plans/feature.md
+
+# Switch to Antigravity
+ralphex --gemini-command=scripts/agy-as-gemini/agy-as-gemini.sh docs/plans/feature.md
+```
+
+---
+
 ## Alternative Providers
 
 ralphex is designed to be provider-agnostic. While it defaults to the **Gemini CLI**, it can drive any tool that produces compatible output.
