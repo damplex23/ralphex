@@ -122,6 +122,7 @@ func splitArgs(s string) []string {
 	var current strings.Builder
 	var inQuote rune
 	var escaped bool
+	var hadQuote bool
 
 	for _, r := range s {
 		if escaped {
@@ -136,6 +137,7 @@ func splitArgs(s string) []string {
 		}
 
 		if r == '"' || r == '\'' {
+			hadQuote = true
 			switch { //nolint:staticcheck // cannot use tagged switch because we compare with both inQuote and r
 			case inQuote == 0:
 				inQuote = r
@@ -148,9 +150,10 @@ func splitArgs(s string) []string {
 		}
 
 		if r == ' ' && inQuote == 0 {
-			if current.Len() > 0 {
+			if current.Len() > 0 || hadQuote {
 				args = append(args, current.String())
 				current.Reset()
+				hadQuote = false
 			}
 			continue
 		}
@@ -158,7 +161,7 @@ func splitArgs(s string) []string {
 		current.WriteRune(r)
 	}
 
-	if current.Len() > 0 {
+	if current.Len() > 0 || hadQuote {
 		args = append(args, current.String())
 	}
 
@@ -289,7 +292,10 @@ func (e *GeminiExecutor) Run(ctx context.Context, prompt string) Result {
 		args = append(args, "--effort", e.Effort)
 	}
 	// signal headless mode via --prompt; ralphex passes the real prompt via stdin
-	// to avoid Windows 8191-char command-line limit.
+	// to avoid Windows 8191-char command-line limit. strip any existing prompt flags
+	// to avoid duplicate/conflicting signals.
+	args = stripFlag(args, "--prompt")
+	args = stripFlag(args, "-p")
 	args = append(args, "--prompt", "")
 	// if cmdRunner is set (test injection), use it; otherwise use real runner
 	stdinReader := strings.NewReader(prompt)
@@ -449,15 +455,25 @@ func (e *GeminiExecutor) parseStream(ctx context.Context, r io.Reader, idleTouch
 // extractText extracts text content from various event types.
 func (e *GeminiExecutor) extractText(event *streamEvent) string {
 	switch event.Type {
-	case "assistant":
-		// assistant events contain message.content array with text blocks
+	case "assistant", "message":
+		// assistant and message events contain message.content array with text blocks
 		var texts []string
 		for _, c := range event.Message.Content {
 			if c.Type == "text" && c.Text != "" {
 				texts = append(texts, c.Text)
 			}
 		}
-		return strings.Join(texts, "")
+		if len(texts) > 0 {
+			return strings.Join(texts, "")
+		}
+		// some message events might have a top-level content field if simplified
+		if event.Type == "message" && event.ContentBlock.Type == "text" {
+			return event.ContentBlock.Text
+		}
+		if event.Type == "message" && event.Delta.Type == "text" {
+			return event.Delta.Text
+		}
+		return ""
 	case "content_block_delta":
 		if event.Delta.Type == "text_delta" {
 			return event.Delta.Text
@@ -499,6 +515,8 @@ func detectSignal(text string) string {
 		status.ReviewDone,
 		status.CodexDone,
 		status.PlanReady,
+		status.Question,
+		status.PlanDraft,
 	}
 	for _, sig := range knownSignals {
 		if strings.Contains(text, sig) {

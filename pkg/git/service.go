@@ -581,29 +581,46 @@ func (s *Service) DiffStats(baseBranch string) (DiffStats, error) {
 }
 
 // EnsureLocalGitignore creates .ralphex/.gitignore with patterns for runtime artifacts
-// (progress/ and worktrees/). this keeps ignore rules self-contained inside .ralphex/
-// instead of modifying the project's root .gitignore.
-// idempotent: does nothing if the file already exists with the expected content.
+// (progress/ and worktrees/) and ensures a .geminiignore exists in the root that
+// un-ignores .ralphex/progress/ so Gemini CLI can access it.
+// idempotent: does nothing if files already exist with expected content.
 func (s *Service) EnsureLocalGitignore() error {
 	ralphexDir := filepath.Join(s.repo.root(), ".ralphex")
 	if err := os.MkdirAll(ralphexDir, 0o750); err != nil {
 		return fmt.Errorf("create .ralphex dir: %w", err)
 	}
 
+	// 1. .ralphex/.gitignore (keep artifacts out of git)
 	gitignorePath := filepath.Join(ralphexDir, ".gitignore")
-	const content = ".gitignore\nprogress/\nworktrees/\n"
+	const gitignoreContent = ".gitignore\nprogress/\nworktrees/\n"
+	if err := s.ensureFile(gitignorePath, gitignoreContent, "created .ralphex/.gitignore"); err != nil {
+		return err
+	}
 
-	if existing, err := os.ReadFile(gitignorePath); err == nil { //nolint:gosec // .gitignore is world-readable
+	// 2. .geminiignore in repo root (allow Gemini to read progress files)
+	// some versions of Gemini CLI ignore directories starting with dot or
+	// directories ignored by .gitignore. we must explicitly whitelist progress.
+	geminiIgnorePath := filepath.Join(s.repo.root(), ".geminiignore")
+	const geminiIgnoreContent = "!.ralphex/progress/\n"
+	if err := s.ensureFile(geminiIgnorePath, geminiIgnoreContent, "created .geminiignore"); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *Service) ensureFile(path, content, logMsg string) error {
+	if existing, err := os.ReadFile(path); err == nil { //nolint:gosec // ignore files are world-readable
 		if string(existing) == content {
 			return nil
 		}
 	}
 
-	if err := os.WriteFile(gitignorePath, []byte(content), 0o644); err != nil { //nolint:gosec // .gitignore needs world-readable
-		return fmt.Errorf("write .ralphex/.gitignore: %w", err)
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil { //nolint:gosec // ignore files need world-readable
+		return fmt.Errorf("write %s: %w", path, err)
 	}
 
-	s.log.Printf("created .ralphex/.gitignore\n")
+	s.log.Printf("%s\n", logMsg)
 	return nil
 }
 
