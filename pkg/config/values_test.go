@@ -2531,12 +2531,12 @@ func TestValuesLoader_Load_PlanModel(t *testing.T) {
 	t.Run("parse valid value", func(t *testing.T) {
 		tmpDir := t.TempDir()
 		cfgPath := filepath.Join(tmpDir, "config")
-		require.NoError(t, os.WriteFile(cfgPath, []byte(`plan_model = opus:high`), 0o600))
+		require.NoError(t, os.WriteFile(cfgPath, []byte(`plan_model = pro:high`), 0o600))
 
 		loader := newValuesLoader(defaultsFS)
 		values, err := loader.Load("", cfgPath)
 		require.NoError(t, err)
-		assert.Equal(t, "opus:high", values.PlanModel)
+		assert.Equal(t, "pro:high", values.PlanModel)
 	})
 
 	t.Run("not set defaults to empty", func(t *testing.T) {
@@ -2551,12 +2551,12 @@ func TestValuesLoader_Load_TaskModel(t *testing.T) {
 	t.Run("parse valid value", func(t *testing.T) {
 		tmpDir := t.TempDir()
 		cfgPath := filepath.Join(tmpDir, "config")
-		require.NoError(t, os.WriteFile(cfgPath, []byte(`task_model = sonnet`), 0o600))
+		require.NoError(t, os.WriteFile(cfgPath, []byte(`task_model = flash`), 0o600))
 
 		loader := newValuesLoader(defaultsFS)
 		values, err := loader.Load("", cfgPath)
 		require.NoError(t, err)
-		assert.Equal(t, "sonnet", values.TaskModel)
+		assert.Equal(t, "flash", values.TaskModel)
 	})
 
 	t.Run("not set defaults to empty", func(t *testing.T) {
@@ -2569,12 +2569,12 @@ func TestValuesLoader_Load_TaskModel(t *testing.T) {
 	t.Run("full model ID accepted", func(t *testing.T) {
 		tmpDir := t.TempDir()
 		cfgPath := filepath.Join(tmpDir, "config")
-		require.NoError(t, os.WriteFile(cfgPath, []byte(`task_model = gemini-sonnet-4-5-20250929`), 0o600))
+		require.NoError(t, os.WriteFile(cfgPath, []byte(`task_model = gemini-flash-4-5-20250929`), 0o600))
 
 		loader := newValuesLoader(defaultsFS)
 		values, err := loader.Load("", cfgPath)
 		require.NoError(t, err)
-		assert.Equal(t, "gemini-sonnet-4-5-20250929", values.TaskModel)
+		assert.Equal(t, "gemini-flash-4-5-20250929", values.TaskModel)
 	})
 }
 
@@ -2582,12 +2582,12 @@ func TestValuesLoader_Load_ReviewModel(t *testing.T) {
 	t.Run("parse valid value", func(t *testing.T) {
 		tmpDir := t.TempDir()
 		cfgPath := filepath.Join(tmpDir, "config")
-		require.NoError(t, os.WriteFile(cfgPath, []byte(`review_model = haiku`), 0o600))
+		require.NoError(t, os.WriteFile(cfgPath, []byte(`review_model = flash-lite`), 0o600))
 
 		loader := newValuesLoader(defaultsFS)
 		values, err := loader.Load("", cfgPath)
 		require.NoError(t, err)
-		assert.Equal(t, "haiku", values.ReviewModel)
+		assert.Equal(t, "flash-lite", values.ReviewModel)
 	})
 
 	t.Run("not set defaults to empty", func(t *testing.T) {
@@ -2601,86 +2601,86 @@ func TestValuesLoader_Load_ReviewModel(t *testing.T) {
 func TestValues_mergeFrom_PlanModel(t *testing.T) {
 	t.Run("non-empty overrides", func(t *testing.T) {
 		dst := Values{PlanModel: ""}
-		src := Values{PlanModel: "opus"}
+		src := Values{PlanModel: "pro"}
 		dst.mergeFrom(&src)
-		assert.Equal(t, "opus", dst.PlanModel)
+		assert.Equal(t, "pro", dst.PlanModel)
 	})
 
 	t.Run("empty preserves existing", func(t *testing.T) {
-		dst := Values{PlanModel: "opus"}
+		dst := Values{PlanModel: "pro"}
 		src := Values{PlanModel: ""}
 		dst.mergeFrom(&src)
-		assert.Equal(t, "opus", dst.PlanModel)
+		assert.Equal(t, "pro", dst.PlanModel)
 	})
 
 	t.Run("local overrides global", func(t *testing.T) {
 		tmpDir := t.TempDir()
 		globalCfg := filepath.Join(tmpDir, "global")
 		localCfg := filepath.Join(tmpDir, "local")
-		require.NoError(t, os.WriteFile(globalCfg, []byte(`plan_model = opus`), 0o600))
-		require.NoError(t, os.WriteFile(localCfg, []byte(`plan_model = haiku`), 0o600))
+		require.NoError(t, os.WriteFile(globalCfg, []byte(`plan_model = pro`), 0o600))
+		require.NoError(t, os.WriteFile(localCfg, []byte(`plan_model = flash-lite`), 0o600))
 
 		loader := newValuesLoader(defaultsFS)
 		values, err := loader.Load(localCfg, globalCfg)
 		require.NoError(t, err)
-		assert.Equal(t, "haiku", values.PlanModel)
+		assert.Equal(t, "flash-lite", values.PlanModel)
 	})
 }
 
 func TestValues_mergeFrom_TaskModel(t *testing.T) {
 	t.Run("non-empty overrides", func(t *testing.T) {
 		dst := Values{TaskModel: ""}
-		src := Values{TaskModel: "opus"}
+		src := Values{TaskModel: "pro"}
 		dst.mergeFrom(&src)
-		assert.Equal(t, "opus", dst.TaskModel)
+		assert.Equal(t, "pro", dst.TaskModel)
 	})
 
 	t.Run("empty preserves existing", func(t *testing.T) {
-		dst := Values{TaskModel: "opus"}
+		dst := Values{TaskModel: "pro"}
 		src := Values{TaskModel: ""}
 		dst.mergeFrom(&src)
-		assert.Equal(t, "opus", dst.TaskModel)
+		assert.Equal(t, "pro", dst.TaskModel)
 	})
 
 	t.Run("local overrides global", func(t *testing.T) {
 		tmpDir := t.TempDir()
 		globalCfg := filepath.Join(tmpDir, "global")
 		localCfg := filepath.Join(tmpDir, "local")
-		require.NoError(t, os.WriteFile(globalCfg, []byte(`task_model = opus`), 0o600))
-		require.NoError(t, os.WriteFile(localCfg, []byte(`task_model = haiku`), 0o600))
+		require.NoError(t, os.WriteFile(globalCfg, []byte(`task_model = pro`), 0o600))
+		require.NoError(t, os.WriteFile(localCfg, []byte(`task_model = flash-lite`), 0o600))
 
 		loader := newValuesLoader(defaultsFS)
 		values, err := loader.Load(localCfg, globalCfg)
 		require.NoError(t, err)
-		assert.Equal(t, "haiku", values.TaskModel)
+		assert.Equal(t, "flash-lite", values.TaskModel)
 	})
 }
 
 func TestValues_mergeFrom_ReviewModel(t *testing.T) {
 	t.Run("non-empty overrides", func(t *testing.T) {
 		dst := Values{ReviewModel: ""}
-		src := Values{ReviewModel: "sonnet"}
+		src := Values{ReviewModel: "flash"}
 		dst.mergeFrom(&src)
-		assert.Equal(t, "sonnet", dst.ReviewModel)
+		assert.Equal(t, "flash", dst.ReviewModel)
 	})
 
 	t.Run("empty preserves existing", func(t *testing.T) {
-		dst := Values{ReviewModel: "sonnet"}
+		dst := Values{ReviewModel: "flash"}
 		src := Values{ReviewModel: ""}
 		dst.mergeFrom(&src)
-		assert.Equal(t, "sonnet", dst.ReviewModel)
+		assert.Equal(t, "flash", dst.ReviewModel)
 	})
 
 	t.Run("local overrides global", func(t *testing.T) {
 		tmpDir := t.TempDir()
 		globalCfg := filepath.Join(tmpDir, "global")
 		localCfg := filepath.Join(tmpDir, "local")
-		require.NoError(t, os.WriteFile(globalCfg, []byte(`review_model = sonnet`), 0o600))
-		require.NoError(t, os.WriteFile(localCfg, []byte(`review_model = haiku`), 0o600))
+		require.NoError(t, os.WriteFile(globalCfg, []byte(`review_model = flash`), 0o600))
+		require.NoError(t, os.WriteFile(localCfg, []byte(`review_model = flash-lite`), 0o600))
 
 		loader := newValuesLoader(defaultsFS)
 		values, err := loader.Load(localCfg, globalCfg)
 		require.NoError(t, err)
-		assert.Equal(t, "haiku", values.ReviewModel)
+		assert.Equal(t, "flash-lite", values.ReviewModel)
 	})
 }

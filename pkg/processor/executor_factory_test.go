@@ -157,12 +157,12 @@ func TestParseModelSpec(t *testing.T) {
 		effort string
 	}{
 		{name: "empty", input: "", model: "", effort: ""},
-		{name: "model only", input: "opus", model: "opus", effort: ""},
-		{name: "model and effort", input: "opus:high", model: "opus", effort: "high"},
+		{name: "model only", input: "pro", model: "pro", effort: ""},
+		{name: "model and effort", input: "pro:high", model: "pro", effort: "high"},
 		{name: "effort only", input: ":high", model: "", effort: "high"},
-		{name: "trailing colon", input: "opus:", model: "opus", effort: ""},
-		{name: "full model id with effort", input: "gemini-sonnet-4-6:medium", model: "gemini-sonnet-4-6", effort: "medium"},
-		{name: "multiple colons — split on first", input: "opus:high:extra", model: "opus", effort: "high:extra"},
+		{name: "trailing colon", input: "pro:", model: "pro", effort: ""},
+		{name: "full model id with effort", input: "gemini-flash-4-6:medium", model: "gemini-flash-4-6", effort: "medium"},
+		{name: "multiple colons — split on first", input: "pro:high:extra", model: "pro", effort: "high:extra"},
 	}
 
 	for _, tc := range tests {
@@ -225,12 +225,12 @@ func TestRunner_New_ModelEffortWiring(t *testing.T) {
 		sameExecutor bool // true when review falls back to task executor
 	}{
 		{name: "empty specs", taskModel: "", reviewModel: "", wantTask: [2]string{"", ""}, wantReview: [2]string{"", ""}, sameExecutor: true},
-		{name: "task model only, review empty", taskModel: "opus", reviewModel: "", wantTask: [2]string{"opus", ""}, wantReview: [2]string{"opus", ""}, sameExecutor: true},
-		{name: "task model with effort, review empty", taskModel: "opus:high", reviewModel: "", wantTask: [2]string{"opus", "high"}, wantReview: [2]string{"opus", "high"}, sameExecutor: true},
+		{name: "task model only, review empty", taskModel: "pro", reviewModel: "", wantTask: [2]string{"pro", ""}, wantReview: [2]string{"pro", ""}, sameExecutor: true},
+		{name: "task model with effort, review empty", taskModel: "pro:high", reviewModel: "", wantTask: [2]string{"pro", "high"}, wantReview: [2]string{"pro", "high"}, sameExecutor: true},
 		{name: "effort only, review empty", taskModel: ":medium", reviewModel: "", wantTask: [2]string{"", "medium"}, wantReview: [2]string{"", "medium"}, sameExecutor: true},
-		{name: "trailing colon equivalent to plain model", taskModel: "opus", reviewModel: "opus:", wantTask: [2]string{"opus", ""}, wantReview: [2]string{"opus", ""}, sameExecutor: true},
-		{name: "same model different effort — separate executor", taskModel: "opus", reviewModel: "opus:high", wantTask: [2]string{"opus", ""}, wantReview: [2]string{"opus", "high"}, sameExecutor: false},
-		{name: "different model and effort — separate executor", taskModel: "opus:high", reviewModel: "sonnet:medium", wantTask: [2]string{"opus", "high"}, wantReview: [2]string{"sonnet", "medium"}, sameExecutor: false},
+		{name: "trailing colon equivalent to plain model", taskModel: "pro", reviewModel: "pro:", wantTask: [2]string{"pro", ""}, wantReview: [2]string{"pro", ""}, sameExecutor: true},
+		{name: "same model different effort — separate executor", taskModel: "pro", reviewModel: "pro:high", wantTask: [2]string{"pro", ""}, wantReview: [2]string{"pro", "high"}, sameExecutor: false},
+		{name: "different model and effort — separate executor", taskModel: "pro:high", reviewModel: "flash:medium", wantTask: [2]string{"pro", "high"}, wantReview: [2]string{"flash", "medium"}, sameExecutor: false},
 	}
 
 	for _, tc := range tests {

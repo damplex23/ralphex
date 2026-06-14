@@ -1202,19 +1202,19 @@ func TestRunHeaderParams(t *testing.T) {
 	})
 
 	t.Run("cli task and review models", func(t *testing.T) {
-		got := runHeaderParams(parseTestOpts(t, "--task-model", "opus:high", "--review-model", "sonnet:low"), &config.Config{}, processor.ModeFull)
-		assert.Equal(t, progress.RunParams{TaskModel: "opus:high", ReviewModel: "sonnet:low"}, got)
+		got := runHeaderParams(parseTestOpts(t, "--task-model", "pro:high", "--review-model", "flash:low"), &config.Config{}, processor.ModeFull)
+		assert.Equal(t, progress.RunParams{TaskModel: "pro:high", ReviewModel: "flash:low"}, got)
 	})
 
 	t.Run("cli flags override config values", func(t *testing.T) {
-		cfg := &config.Config{TaskModel: "sonnet", ReviewModel: "haiku"}
-		got := runHeaderParams(parseTestOpts(t, "--task-model", "opus"), cfg, processor.ModeFull)
-		assert.Equal(t, progress.RunParams{TaskModel: "opus", ReviewModel: "haiku"}, got)
+		cfg := &config.Config{TaskModel: "flash", ReviewModel: "flash-lite"}
+		got := runHeaderParams(parseTestOpts(t, "--task-model", "pro"), cfg, processor.ModeFull)
+		assert.Equal(t, progress.RunParams{TaskModel: "pro", ReviewModel: "flash-lite"}, got)
 	})
 
 	t.Run("review model fallback to task is not recorded", func(t *testing.T) {
-		got := runHeaderParams(parseTestOpts(t, "--task-model", "opus"), &config.Config{}, processor.ModeFull)
-		assert.Equal(t, progress.RunParams{TaskModel: "opus"}, got, "review inherits task implicitly, no separate header line")
+		got := runHeaderParams(parseTestOpts(t, "--task-model", "pro"), &config.Config{}, processor.ModeFull)
+		assert.Equal(t, progress.RunParams{TaskModel: "pro"}, got, "review inherits task implicitly, no separate header line")
 	})
 
 	t.Run("codex executor recorded", func(t *testing.T) {
@@ -1224,13 +1224,13 @@ func TestRunHeaderParams(t *testing.T) {
 	})
 
 	t.Run("plan mode records effective plan model", func(t *testing.T) {
-		got := runHeaderParams(parseTestOpts(t, "--plan-model", "opus:high"), &config.Config{}, processor.ModePlan)
-		assert.Equal(t, progress.RunParams{PlanModel: "opus:high"}, got)
+		got := runHeaderParams(parseTestOpts(t, "--plan-model", "pro:high"), &config.Config{}, processor.ModePlan)
+		assert.Equal(t, progress.RunParams{PlanModel: "pro:high"}, got)
 	})
 
 	t.Run("plan mode falls back to task model", func(t *testing.T) {
-		got := runHeaderParams(parseTestOpts(t, "--task-model", "opus"), &config.Config{}, processor.ModePlan)
-		assert.Equal(t, progress.RunParams{PlanModel: "opus"}, got, "plan_model falls back to task_model by design")
+		got := runHeaderParams(parseTestOpts(t, "--task-model", "pro"), &config.Config{}, processor.ModePlan)
+		assert.Equal(t, progress.RunParams{PlanModel: "pro"}, got, "plan_model falls back to task_model by design")
 	})
 }
 

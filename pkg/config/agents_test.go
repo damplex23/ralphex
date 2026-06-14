@@ -519,7 +519,7 @@ func TestAgentLoader_Load_FrontmatterOnlyFallsBackToEmbedded(t *testing.T) {
 	require.NoError(t, os.MkdirAll(agentsDir, 0o750))
 
 	// quality.txt with only frontmatter, no body — should fall back to embedded default
-	content := "---\nmodel: haiku\n---"
+	content := "---\nmodel: flash-lite\n---"
 	require.NoError(t, os.WriteFile(filepath.Join(agentsDir, "quality.txt"), []byte(content), 0o600))
 
 	loader := newAgentLoader(defaultsFS)
@@ -539,7 +539,7 @@ func TestAgentLoader_Load_FrontmatterAndCommentsOnlyFallsBackToEmbedded(t *testi
 	require.NoError(t, os.MkdirAll(agentsDir, 0o750))
 
 	// quality.txt with frontmatter + commented body — should fall back to embedded default
-	content := "---\nmodel: haiku\n---\n# this is a comment\n# another comment"
+	content := "---\nmodel: flash-lite\n---\n# this is a comment\n# another comment"
 	require.NoError(t, os.WriteFile(filepath.Join(agentsDir, "quality.txt"), []byte(content), 0o600))
 
 	loader := newAgentLoader(defaultsFS)
@@ -557,7 +557,7 @@ func TestAgentLoader_Load_ParsesOptions(t *testing.T) {
 	agentsDir := filepath.Join(dir, "agents")
 	require.NoError(t, os.MkdirAll(agentsDir, 0o750))
 
-	content := "---\nmodel: haiku\nagent: code-reviewer\n---\nReview code for issues."
+	content := "---\nmodel: flash-lite\nagent: code-reviewer\n---\nReview code for issues."
 	require.NoError(t, os.WriteFile(filepath.Join(agentsDir, "quality.txt"), []byte(content), 0o600))
 
 	loader := newAgentLoader(defaultsFS)
@@ -567,7 +567,7 @@ func TestAgentLoader_Load_ParsesOptions(t *testing.T) {
 	q := findAgent(agents, "quality")
 	require.NotNil(t, q)
 	assert.Equal(t, "Review code for issues.", q.Prompt)
-	assert.Equal(t, "haiku", q.Model)
+	assert.Equal(t, "flash-lite", q.Model)
 	assert.Equal(t, "code-reviewer", q.AgentType)
 }
 
@@ -577,7 +577,7 @@ func TestAgentLoader_Load_ParsesOptionsWithSingleLeadingComment(t *testing.T) {
 	require.NoError(t, os.MkdirAll(agentsDir, 0o750))
 
 	// single comment before frontmatter should not prevent frontmatter detection
-	content := "# my custom agent\n---\nmodel: haiku\nagent: code-reviewer\n---\nReview code for issues."
+	content := "# my custom agent\n---\nmodel: flash-lite\nagent: code-reviewer\n---\nReview code for issues."
 	require.NoError(t, os.WriteFile(filepath.Join(agentsDir, "quality.txt"), []byte(content), 0o600))
 
 	loader := newAgentLoader(defaultsFS)
@@ -587,7 +587,7 @@ func TestAgentLoader_Load_ParsesOptionsWithSingleLeadingComment(t *testing.T) {
 	q := findAgent(agents, "quality")
 	require.NotNil(t, q)
 	assert.Equal(t, "Review code for issues.", q.Prompt)
-	assert.Equal(t, "haiku", q.Model)
+	assert.Equal(t, "flash-lite", q.Model)
 	assert.Equal(t, "code-reviewer", q.AgentType)
 }
 
@@ -597,7 +597,7 @@ func TestAgentLoader_Load_ParsesOptionsWithWhitespaceSeparator(t *testing.T) {
 	require.NoError(t, os.MkdirAll(agentsDir, 0o750))
 
 	// whitespace-only line between comments and frontmatter should still work
-	content := "# my agent\n# description\n   \n---\nmodel: sonnet\n---\nReview code."
+	content := "# my agent\n# description\n   \n---\nmodel: flash\n---\nReview code."
 	require.NoError(t, os.WriteFile(filepath.Join(agentsDir, "quality.txt"), []byte(content), 0o600))
 
 	loader := newAgentLoader(defaultsFS)
@@ -607,7 +607,7 @@ func TestAgentLoader_Load_ParsesOptionsWithWhitespaceSeparator(t *testing.T) {
 	q := findAgent(agents, "quality")
 	require.NotNil(t, q)
 	assert.Equal(t, "Review code.", q.Prompt)
-	assert.Equal(t, "sonnet", q.Model)
+	assert.Equal(t, "flash", q.Model)
 }
 
 func TestAgentLoader_Load_ParsesOptionsWithLeadingComments(t *testing.T) {
@@ -616,7 +616,7 @@ func TestAgentLoader_Load_ParsesOptionsWithLeadingComments(t *testing.T) {
 	require.NoError(t, os.MkdirAll(agentsDir, 0o750))
 
 	// comments before frontmatter should not prevent frontmatter detection
-	content := "# my custom agent\n# description of what it does\n---\nmodel: haiku\nagent: code-reviewer\n---\nReview code for issues."
+	content := "# my custom agent\n# description of what it does\n---\nmodel: flash-lite\nagent: code-reviewer\n---\nReview code for issues."
 	require.NoError(t, os.WriteFile(filepath.Join(agentsDir, "quality.txt"), []byte(content), 0o600))
 
 	loader := newAgentLoader(defaultsFS)
@@ -626,7 +626,7 @@ func TestAgentLoader_Load_ParsesOptionsWithLeadingComments(t *testing.T) {
 	q := findAgent(agents, "quality")
 	require.NotNil(t, q)
 	assert.Equal(t, "Review code for issues.", q.Prompt)
-	assert.Equal(t, "haiku", q.Model)
+	assert.Equal(t, "flash-lite", q.Model)
 	assert.Equal(t, "code-reviewer", q.AgentType)
 }
 

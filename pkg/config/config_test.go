@@ -553,7 +553,7 @@ func TestLoad_AllUserValues(t *testing.T) {
 	configContent := `
 gemini_command = /custom/gemini
 gemini_args = --custom
-plan_model = opus:high
+plan_model = pro:high
 codex_enabled = false
 codex_command = /custom/codex
 codex_model = custom-model
@@ -572,7 +572,7 @@ plans_dir = my/plans
 	// all values should be user-specified, not defaults
 	assert.Equal(t, "/custom/gemini", cfg.GeminiCommand)
 	assert.Equal(t, "--custom", cfg.GeminiArgs)
-	assert.Equal(t, "opus:high", cfg.PlanModel)
+	assert.Equal(t, "pro:high", cfg.PlanModel)
 	assert.False(t, cfg.CodexEnabled)
 	assert.Equal(t, "/custom/codex", cfg.CodexCommand)
 	assert.Equal(t, "custom-model", cfg.CodexModel)
@@ -1460,9 +1460,9 @@ func TestConfig_JSONShape(t *testing.T) {
 	c := Config{
 		GeminiCommand:           "gemini",
 		GeminiArgs:              "--foo",
-		PlanModel:               "opus:high",
-		TaskModel:               "sonnet:medium",
-		ReviewModel:             "sonnet:low",
+		PlanModel:               "pro:high",
+		TaskModel:               "flash:medium",
+		ReviewModel:             "flash:low",
 		CodexEnabled:            true,
 		CodexCommand:            "codex",
 		CodexModel:              "gpt-5.5",

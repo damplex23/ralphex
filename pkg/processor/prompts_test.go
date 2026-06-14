@@ -670,7 +670,7 @@ func TestRunner_expandAgentReferences_WithModelAndAgentType(t *testing.T) {
 	t.Run("both model and agent type", func(t *testing.T) {
 		appCfg := &config.Config{
 			CustomAgents: []config.CustomAgent{
-				{Name: "docs", Prompt: "Check docs.", Options: config.Options{Model: "haiku", AgentType: "code-reviewer"}},
+				{Name: "docs", Prompt: "Check docs.", Options: config.Options{Model: "flash-lite", AgentType: "code-reviewer"}},
 			},
 		}
 		r := &Runner{cfg: Config{AppConfig: appCfg}, log: newMockLogger()}
@@ -684,7 +684,7 @@ func TestRunner_expandAgentReferences_WithModelAndAgentType(t *testing.T) {
 	t.Run("model only uses default agent type", func(t *testing.T) {
 		appCfg := &config.Config{
 			CustomAgents: []config.CustomAgent{
-				{Name: "lint", Prompt: "Lint code.", Options: config.Options{Model: "sonnet"}},
+				{Name: "lint", Prompt: "Lint code.", Options: config.Options{Model: "flash"}},
 			},
 		}
 		r := &Runner{cfg: Config{AppConfig: appCfg}, log: newMockLogger()}
@@ -1433,7 +1433,7 @@ func TestRunner_formatAgentExpansion_CodexIgnoresFrontmatterOverrides(t *testing
 		CustomAgents: []config.CustomAgent{{
 			Name:    "reviewer",
 			Prompt:  "do a review",
-			Options: config.Options{Model: "opus", AgentType: "qa-expert"},
+			Options: config.Options{Model: "pro", AgentType: "qa-expert"},
 		}},
 	}
 	r := &Runner{
@@ -1449,7 +1449,7 @@ func TestRunner_formatAgentExpansion_CodexIgnoresFrontmatterOverrides(t *testing
 	assert.Contains(t, result, "spawn_agent(agent='reviewer', task='")
 	assert.Contains(t, result, "do a review')", "agent body is the tail of the task argument")
 	assert.NotContains(t, result, "qa-expert")
-	assert.NotContains(t, result, "with model=opus")
+	assert.NotContains(t, result, "with model=pro")
 
 	// verify the warning fires when frontmatter is discarded
 	var foundWarn bool

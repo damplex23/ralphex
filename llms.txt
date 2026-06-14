@@ -56,10 +56,10 @@ ralphex --review-patience=3 docs/plans/feature.md
 ralphex --wait=1h docs/plans/feature.md
 
 # use a stronger model for plan creation
-ralphex --plan-model=fable:high --plan="add caching"
+ralphex --plan-model=pro-exp:high --plan="add caching"
 
 # use different models for tasks and reviews
-ralphex --task-model=opus --review-model=sonnet:low docs/plans/feature.md
+ralphex --task-model=pro --review-model=flash:low docs/plans/feature.md
 
 # override Gemini-compatible provider and external review tool for one run
 ralphex --gemini-command=/path/to/codex-as-gemini.sh --external-review-tool=custom --custom-review-script=/path/to/review.sh docs/plans/feature.md
@@ -141,15 +141,15 @@ Configuration directory: `~/.config/ralphex/` (override with `--config-dir` or `
 
 **Stalemate detection:** `review_patience` config option (or `--review-patience` CLI flag) terminates the external review loop early when Gemini produces no commits for N consecutive rounds. Set to 0 (default) to disable. Useful when the external tool and Gemini can't agree on findings.
 
-**Per-phase model configuration:** `plan_model`, `task_model`, and `review_model` config options (or `--plan-model`, `--task-model`, `--review-model` CLI flags) set phase model/effort using `model[:effort]` syntax. Examples: `opus` (model only), `opus:high` (both), `:medium` (effort only). Effort levels: `low`, `medium`, `high`, `xhigh`, `max`. `plan_model` sets plan creation and falls back to `task_model` if empty. `task_model` sets task execution. `review_model` sets review phases and falls back to `task_model` if empty. Parts are appended to the configured `gemini_command` as `--model <m>` and/or `--effort <e>`. Custom wrappers may ignore the flags (default behavior via `*) shift ;;`) or map them to their own selection. Empty by default (uses Gemini CLI's defaults).
+**Per-phase model configuration:** `plan_model`, `task_model`, and `review_model` config options (or `--plan-model`, `--task-model`, `--review-model` CLI flags) set phase model/effort using `model[:effort]` syntax. Examples: `pro` (model only), `pro:high` (both), `:medium` (effort only). Effort levels: `low`, `medium`, `high`, `xhigh`, `max`. `plan_model` sets plan creation and falls back to `task_model` if empty. `task_model` sets task execution. `review_model` sets review phases and falls back to `task_model` if empty. Parts are appended to the configured `gemini_command` as `--model <m>` and/or `--effort <e>`. Custom wrappers may ignore the flags (default behavior via `*) shift ;;`) or map them to their own selection. Empty by default (uses Gemini CLI's defaults).
 
 Under the codex executor (`--codex` or `executor = codex`), `plan_model`/`task_model`/`review_model` (CLI flag or config) select the model/effort per phase, resolved against `codex_model`/`codex_reasoning_effort` as the codex defaults. `--plan-model` sets plan creation and falls back to `--task-model` when unset. `--task-model` sets the task phase. `--review-model` sets the review phase and falls back to `--task-model` when unset. Codex builds a separate review executor when the review model/effort differs from task, so tasks and reviews can run on different codex models. An unset spec inherits the codex defaults, and each populated half of a `model[:effort]` spec overrides its default (`--task-model=:high` changes effort only). The `max` effort level does not exist in codex — passing it under `--codex` prints a warning and is ignored.
 
 ```ini
 # in ~/.config/ralphex/config
-plan_model = fable:high
-task_model = sonnet:medium
-review_model = sonnet:low
+plan_model = pro-exp:high
+task_model = flash:medium
+review_model = flash:low
 ```
 
 **Manual break (Ctrl+\):** Press Ctrl+\ (SIGQUIT) to intervene during execution. In the task phase, it pauses execution and prompts "press Enter to continue, Ctrl+C to abort" — on Enter the same task re-runs with a fresh session that re-reads the plan file, so you can edit the plan mid-run. In the external review phase, it terminates the loop immediately. Not available on Windows.

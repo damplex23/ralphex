@@ -21,7 +21,7 @@ import (
 //	Branch: feature-branch
 //	Mode: full
 //	Executor: codex
-//	Plan model: opus:high
+//	Plan model: pro:high
 //	Task model: gpt-5.5:high
 //	Review model: gpt-5.5:low
 //	Started: 2026-01-22 10:30:00

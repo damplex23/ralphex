@@ -92,8 +92,8 @@ func TestNewLogger_HeaderRunParams(t *testing.T) {
 		},
 		{
 			name:        "task model only",
-			params:      RunParams{TaskModel: "opus:high"},
-			wantLines:   []string{"Task model: opus:high\n"},
+			params:      RunParams{TaskModel: "pro:high"},
+			wantLines:   []string{"Task model: pro:high\n"},
 			absentLines: []string{"Executor: ", "Plan model: ", "Review model: "},
 		},
 		{
@@ -103,8 +103,8 @@ func TestNewLogger_HeaderRunParams(t *testing.T) {
 		},
 		{
 			name:        "plan model only",
-			params:      RunParams{PlanModel: "opus:high"},
-			wantLines:   []string{"Plan model: opus:high\n"},
+			params:      RunParams{PlanModel: "pro:high"},
+			wantLines:   []string{"Plan model: pro:high\n"},
 			absentLines: []string{"Executor: ", "Task model: ", "Review model: "},
 		},
 	}

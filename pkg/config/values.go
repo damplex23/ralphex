@@ -18,7 +18,7 @@ type Values struct {
 	GeminiCommand              string
 	GeminiArgs                 string
 	PlanModel                  string // model for plan creation (falls back to TaskModel if empty)
-	TaskModel                  string // model for task execution (e.g., "fable", "opus", "sonnet", "haiku")
+	TaskModel                  string // model for task execution (e.g., "pro-exp", "pro", "flash", "flash-lite")
 	ReviewModel                string // model for review phases (falls back to TaskModel if empty)
 	GeminiErrorPatterns        []string
 	CodexErrorPatterns         []string

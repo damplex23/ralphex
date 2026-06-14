@@ -428,9 +428,9 @@ func Test_stripLeadingComments(t *testing.T) {
 		{name: "mid-content comments kept", input: "# meta1\n# meta2\ncontent\n# mid comment\nmore", expected: "content\n# mid comment\nmore"},
 		{name: "meta block then hash title", input: "# comment\n# another\n\n# Title\n\nContent", expected: "# Title\n\nContent"},
 		{name: "only comments", input: "# comment\n# another", expected: ""},
-		{name: "two comments before frontmatter", input: "# desc\n# more\n---\nmodel: haiku\n---\nbody", expected: "---\nmodel: haiku\n---\nbody"},
-		{name: "single comment before frontmatter preserved", input: "# desc\n---\nmodel: haiku\n---\nbody", expected: "# desc\n---\nmodel: haiku\n---\nbody"},
-		{name: "no leading comments with frontmatter", input: "---\nmodel: haiku\n---\nbody", expected: "---\nmodel: haiku\n---\nbody"},
+		{name: "two comments before frontmatter", input: "# desc\n# more\n---\nmodel: flash-lite\n---\nbody", expected: "---\nmodel: flash-lite\n---\nbody"},
+		{name: "single comment before frontmatter preserved", input: "# desc\n---\nmodel: flash-lite\n---\nbody", expected: "# desc\n---\nmodel: flash-lite\n---\nbody"},
+		{name: "no leading comments with frontmatter", input: "---\nmodel: flash-lite\n---\nbody", expected: "---\nmodel: flash-lite\n---\nbody"},
 		{name: "empty input", input: "", expected: ""},
 		{name: "three comments stripped", input: "# meta 1\n# meta 2\n# meta 3\n\ncontent", expected: "content"},
 		{name: "single comment only", input: "# Title", expected: "# Title"},
@@ -452,14 +452,14 @@ func Test_stripLeadingCommentLines(t *testing.T) {
 		expected string
 	}{
 		{name: "no comments", input: "line one\nline two", expected: "line one\nline two"},
-		{name: "single comment stripped", input: "# desc\n---\nmodel: haiku\n---\nbody", expected: "---\nmodel: haiku\n---\nbody"},
-		{name: "two comments stripped", input: "# desc\n# more\n---\nmodel: haiku\n---\nbody", expected: "---\nmodel: haiku\n---\nbody"},
+		{name: "single comment stripped", input: "# desc\n---\nmodel: flash-lite\n---\nbody", expected: "---\nmodel: flash-lite\n---\nbody"},
+		{name: "two comments stripped", input: "# desc\n# more\n---\nmodel: flash-lite\n---\nbody", expected: "---\nmodel: flash-lite\n---\nbody"},
 		{name: "three comments stripped", input: "# a\n# b\n# c\ncontent", expected: "content"},
 		{name: "empty input", input: "", expected: ""},
 		{name: "only comments", input: "# one\n# two", expected: ""},
 		{name: "blank line stops stripping", input: "# comment\n\n# another\ncontent", expected: "# another\ncontent"},
-		{name: "whitespace line after comments trimmed", input: "# comment\n# more\n   \n---\nmodel: haiku\n---\nbody", expected: "---\nmodel: haiku\n---\nbody"},
-		{name: "no comments with frontmatter", input: "---\nmodel: haiku\n---\nbody", expected: "---\nmodel: haiku\n---\nbody"},
+		{name: "whitespace line after comments trimmed", input: "# comment\n# more\n   \n---\nmodel: flash-lite\n---\nbody", expected: "---\nmodel: flash-lite\n---\nbody"},
+		{name: "no comments with frontmatter", input: "---\nmodel: flash-lite\n---\nbody", expected: "---\nmodel: flash-lite\n---\nbody"},
 	}
 
 	for _, tc := range tests {

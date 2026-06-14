@@ -313,10 +313,10 @@ Implementation:
 **Loading behavior:** agents are loaded with per-file fallback: local `.ralphex/agents/` → global `~/.config/ralphex/agents/` → embedded default. The 5 embedded agents are always the baseline — deleting an agent file from disk does not disable it, the embedded version is used as fallback. To disable a specific agent, remove its `{{agent:name}}` reference from the prompt files (`review_first.txt`, `review_second.txt`), not the agent file itself.
 
 **Frontmatter options:** Agent files support optional YAML frontmatter (`---` delimited) for per-agent model and subagent type:
-- `model: haiku|sonnet|opus|fable` — Gemini model for this agent
+- `model: flash-lite|flash|pro|pro-exp` — Gemini model for this agent
 - `agent: <type>` — Gemini CLI invoke_agent tool subagent type (default: `general-purpose`)
 - Parsed by `parseOptions()` in `pkg/config/frontmatter.go`, validated by `Options.Validate()`
-- Full model IDs (e.g. `gemini-sonnet-4-5-20250929`) are normalized to short keywords (`sonnet`)
+- Full model IDs (e.g. `gemini-flash-4-5-20250929`) are normalized to short keywords (`flash`)
 - Invalid model values are dropped with a warning, falling back to defaults
 
 **Template variables:** Prompt files support variable expansion via `replacePromptVariables()` in `pkg/processor/prompts.go`:

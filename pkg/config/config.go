@@ -48,7 +48,7 @@ type Config struct {
 	GeminiArgs    string `json:"gemini_args"`
 	GeminiArgsSet bool   `json:"-"`            // tracks runtime overrides, including an explicit empty --gemini-args=
 	PlanModel     string `json:"plan_model"`   // model[:effort] spec for plan creation (falls back to TaskModel)
-	TaskModel     string `json:"task_model"`   // model[:effort] spec for task execution (e.g., "opus", "opus:high", ":medium")
+	TaskModel     string `json:"task_model"`   // model[:effort] spec for task execution (e.g., "pro", "pro:high", ":medium")
 	ReviewModel   string `json:"review_model"` // model[:effort] spec for review phases (falls back to TaskModel)
 
 	CodexEnabled         bool   `json:"codex_enabled"`

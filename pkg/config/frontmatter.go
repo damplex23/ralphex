@@ -13,7 +13,7 @@ type Options struct {
 	AgentType string `yaml:"agent"`
 }
 
-var validModels = map[string]bool{"haiku": true, "sonnet": true, "opus": true, "fable": true}
+var validModels = map[string]bool{"flash-lite": true, "flash": true, "pro": true, "pro-exp": true}
 
 // String returns a human-readable summary of the options for logging.
 func (o Options) String() string {
@@ -33,13 +33,13 @@ func (o Options) String() string {
 func (o Options) Validate() []string {
 	var warnings []string
 	if o.Model != "" && !validModels[o.Model] {
-		warnings = append(warnings, fmt.Sprintf("unknown model %q, must be one of: haiku, sonnet, opus, fable", o.Model))
+		warnings = append(warnings, fmt.Sprintf("unknown model %q, must be one of: flash-lite, flash, pro, pro-exp", o.Model))
 	}
 	return warnings
 }
 
-// normalizeModel extracts the keyword (haiku, sonnet, opus, fable) from a model string.
-// e.g. "gemini-sonnet-4-5-20250929" → "sonnet", "opus" → "opus", "" → "".
+// normalizeModel extracts the keyword (flash-lite, flash, pro, pro-exp) from a model string.
+// e.g. "gemini-flash-4-5-20250929" → "flash", "pro" → "pro", "" → "".
 func normalizeModel(model string) string {
 	lower := strings.ToLower(model)
 	for kw := range validModels {

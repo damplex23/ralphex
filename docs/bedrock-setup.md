@@ -73,8 +73,8 @@ Create an IAM policy with only the permissions required for Gemini via Bedrock.
                 "bedrock:InvokeModelWithResponseStream"
             ],
             "Resource": [
-                "arn:aws:bedrock:us-east-1::foundation-model/gemini.gemini-sonnet-4-20250514-v1:0",
-                "arn:aws:bedrock:us-east-1::foundation-model/gemini.gemini-haiku-4-20250514-v1:0"
+                "arn:aws:bedrock:us-east-1::foundation-model/gemini.gemini-flash-4-20250514-v1:0",
+                "arn:aws:bedrock:us-east-1::foundation-model/gemini.gemini-flash-lite-4-20250514-v1:0"
             ]
         },
         {
@@ -85,8 +85,8 @@ Create an IAM policy with only the permissions required for Gemini via Bedrock.
                 "bedrock:InvokeModelWithResponseStream"
             ],
             "Resource": [
-                "arn:aws:bedrock:us-east-1:*:inference-profile/us.gemini.gemini-sonnet-4-20250514-v1:0",
-                "arn:aws:bedrock:us-east-1:*:inference-profile/us.gemini.gemini-haiku-4-20250514-v1:0"
+                "arn:aws:bedrock:us-east-1:*:inference-profile/us.gemini.gemini-flash-4-20250514-v1:0",
+                "arn:aws:bedrock:us-east-1:*:inference-profile/us.gemini.gemini-flash-lite-4-20250514-v1:0"
             ]
         }
     ]

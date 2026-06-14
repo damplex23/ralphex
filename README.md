@@ -661,10 +661,10 @@ ralphex --review-patience=3 docs/plans/feature.md
 ralphex --wait=1h docs/plans/feature.md
 
 # use a stronger model for plan creation
-ralphex --plan-model=fable:high --plan="add caching"
+ralphex --plan-model=pro-exp:high --plan="add caching"
 
 # use different models for tasks and reviews
-ralphex --task-model=opus --review-model=sonnet:low docs/plans/feature.md
+ralphex --task-model=pro --review-model=flash:low docs/plans/feature.md
 
 # use provider overrides for one run without editing config
 ralphex --gemini-command=/path/to/codex-as-gemini.sh --external-review-tool=custom --custom-review-script=/path/to/review.sh docs/plans/feature.md
@@ -701,7 +701,7 @@ ralphex --serve --port=3000 docs/plans/feature.md
 | `-b, --base-ref` | Override default branch for review diffs (branch name or commit hash) | auto-detect |
 | `--skip-finalize` | Skip finalize step even if enabled in config | false |
 | `--plan-model` | Model for plan creation as `model[:effort]` (falls back to `--task-model`). Same syntax and wrapper behavior as `--task-model`. Under `--codex`, selects the codex plan-creation model/effort | empty |
-| `--task-model` | Model for task execution as `model[:effort]` (e.g., `opus`, `opus:high`, `:medium`). Effort values: `low`, `medium`, `high`, `xhigh`, `max`. Appended as `--model <m>` and/or `--effort <e>` to `gemini_command`; custom wrappers may ignore or implement the flags. Under `--codex`, selects the codex task-phase model/effort instead (see *Model selection under `--codex`*) | empty |
+| `--task-model` | Model for task execution as `model[:effort]` (e.g., `pro`, `pro:high`, `:medium`). Effort values: `low`, `medium`, `high`, `xhigh`, `max`. Appended as `--model <m>` and/or `--effort <e>` to `gemini_command`; custom wrappers may ignore or implement the flags. Under `--codex`, selects the codex task-phase model/effort instead (see *Model selection under `--codex`*) | empty |
 | `--review-model` | Model for review phases as `model[:effort]` (falls back to `--task-model`). Same syntax and wrapper behavior as `--task-model`. Under `--codex`, selects the codex review-phase model/effort | empty |
 | `--gemini-command` | Override the Gemini-compatible command for this run | config/default |
 | `--gemini-args` | Override Gemini-compatible command arguments for this run. Use `--gemini-args=` to clear configured/default args | config/default |
@@ -779,7 +779,7 @@ Agent files support optional YAML frontmatter for per-agent configuration:
 
 ```txt
 ---
-model: haiku
+model: flash-lite
 agent: code-reviewer
 ---
 Review the code for quality issues...
@@ -787,10 +787,10 @@ Review the code for quality issues...
 
 | Option | Values | Description |
 |--------|--------|-------------|
-| `model` | `haiku`, `sonnet`, `opus`, `fable` | Gemini model for this agent |
+| `model` | `flash-lite`, `flash`, `pro`, `pro-exp` | Gemini model for this agent |
 | `agent` | any string | Gemini CLI invoke_agent tool subagent type |
 
-Both options are optional. Without frontmatter, agents use default model and `general-purpose` subagent type. Full model IDs (e.g. `gemini-sonnet-4-5-20250929`) are normalized to short keywords (`sonnet`) since Gemini CLI only accepts `haiku`, `sonnet`, `opus`, `fable`. Invalid model values are dropped with a warning.
+Both options are optional. Without frontmatter, agents use default model and `general-purpose` subagent type. Full model IDs (e.g. `gemini-flash-4-5-20250929`) are normalized to short keywords (`flash`) since Gemini CLI only accepts `flash-lite`, `flash`, `pro`, `pro-exp`. Invalid model values are dropped with a warning.
 
 ### Template Syntax
 
@@ -997,8 +997,8 @@ Provider-related CLI flags (`--gemini-command`, `--gemini-args`, `--external-rev
 | `gemini_args` | Gemini CLI arguments | `--yolo --output-format stream-json --prompt ""` |
 | `executor` | Executor for plan creation, task, review, and finalize phases. `""` (default) uses Gemini CLI; `codex` routes the full pipeline through the codex CLI and skips the external review phase. CLI flag `--codex` takes precedence | empty |
 | `pass_gemini.md` | When `executor = codex`, pass project `GEMINI.md` to codex as `AGENTS.md` via `-c project_doc_fallback_filenames=["GEMINI.md"]`. CLI flag `--pass-gemini.md` takes precedence | `false` |
-| `plan_model` | Model for plan creation as `model[:effort]` (e.g., `opus`, `opus:high`, `:medium`). Falls back to `task_model` if empty. Same syntax and wrapper behavior as `task_model`. Under `--codex`, selects the codex plan-creation model/effort instead (see *Model selection under `--codex`*) | empty |
-| `task_model` | Model for task execution as `model[:effort]` (e.g., `opus`, `opus:high`, `:medium`). Effort: `low`, `medium`, `high`, `xhigh`, `max`. Appended as `--model <m>` and/or `--effort <e>` to `gemini_command`; custom wrappers may ignore or implement the flags. Under `--codex`, selects the codex task-phase model/effort instead (see *Model selection under `--codex`*) | empty |
+| `plan_model` | Model for plan creation as `model[:effort]` (e.g., `pro`, `pro:high`, `:medium`). Falls back to `task_model` if empty. Same syntax and wrapper behavior as `task_model`. Under `--codex`, selects the codex plan-creation model/effort instead (see *Model selection under `--codex`*) | empty |
+| `task_model` | Model for task execution as `model[:effort]` (e.g., `pro`, `pro:high`, `:medium`). Effort: `low`, `medium`, `high`, `xhigh`, `max`. Appended as `--model <m>` and/or `--effort <e>` to `gemini_command`; custom wrappers may ignore or implement the flags. Under `--codex`, selects the codex task-phase model/effort instead (see *Model selection under `--codex`*) | empty |
 | `review_model` | Model for review phases as `model[:effort]`. Falls back to `task_model` if empty. Same syntax and wrapper behavior as `task_model`. Under `--codex`, selects the codex review-phase model/effort | empty |
 | `codex_enabled` | Enable codex review phase | `true` |
 | `codex_command` | Codex CLI command | `codex` |
@@ -1084,7 +1084,7 @@ curl -s https://openrouter.ai/api/v1/chat/completions \
   -H "Authorization: Bearer $OPENROUTER_API_KEY" \
   -H "Content-Type: application/json" \
   -d "{
-    \"model\": \"gemini/gemini-3.5-sonnet\",
+    \"model\": \"gemini/gemini-3.5-flash\",
     \"messages\": [{\"role\": \"user\", \"content\": $(echo "$prompt" | jq -Rs .)}]
   }" | jq -r '.choices[0].message.content'
 ```

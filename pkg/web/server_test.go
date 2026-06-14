@@ -838,10 +838,10 @@ func TestFormatRunParams(t *testing.T) {
 	}{
 		{name: "all empty", want: ""},
 		{name: "executor only", executor: "codex", want: "codex"},
-		{name: "task model only", taskModel: "opus:high", want: "task opus:high"},
-		{name: "task and review models", taskModel: "opus", reviewModel: "sonnet:low", want: "task opus · review sonnet:low"},
+		{name: "task model only", taskModel: "pro:high", want: "task pro:high"},
+		{name: "task and review models", taskModel: "pro", reviewModel: "flash:low", want: "task pro · review flash:low"},
 		{name: "executor with models", executor: "codex", taskModel: "gpt-5.5:high", reviewModel: "gpt-5.5:low", want: "codex · task gpt-5.5:high · review gpt-5.5:low"},
-		{name: "plan model only", planModel: "opus:high", want: "plan opus:high"},
+		{name: "plan model only", planModel: "pro:high", want: "plan pro:high"},
 	}
 
 	for _, tc := range tests {

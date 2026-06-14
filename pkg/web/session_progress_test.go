@@ -52,7 +52,7 @@ Plan: docs/plans/my-plan.md
 Branch: feature-branch
 Mode: full
 Executor: codex
-Plan model: opus:high
+Plan model: pro:high
 Task model: gpt-5.5:high
 Review model: gpt-5.5:low
 Started: 2026-01-22 10:30:00
@@ -65,7 +65,7 @@ Started: 2026-01-22 10:30:00
 		assert.True(t, complete)
 
 		assert.Equal(t, "codex", meta.Executor)
-		assert.Equal(t, "opus:high", meta.PlanModel)
+		assert.Equal(t, "pro:high", meta.PlanModel)
 		assert.Equal(t, "gpt-5.5:high", meta.TaskModel)
 		assert.Equal(t, "gpt-5.5:low", meta.ReviewModel)
 		assert.Equal(t, "docs/plans/my-plan.md", meta.PlanPath, "Plan model line must not shadow Plan line")

@@ -229,7 +229,7 @@ gemini_command = /path/to/scripts/opencode/opencode-as-gemini.sh
 
 | Variable | Default | Description |
 |---|---|---|
-| `OPENCODE_MODEL` | (opencode default) | Model in provider/model format, e.g. `github-copilot/gemini-opus-4.6` |
+| `OPENCODE_MODEL` | (opencode default) | Model in provider/model format, e.g. `github-copilot/gemini-pro-4.6` |
 | `OPENCODE_VARIANT` | (opencode default) | Model variant/reasoning effort, e.g. `high`, `medium`, or `low` |
 | `OPENCODE_EFFORT` | (opencode default) | Alias for `OPENCODE_VARIANT` when `OPENCODE_VARIANT` is unset |
 | `OPENCODE_REASONING` | (opencode default) | Alias for `OPENCODE_VARIANT` when both `OPENCODE_VARIANT` and `OPENCODE_EFFORT` are unset |
@@ -471,7 +471,7 @@ done
 if [[ -z "$prompt" ]] && [[ ! -t 0 ]]; then prompt=$(cat); fi
 [[ -z "$prompt" ]] && exit 1
 
-OPENROUTER_MODEL="${OPENROUTER_MODEL:-gemini/gemini-sonnet-4}"
+OPENROUTER_MODEL="${OPENROUTER_MODEL:-gemini/gemini-flash-4}"
 
 response=$(curl -s https://openrouter.ai/api/v1/chat/completions \
     -H "Authorization: Bearer $OPENROUTER_API_KEY" \

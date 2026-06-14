@@ -235,7 +235,7 @@ func (*executorFactory) needsCodexBinary(appConfig *config.Config) bool {
 
 // parseModelEffort splits a "model[:effort]" spec into separate parts.
 // empty input returns ("", ""). missing colon returns (s, "").
-// a leading colon (":high") returns ("", "high"); a trailing colon ("opus:") returns ("opus", "").
+// a leading colon (":high") returns ("", "high"); a trailing colon ("pro:") returns ("pro", "").
 // only the first colon is treated as the separator; anything after is passed through as effort.
 func parseModelEffort(s string) (model, effort string) {
 	model, effort, _ = strings.Cut(s, ":")

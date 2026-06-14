@@ -489,14 +489,14 @@ func TestStripFlag(t *testing.T) {
 		flag string
 		want []string
 	}{
-		{name: "removes flag and value", args: []string{"--prompt", "", "--model", "opus", "--prompt", ""}, flag: "--model", want: []string{"--prompt", "", "--prompt", ""}},
+		{name: "removes flag and value", args: []string{"--prompt", "", "--model", "pro", "--prompt", ""}, flag: "--model", want: []string{"--prompt", "", "--prompt", ""}},
 		{name: "flag not present", args: []string{"--prompt", "", "--prompt", ""}, flag: "--model", want: []string{"--prompt", "", "--prompt", ""}},
-		{name: "flag at end with value", args: []string{"--prompt", "", "--model", "opus"}, flag: "--model", want: []string{"--prompt", ""}},
+		{name: "flag at end with value", args: []string{"--prompt", "", "--model", "pro"}, flag: "--model", want: []string{"--prompt", ""}},
 		{name: "empty args", args: []string{}, flag: "--model", want: []string{}},
-		{name: "removes equals form", args: []string{"--prompt", "", "--model=opus", "--prompt", ""}, flag: "--model", want: []string{"--prompt", "", "--prompt", ""}},
-		{name: "removes equals form at end", args: []string{"--prompt", "", "--model=opus"}, flag: "--model", want: []string{"--prompt", ""}},
+		{name: "removes equals form", args: []string{"--prompt", "", "--model=pro", "--prompt", ""}, flag: "--model", want: []string{"--prompt", "", "--prompt", ""}},
+		{name: "removes equals form at end", args: []string{"--prompt", "", "--model=pro"}, flag: "--model", want: []string{"--prompt", ""}},
 		{name: "removes bare flag at end", args: []string{"--prompt", "", "--model"}, flag: "--model", want: []string{"--prompt", ""}},
-		{name: "removes repeated occurrences", args: []string{"--model", "opus", "--prompt", "", "--model=sonnet"}, flag: "--model", want: []string{"--prompt", ""}},
+		{name: "removes repeated occurrences", args: []string{"--model", "pro", "--prompt", "", "--model=flash"}, flag: "--model", want: []string{"--prompt", ""}},
 		{name: "does not match prefix-only", args: []string{"--model-foo", "bar", "--prompt", ""}, flag: "--model", want: []string{"--model-foo", "bar", "--prompt", ""}},
 		{name: "bare flag in middle preserves next flag", args: []string{"--prompt", "", "--model", "--prompt", ""}, flag: "--model", want: []string{"--prompt", "", "--prompt", ""}},
 		{name: "bare flag preserves next flag with dash value", args: []string{"--model", "-x", "--prompt", ""}, flag: "--model", want: []string{"-x", "--prompt", ""}},
@@ -1412,11 +1412,11 @@ func TestGeminiExecutor_Run_ModelFlag(t *testing.T) {
 	}
 
 	t.Run("model set injects --model flag", func(t *testing.T) {
-		e := &GeminiExecutor{Model: "sonnet", cmdRunner: mock}
+		e := &GeminiExecutor{Model: "flash", cmdRunner: mock}
 		result := e.Run(context.Background(), "test")
 		require.NoError(t, result.Error)
 		assert.Contains(t, capturedArgs, "--model")
-		assert.Contains(t, capturedArgs, "sonnet")
+		assert.Contains(t, capturedArgs, "flash")
 	})
 
 	t.Run("model empty does not inject --model flag", func(t *testing.T) {
@@ -1427,11 +1427,11 @@ func TestGeminiExecutor_Run_ModelFlag(t *testing.T) {
 	})
 
 	t.Run("model overrides existing --model in args", func(t *testing.T) {
-		e := &GeminiExecutor{Args: `--prompt "" --model opus --output-format json`, Model: "sonnet", cmdRunner: mock}
+		e := &GeminiExecutor{Args: `--prompt "" --model pro --output-format json`, Model: "flash", cmdRunner: mock}
 		result := e.Run(context.Background(), "test")
 		require.NoError(t, result.Error)
-		assert.Contains(t, capturedArgs, "sonnet")
-		assert.NotContains(t, capturedArgs, "opus", "old --model value should be stripped")
+		assert.Contains(t, capturedArgs, "flash")
+		assert.NotContains(t, capturedArgs, "pro", "old --model value should be stripped")
 		// count --model occurrences — should be exactly one
 		count := 0
 		for _, a := range capturedArgs {
@@ -1486,11 +1486,11 @@ func TestGeminiExecutor_Run_EffortFlag(t *testing.T) {
 
 	t.Run("model and effort together inject both flags", func(t *testing.T) {
 		var capturedArgs []string
-		e := &GeminiExecutor{Model: "opus", Effort: "medium", cmdRunner: newMock(&capturedArgs)}
+		e := &GeminiExecutor{Model: "pro", Effort: "medium", cmdRunner: newMock(&capturedArgs)}
 		result := e.Run(context.Background(), "test")
 		require.NoError(t, result.Error)
 		assert.Contains(t, capturedArgs, "--model")
-		assert.Contains(t, capturedArgs, "opus")
+		assert.Contains(t, capturedArgs, "pro")
 		assert.Contains(t, capturedArgs, "--effort")
 		assert.Contains(t, capturedArgs, "medium")
 	})
