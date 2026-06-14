@@ -262,60 +262,71 @@ func TestGeminiExecutor_extractText(t *testing.T) {
 
 	t.Run("assistant event with text", func(t *testing.T) {
 		event := streamEvent{Type: "assistant", Message: []byte(`{"content":[{"type":"text","text":"assistant message"}]}`)}
-		assert.Equal(t, "assistant message", e.extractText(&event))
+		got, _ := e.extractText(&event)
+		assert.Equal(t, "assistant message", got)
 	})
 
 	t.Run("assistant event with multiple text blocks", func(t *testing.T) {
 		event := streamEvent{Type: "assistant", Message: []byte(`{"content":[{"type":"text","text":"first"},{"type":"text","text":"second"}]}`)}
-		assert.Equal(t, "firstsecond", e.extractText(&event))
+		got, _ := e.extractText(&event)
+		assert.Equal(t, "firstsecond", got)
 	})
 
 	t.Run("assistant event with empty content", func(t *testing.T) {
 		event := streamEvent{Type: "assistant"}
-		assert.Empty(t, e.extractText(&event))
+		got, _ := e.extractText(&event)
+		assert.Empty(t, got)
 	})
 
 	t.Run("content block delta", func(t *testing.T) {
 		event := streamEvent{Type: "content_block_delta", Delta: []byte(`{"type":"text_delta","text":"hello"}`)}
-		assert.Equal(t, "hello", e.extractText(&event))
+		got, _ := e.extractText(&event)
+		assert.Equal(t, "hello", got)
 	})
 
 	t.Run("non-text delta", func(t *testing.T) {
 		event := streamEvent{Type: "content_block_delta", Delta: []byte(`{"type":"tool_use","text":"ignored"}`)}
-		assert.Empty(t, e.extractText(&event))
+		got, _ := e.extractText(&event)
+		assert.Empty(t, got)
 	})
 
 	t.Run("result with object", func(t *testing.T) {
 		event := streamEvent{Type: "result"}
 		event.Result = []byte(`{"output":"final"}`)
-		assert.Equal(t, "final", e.extractText(&event))
+		got, _ := e.extractText(&event)
+		assert.Equal(t, "final", got)
 	})
 
 	t.Run("result with string skipped", func(t *testing.T) {
 		// session summary format - content already streamed, should be skipped
 		event := streamEvent{Type: "result"}
 		event.Result = []byte(`"Task completed"`)
-		assert.Empty(t, e.extractText(&event))
+		got, _ := e.extractText(&event)
+		assert.Empty(t, got)
 	})
 
 	t.Run("message_stop with text content", func(t *testing.T) {
 		event := streamEvent{Type: "message_stop", Message: []byte(`{"content":[{"type":"text","text":"final message"}]}`)}
-		assert.Equal(t, "final message", e.extractText(&event))
+		got, _ := e.extractText(&event)
+		assert.Equal(t, "final message", got)
 	})
 
 	t.Run("message_stop with non-text content", func(t *testing.T) {
 		event := streamEvent{Type: "message_stop", Message: []byte(`{"content":[{"type":"tool_use","text":"ignored"}]}`)}
-		assert.Empty(t, e.extractText(&event))
+		got, _ := e.extractText(&event)
+		assert.Empty(t, got)
 	})
 
 	t.Run("message_stop with empty content", func(t *testing.T) {
 		event := streamEvent{Type: "message_stop"}
-		assert.Empty(t, e.extractText(&event))
+		got, _ := e.extractText(&event)
+		assert.Empty(t, got)
 	})
 
 	t.Run("unknown type", func(t *testing.T) {
 		event := streamEvent{Type: "ping"}
-		assert.Empty(t, e.extractText(&event))
+		got, _ := e.extractText(&event)
+		assert.Empty(t, got)
 	})
 }
 
