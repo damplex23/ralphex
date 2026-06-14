@@ -400,7 +400,7 @@ func (e *GeminiExecutor) parseStream(ctx context.Context, r io.Reader, idleTouch
 
 		var event streamEvent
 		if jsonErr := json.Unmarshal([]byte(line), &event); jsonErr != nil {
-			// skip non-JSON lines for cleaner output unless debug is on
+			// line is not valid JSON. treat as raw text (could be system error or wrapper noise)
 			if e.Debug {
 				log.Printf("[debug] non-JSON line: %s", line)
 				if e.OutputHandler != nil {
@@ -409,6 +409,7 @@ func (e *GeminiExecutor) parseStream(ctx context.Context, r io.Reader, idleTouch
 			}
 			output.WriteString(line)
 			output.WriteString("\n")
+			// only store clean text in the buffer used for signal detection
 			recentBlocks[blockIdx%recentBlockCount] = line
 			blockIdx++
 			return
@@ -422,12 +423,12 @@ func (e *GeminiExecutor) parseStream(ctx context.Context, r io.Reader, idleTouch
 				e.OutputHandler(text)
 			}
 
-			// track recent blocks for pattern matching (avoids false positives on full output)
+			// track clean text chunks for pattern matching and signal reconstruction.
+			// very important: do NOT store the raw JSON 'line' here.
 			recentBlocks[blockIdx%recentBlockCount] = text
 			blockIdx++
 
-			// check for signals in text. some events might contain the full signal,
-			// or it might be reconstructed from recent blocks.
+			// check for signals in this specific chunk
 			if sig := detectSignal(text); sig != "" {
 				signal = sig
 			}
@@ -443,19 +444,21 @@ func (e *GeminiExecutor) parseStream(ctx context.Context, r io.Reader, idleTouch
 			recent.WriteString(b)
 		}
 	}
+	recentText := recent.String()
+
 	// check if signal is present in reconstructed text (in case it was split across events)
 	if signal == "" {
-		if sig := detectSignal(recent.String()); sig != "" {
+		if sig := detectSignal(recentText); sig != "" {
 			signal = sig
 		}
 	}
 
 	if err != nil {
-		return Result{Output: output.String(), RecentText: recent.String(), Signal: signal,
+		return Result{Output: output.String(), RecentText: recentText, Signal: signal,
 			Error: fmt.Errorf("stream read: %w", err)}
 	}
 
-	return Result{Output: output.String(), RecentText: recent.String(), Signal: signal}
+	return Result{Output: output.String(), RecentText: recentText, Signal: signal}
 }
 
 // extractText extracts text content from various event types.
